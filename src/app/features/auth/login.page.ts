@@ -26,7 +26,7 @@ const DEFAULT_RETRY_SECONDS = 60;
         ></div>
         <div class="relative flex items-center gap-3">
           <span class="flex size-9 items-center justify-center rounded-control bg-brand"><app-icon name="chef" /></span>
-          <span class="text-xl font-semibold">ServidOS</span>
+          <span class="font-display text-xl font-semibold">ServidOS</span>
         </div>
         <div class="relative">
           <h2 class="max-w-md text-4xl font-bold leading-tight tracking-tight">Salón, cocina y caja en el mismo turno.</h2>

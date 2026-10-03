@@ -2,8 +2,9 @@
 
 /*
  * Design tokens extracted from pencil-export (ServidOS design).
- * Fonts: no external resource is loaded. The design looks like a geometric grotesque
- * (sans) plus a monospace; until the user picks and approves real fonts, system stacks apply.
+ * Fonts (chosen by the user): 'Bricolage Grotesque' for headlines (`font-display`, applied to
+ * h1–h3 by default) and 'Geist' for body text (`font-sans`). Loaded from Google Fonts in
+ * index.html with display=swap; system stacks are the fallback while they load or if blocked.
  */
 @theme {
   --color-brand: #d9480f;
@@ -39,7 +40,8 @@
   --radius-card: 0.75rem;
   --radius-modal: 1rem;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
   --shadow-modal: 0 24px 60px -12px rgb(20 17 13 / 0.35);
@@ -56,6 +58,12 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
 
   button:not(:disabled),

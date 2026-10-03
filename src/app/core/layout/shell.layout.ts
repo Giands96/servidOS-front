@@ -16,7 +16,7 @@ import { SessionStore } from '../auth/session.store';
       <aside class="flex shrink-0 flex-col bg-ink p-3 text-white lg:sticky lg:top-0 lg:h-screen lg:w-60">
         <div class="flex items-center gap-3 px-2 py-3">
           <span class="flex size-8 items-center justify-center rounded-control bg-brand"><app-icon name="chef" [size]="18" /></span>
-          <span class="text-lg font-semibold">ServidOS</span>
+          <span class="font-display text-lg font-semibold">ServidOS</span>
         </div>
 
         <div class="mt-3 rounded-card border border-ink-line px-3 py-2.5">
