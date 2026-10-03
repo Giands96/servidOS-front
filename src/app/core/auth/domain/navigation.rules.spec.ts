@@ -1,12 +1,55 @@
 import { aMe } from '../../../../testing/builders';
 import { Rol } from '../auth.types';
-import { homeLabel, initialsOf, navFor, roleLabel } from './navigation.rules';
+import { Routes } from '@angular/router';
+import { routes } from '../../../app.routes';
+import { homeLabel, initialsOf, navEntriesFrom, navFor, roleLabel } from './navigation.rules';
 import { can, homeFor } from './permissions.rules';
+
+const entries = navEntriesFrom(routes);
 
 const tenant = (rol: Rol) => aMe({ rol, restauranteId: 7 });
 const platform = (rol: Rol) => aMe({ rol, restauranteId: null });
 
-const routesOf = (user: ReturnType<typeof aMe>) => navFor(user).map((item) => item.route);
+const routesOf = (user: ReturnType<typeof aMe>) => navFor(user, entries).map((item) => item.route);
+
+describe('navEntriesFrom', () => {
+  it('builds absolute paths from nested children and keeps declaration order', () => {
+    const config: Routes = [
+      { path: 'login' },
+      {
+        path: '',
+        children: [
+          { path: 'b', data: { action: 'cocina.ver', nav: { label: 'B', icon: 'flame' } } },
+          {
+            path: 'plataforma',
+            children: [
+              {
+                path: 'restaurantes',
+                data: { action: 'plataforma.restaurantes.ver', nav: { label: 'R', icon: 'building' } },
+              },
+            ],
+          },
+          { path: 'a/nuevo', data: { action: 'catalogo.ver', nav: { label: 'A', icon: 'book' } } },
+        ],
+      },
+    ];
+    expect(navEntriesFrom(config).map((e) => [e.route, e.label, e.action])).toEqual([
+      ['/b', 'B', 'cocina.ver'],
+      ['/plataforma/restaurantes', 'R', 'plataforma.restaurantes.ver'],
+      ['/a/nuevo', 'A', 'catalogo.ver'],
+    ]);
+  });
+
+  it('ignores routes without data.nav', () => {
+    const config: Routes = [{ path: 'x', data: { action: 'cocina.ver' } }, { path: 'y', data: { title: 'Y' } }, { path: 'z' }];
+    expect(navEntriesFrom(config)).toEqual([]);
+  });
+
+  it('fails closed: a nav entry without an action is never listed', () => {
+    const config: Routes = [{ path: 'x', data: { nav: { label: 'X', icon: 'book' } } }];
+    expect(navEntriesFrom(config)).toEqual([]);
+  });
+});
 
 describe('navFor', () => {
   it.each([
@@ -29,11 +72,11 @@ describe('navFor', () => {
   });
 
   it('is empty for an anonymous session', () => {
-    expect(navFor(null)).toEqual([]);
+    expect(navFor(null, entries)).toEqual([]);
   });
 
   it('uses the design labels', () => {
-    expect(navFor(tenant('ADMINISTRADOR')).map((i) => i.label)).toEqual([
+    expect(navFor(tenant('ADMINISTRADOR'), entries).map((i) => i.label)).toEqual([
       'Pedidos',
       'Cocina',
       'Caja',
@@ -47,7 +90,7 @@ describe('navFor', () => {
     'every item of %s passes can() for its own action',
     (rol) => {
       const user = tenant(rol);
-      expect(navFor(user).every((item) => can(user, item.action))).toBe(true);
+      expect(navFor(user, entries).every((item) => can(user, item.action))).toBe(true);
     },
   );
 });
@@ -60,13 +103,13 @@ describe('homeLabel', () => {
     [platform('SUPERADMIN'), 'Restaurantes'],
     [platform('ADMIN'), 'Crear restaurante'],
   ])('labels the home of %j as %s', (user, expected) => {
-    expect(homeLabel(user)).toBe(expected);
+    expect(homeLabel(user, entries)).toBe(expected);
   });
 
   it('is null when the role has no home module', () => {
     expect(homeFor(tenant('MESERO'))).toBe('/sin-modulos');
-    expect(homeLabel(tenant('MESERO'))).toBeNull();
-    expect(homeLabel(null)).toBeNull();
+    expect(homeLabel(tenant('MESERO'), entries)).toBeNull();
+    expect(homeLabel(null, entries)).toBeNull();
   });
 });
 

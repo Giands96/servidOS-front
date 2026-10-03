@@ -16,13 +16,14 @@ import { SessionStore } from '../session.store';
 import { authGuard } from './auth.guard';
 import { guestGuard } from './guest.guard';
 import { roleGuard } from './role.guard';
+import { routeActionGuard } from './route-action.guard';
 import { subscriptionGuard } from './subscription.guard';
 
 type GuardResult = boolean | UrlTree;
 
-async function run(guard: CanActivateFn): Promise<GuardResult> {
+async function run(guard: CanActivateFn, data: Record<string, unknown> = {}): Promise<GuardResult> {
   const result = TestBed.runInInjectionContext(() =>
-    guard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+    guard({ data } as unknown as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
   );
   return (isObservable(result) ? firstValueFrom(result as Observable<GuardResult>) : result) as GuardResult;
 }
@@ -94,6 +95,27 @@ describe('route guards', () => {
 
     it('sends anonymous users to /sin-permiso', async () => {
       expect(urlOf(await run(roleGuard('catalogo.ver')))).toBe('/sin-permiso');
+    });
+  });
+
+  describe('routeActionGuard', () => {
+    it('allows when the route action is permitted', async () => {
+      signIn('RECEPCION');
+      expect(await run(routeActionGuard, { action: 'pedidos.gestionar' })).toBe(true);
+    });
+
+    it('sends a role without the route action to /sin-permiso', async () => {
+      signIn('COCINERO');
+      expect(urlOf(await run(routeActionGuard, { action: 'pagos.registrar' }))).toBe('/sin-permiso');
+    });
+
+    it('fails closed when the route declares no action', async () => {
+      signIn('ADMINISTRADOR');
+      expect(urlOf(await run(routeActionGuard, {}))).toBe('/sin-permiso');
+    });
+
+    it('sends anonymous users to /sin-permiso', async () => {
+      expect(urlOf(await run(routeActionGuard, { action: 'catalogo.ver' }))).toBe('/sin-permiso');
     });
   });
 

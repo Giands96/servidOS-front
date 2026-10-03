@@ -1,3 +1,4 @@
+import type { Routes } from '@angular/router';
 import { MeResponse, Rol } from '../auth.types';
 import { Action, can, homeFor } from './permissions.rules';
 
@@ -13,41 +14,58 @@ export interface NavItem {
 
 type Actor = Pick<MeResponse, 'rol' | 'restauranteId'>;
 
-/** Declaration order is the sidebar order (same as the design). */
-const NAV_ITEMS: readonly NavItem[] = [
-  { label: 'Pedidos', route: '/pedidos/nuevo', icon: 'receipt', action: 'pedidos.gestionar' },
-  { label: 'Cocina', route: '/cocina', icon: 'flame', action: 'cocina.ver' },
-  { label: 'Caja', route: '/caja', icon: 'wallet', action: 'pagos.registrar' },
-  { label: 'Catálogo', route: '/catalogo', icon: 'book', action: 'catalogo.ver' },
-  { label: 'Usuarios', route: '/usuarios', icon: 'users', action: 'usuarios.gestionar' },
-  // Plan/subscription management screen: tenant ADMINISTRADOR only (user decision 2026-10-03).
-  { label: 'Restaurante y plan', route: '/restaurante', icon: 'store', action: 'restaurante.suscripcion.gestionar' },
-  { label: 'Restaurantes', route: '/plataforma/restaurantes', icon: 'building', action: 'plataforma.restaurantes.ver' },
-  {
-    label: 'Crear restaurante',
-    route: '/plataforma/restaurantes/nuevo',
-    icon: 'plus',
-    action: 'plataforma.restaurantes.crear',
-  },
-];
+/**
+ * Shape of the `data` of a module route: the single place where its permission is declared.
+ * Angular types route data loosely (`Record<string, any>`), so routes build it through `routeAccess()`
+ * to get compile-time checking of the action and the nav entry.
+ */
+export interface RouteAccess {
+  /** Permission required to enter the route (read by routeActionGuard and by the sidebar). */
+  action?: Action;
+  /** Present when the route is listed in the sidebar. */
+  nav?: { label: string; icon: NavIcon };
+  title?: string;
+}
+
+export const routeAccess = (access: RouteAccess): RouteAccess => access;
 
 /**
- * Sidebar entries for the session, filtered by can(). "Crear restaurante" is only listed on its own
- * (ADMIN): the SUPERADMIN reaches it from the Restaurantes screen, as in the design.
+ * Sidebar entries derived from the route config, in declaration order (= sidebar order), with absolute
+ * paths. Fails closed: a route with `data.nav` but no `data.action` is never listed.
  */
-export function navFor(user: Actor | null): NavItem[] {
+export function navEntriesFrom(routes: Routes): NavItem[] {
+  const out: NavItem[] = [];
+  const walk = (list: Routes, prefix: string) => {
+    for (const route of list) {
+      const path = [prefix, route.path].filter((segment) => segment !== undefined && segment !== '').join('/');
+      const data = route.data as RouteAccess | undefined;
+      if (data?.nav && data.action) {
+        out.push({ label: data.nav.label, icon: data.nav.icon, route: '/' + path, action: data.action });
+      }
+      walk(route.children ?? [], path);
+    }
+  };
+  walk(routes, '');
+  return out;
+}
+
+/**
+ * Sidebar entries for the session: the entries the role may enter (can()). "Crear restaurante" is only
+ * listed on its own (ADMIN): the SUPERADMIN reaches it from the Restaurantes screen, as in the design.
+ */
+export function navFor(user: Actor | null, entries: readonly NavItem[]): NavItem[] {
   if (user === null) {
     return [];
   }
-  const items = NAV_ITEMS.filter((item) => can(user, item.action));
+  const items = entries.filter((item) => can(user, item.action));
   const hasList = items.some((item) => item.action === 'plataforma.restaurantes.ver');
   return hasList ? items.filter((item) => item.action !== 'plataforma.restaurantes.crear') : items;
 }
 
 /** Label of the nav item that is the user's home (for "Ir a ..." buttons); null without a home module. */
-export function homeLabel(user: Actor | null): string | null {
+export function homeLabel(user: Actor | null, entries: readonly NavItem[]): string | null {
   const home = homeFor(user);
-  return NAV_ITEMS.find((item) => item.route === home)?.label ?? null;
+  return entries.find((item) => item.route === home)?.label ?? null;
 }
 
 const ROLE_LABELS: Record<Rol, string> = {

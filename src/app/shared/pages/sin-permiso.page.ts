@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { homeLabel, roleLabel } from '../../core/auth/domain/navigation.rules';
+import { Router, RouterLink } from '@angular/router';
+import { homeLabel, navEntriesFrom, roleLabel } from '../../core/auth/domain/navigation.rules';
 import { homeFor } from '../../core/auth/domain/permissions.rules';
 import { SessionStore } from '../../core/auth/session.store';
 import { ButtonComponent } from '../ui/button/button.component';
@@ -19,6 +19,7 @@ import { StatePanelComponent } from '../ui/state-panel/state-panel.component';
 })
 export class SinPermisoPage {
   private readonly session = inject(SessionStore);
+  private readonly entries = navEntriesFrom(inject(Router).config);
 
   protected readonly role = computed(() => {
     const rol = this.session.rol();
@@ -26,7 +27,7 @@ export class SinPermisoPage {
   });
   protected readonly home = computed(() => homeFor(this.session.user()));
   protected readonly homeText = computed(() => {
-    const label = homeLabel(this.session.user());
+    const label = homeLabel(this.session.user(), this.entries);
     return label ? `Ir a ${label}` : 'Volver al inicio';
   });
 }

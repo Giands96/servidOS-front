@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { RestauranteApi } from '../../features/restaurante/data/restaurante.api';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { initialsOf, navFor, roleLabel } from '../auth/domain/navigation.rules';
+import { initialsOf, navEntriesFrom, navFor, roleLabel } from '../auth/domain/navigation.rules';
 import { SessionStore } from '../auth/session.store';
 
 /** Authenticated layout: role-filtered sidebar (no counters: no list endpoints exist yet) plus the page outlet. */
@@ -57,7 +57,8 @@ export class ShellLayout {
   private readonly router = inject(Router);
 
   protected readonly user = this.session.user;
-  protected readonly items = computed(() => navFor(this.user()));
+  private readonly entries = navEntriesFrom(this.router.config);
+  protected readonly items = computed(() => navFor(this.user(), this.entries));
   protected readonly initials = computed(() => initialsOf(this.user()?.nombre ?? ''));
   protected readonly role = computed(() => {
     const rol = this.user()?.rol;

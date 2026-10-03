@@ -1,10 +1,20 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 import { homeRedirectGuard } from './core/auth/guards/home-redirect.guard';
+import { NavIcon, routeAccess } from './core/auth/domain/navigation.rules';
+import { Action } from './core/auth/domain/permissions.rules';
 import { roleGuard } from './core/auth/guards/role.guard';
+import { routeActionGuard } from './core/auth/guards/route-action.guard';
 
 const placeholder = () => import('./shared/pages/module-placeholder.page').then((m) => m.ModulePlaceholderPage);
+
+/** Placeholder module route: the permission is declared once, in data, and read by the guard and the sidebar. */
+const moduleRoute = (action: Action, label: string, icon: NavIcon): Pick<Route, 'canActivate' | 'loadComponent' | 'data'> => ({
+  canActivate: [routeActionGuard],
+  loadComponent: placeholder,
+  data: routeAccess({ action, nav: { label, icon }, title: label }),
+});
 
 /*
  * Module routes below are placeholders replaced in later phases.
@@ -22,29 +32,24 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./core/layout/shell.layout').then((m) => m.ShellLayout),
     children: [
-      { path: 'pedidos/nuevo', canActivate: [roleGuard('pedidos.gestionar')], loadComponent: placeholder, data: { title: 'Pedidos' } },
-      { path: 'cocina', canActivate: [roleGuard('cocina.ver')], loadComponent: placeholder, data: { title: 'Cocina' } },
-      { path: 'caja', canActivate: [roleGuard('pagos.registrar')], loadComponent: placeholder, data: { title: 'Caja' } },
-      { path: 'catalogo', canActivate: [roleGuard('catalogo.ver')], loadComponent: placeholder, data: { title: 'Catálogo' } },
-      { path: 'usuarios', canActivate: [roleGuard('usuarios.gestionar')], loadComponent: placeholder, data: { title: 'Usuarios' } },
+      { path: 'pedidos/nuevo', ...moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt') },
+      { path: 'cocina', ...moduleRoute('cocina.ver', 'Cocina', 'flame') },
+      { path: 'caja', ...moduleRoute('pagos.registrar', 'Caja', 'wallet') },
+      { path: 'catalogo', ...moduleRoute('catalogo.ver', 'Catálogo', 'book') },
+      { path: 'usuarios', ...moduleRoute('usuarios.gestionar', 'Usuarios', 'users') },
+      // Plan/subscription management screen: tenant ADMINISTRADOR only (user decision 2026-10-03).
       {
         path: 'restaurante',
-        canActivate: [roleGuard('restaurante.suscripcion.gestionar')],
-        loadComponent: placeholder,
-        data: { title: 'Restaurante y plan' },
+        ...moduleRoute('restaurante.suscripcion.gestionar', 'Restaurante y plan', 'store'),
       },
       {
         path: 'plataforma/restaurantes',
         pathMatch: 'full',
-        canActivate: [roleGuard('plataforma.restaurantes.ver')],
-        loadComponent: placeholder,
-        data: { title: 'Restaurantes' },
+        ...moduleRoute('plataforma.restaurantes.ver', 'Restaurantes', 'building'),
       },
       {
         path: 'plataforma/restaurantes/nuevo',
-        canActivate: [roleGuard('plataforma.restaurantes.crear')],
-        loadComponent: placeholder,
-        data: { title: 'Crear restaurante' },
+        ...moduleRoute('plataforma.restaurantes.crear', 'Crear restaurante', 'plus'),
       },
       {
         path: 'sin-permiso',

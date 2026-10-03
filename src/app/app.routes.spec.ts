@@ -1,11 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRouteSnapshot, Route, Router, RouterStateSnapshot, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { aMe } from '../testing/builders';
 import { SessionStore } from './core/auth/session.store';
 import { routes } from './app.routes';
+import { Rol } from './core/auth/auth.types';
+import { navEntriesFrom, navFor } from './core/auth/domain/navigation.rules';
+import { can, homeFor } from './core/auth/domain/permissions.rules';
+import { routeActionGuard } from './core/auth/guards/route-action.guard';
 
 describe('routes', () => {
   beforeEach(() => {
@@ -99,5 +103,77 @@ describe('routes', () => {
     signIn({ rol: 'RECEPCION' });
     await RouterTestingHarness.create('/paywall');
     expect(url()).toBe('/sin-permiso');
+  });
+});
+
+describe('routes as the single source of module permissions', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideRouter(routes)] }));
+
+  const entries = navEntriesFrom(routes);
+  const ROLES: readonly (readonly [Rol, number | null])[] = [
+    ['ADMINISTRADOR', 7],
+    ['RECEPCION', 7],
+    ['COCINERO', 7],
+    ['MESERO', 7],
+    ['CAJERO', 7],
+    ['REPARTIDOR', 7],
+    ['SUPERADMIN', null],
+    ['ADMIN', null],
+    ['MODERADOR', null],
+  ];
+
+  /** Module routes = routes declaring data.action, with their absolute path. */
+  const moduleRoutes = (): { path: string; route: Route }[] => {
+    const out: { path: string; route: Route }[] = [];
+    const walk = (list: Routes, prefix: string) => {
+      for (const route of list) {
+        const path = [prefix, route.path].filter((s) => s).join('/');
+        if (route.data?.['action']) {
+          out.push({ path: '/' + path, route });
+        }
+        walk(route.children ?? [], path);
+      }
+    };
+    walk(routes, '');
+    return out;
+  };
+
+  const enterable = (route: Route, user: ReturnType<typeof aMe>): boolean => {
+    TestBed.inject(SessionStore).setUser(user);
+    const result = TestBed.runInInjectionContext(() =>
+      routeActionGuard({ data: route.data } as unknown as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+    );
+    return result === true;
+  };
+
+  it.each(ROLES)('menu == enterable modules for %s', (rol, restauranteId) => {
+    const user = aMe({ rol, restauranteId });
+    const visible = navFor(user, entries).map((e) => e.route);
+    for (const path of visible) {
+      const found = moduleRoutes().find((m) => m.path === path);
+      expect(found, path).toBeDefined();
+      expect(enterable(found!.route, user), `${rol} should enter ${path}`).toBe(true);
+    }
+    // 'Crear restaurante' is intentionally hidden for SUPERADMIN, who reaches it from the list screen.
+    for (const { path, route } of moduleRoutes()) {
+      const intentionallyHidden =
+        path === '/plataforma/restaurantes/nuevo' && visible.includes('/plataforma/restaurantes');
+      if (!visible.includes(path) && !intentionallyHidden) {
+        expect(enterable(route, user), `${rol} must not enter hidden ${path}`).toBe(false);
+      }
+    }
+  });
+
+  it.each(ROLES)('homeFor(%s) targets an existing route the role can enter', (rol, restauranteId) => {
+    const user = aMe({ rol, restauranteId });
+    const home = homeFor(user);
+    const found = moduleRoutes().find((m) => m.path === home);
+    if (found) {
+      expect(enterable(found.route, user)).toBe(true);
+      expect(can(user, found.route.data!['action'])).toBe(true);
+    } else {
+      // Not a permissioned module: must still be a declared route (e.g. /sin-modulos).
+      expect(JSON.stringify(routes)).toContain(`"path":"${home.slice(1)}"`);
+    }
   });
 });
