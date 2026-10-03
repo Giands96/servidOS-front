@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/comm
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
-import { SessionStore } from '../auth/session.store';
+import { SessionStore, isAuthRejection } from '../auth/session.store';
 import { API_BASE } from './api.config';
 
 const AUTH_PATH = `${API_BASE}/auth/`;
@@ -37,7 +37,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       const current = store.accessToken();
       const token$ = current !== null && current !== sentWith ? Promise.resolve(current) : store.ensureRefreshed();
       return from(token$).pipe(
-        catchError(() => expire(error)),
+        // Auth rejection: the store already cleared the session -> back to login.
+        // Transient failure: keep the session and surface the original 401 to the caller.
+        catchError((refreshError: unknown) =>
+          refreshError instanceof HttpErrorResponse && isAuthRejection(refreshError.status)
+            ? expire(error)
+            : throwError(() => error),
+        ),
         switchMap((token) =>
           next(withBearer(req, token)).pipe(
             catchError((retryError: unknown) =>

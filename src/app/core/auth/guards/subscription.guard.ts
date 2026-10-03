@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { SuscripcionApi } from '../data/suscripcion.api';
-import { can } from '../domain/permissions.rules';
+import { subscriptionLapsedRoute } from '../domain/permissions.rules';
 import { SessionStore } from '../session.store';
 
 /**
@@ -18,7 +18,7 @@ export const subscriptionGuard: CanActivateFn = () => {
     .pipe(
       map((s) =>
         s.estado === 'CANCELADA'
-          ? router.parseUrl(can(user, 'restaurante.suscripcion.gestionar') ? '/paywall' : '/suspendido')
+          ? router.parseUrl(subscriptionLapsedRoute(user))
           : true,
       ),
       catchError(() => of(true)),

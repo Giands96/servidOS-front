@@ -105,3 +105,8 @@ export function homeFor(user: Actor | null): string {
   }
   return '/sin-modulos';
 }
+
+/** Single destination for a lapsed subscription (HTTP 402 or CANCELADA): admins can renew, others see a notice. */
+export function subscriptionLapsedRoute(user: Actor | null): '/paywall' | '/suspendido' {
+  return can(user, 'restaurante.suscripcion.gestionar') ? '/paywall' : '/suspendido';
+}

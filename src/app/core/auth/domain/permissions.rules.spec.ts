@@ -6,6 +6,7 @@ import {
   grantableRestauranteRoles,
   homeFor,
   scopeOf,
+  subscriptionLapsedRoute,
 } from './permissions.rules';
 
 const PLATFORM: PlatformRol[] = ['SUPERADMIN', 'ADMIN', 'MODERADOR'];
@@ -126,5 +127,19 @@ describe('homeFor', () => {
 
   it('falls back to /login for a null user', () => {
     expect(homeFor(null)).toBe('/login');
+  });
+});
+
+describe('subscriptionLapsedRoute', () => {
+  it.each([
+    ['ADMINISTRADOR', '/paywall'],
+    ['RECEPCION', '/suspendido'],
+    ['MESERO', '/suspendido'],
+  ] as const)('%s -> %s', (rol, expected) => {
+    expect(subscriptionLapsedRoute(userFor(rol))).toBe(expected);
+  });
+
+  it('sends a null user to /suspendido', () => {
+    expect(subscriptionLapsedRoute(null)).toBe('/suspendido');
   });
 });

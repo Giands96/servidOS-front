@@ -72,6 +72,21 @@ describe('route guards', () => {
       expect(await run(roleGuard('pedidos.gestionar'))).toBe(true);
     });
 
+    it('allows RECEPCION on pedidos.gestionar', async () => {
+      signIn('RECEPCION');
+      expect(await run(roleGuard('pedidos.gestionar'))).toBe(true);
+    });
+
+    it.each(['cocina.ver', 'catalogo.disponibilidad'] as const)('allows COCINERO on %s', async (action) => {
+      signIn('COCINERO');
+      expect(await run(roleGuard(action))).toBe(true);
+    });
+
+    it('denies COCINERO on catalogo.editar', async () => {
+      signIn('COCINERO');
+      expect(urlOf(await run(roleGuard('catalogo.editar')))).toBe('/sin-permiso');
+    });
+
     it('sends RECEPCION on pagos.registrar (caja is ADMINISTRADOR only) to /sin-permiso', async () => {
       signIn('RECEPCION');
       expect(urlOf(await run(roleGuard('pagos.registrar')))).toBe('/sin-permiso');

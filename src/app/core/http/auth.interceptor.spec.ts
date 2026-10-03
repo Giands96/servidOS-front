@@ -125,6 +125,19 @@ describe('authInterceptor', () => {
     expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { expired: 1 } });
   });
 
+  it('on transient refresh failure keeps the session, does not navigate and rethrows the original 401', async () => {
+    let error: { status: number; error?: unknown } | undefined;
+    http.get('/api/v1/productos').subscribe({ error: (e) => (error = e) });
+    expectApi(ctrl, 'GET', '/productos').flush(unauthorized(), { status: 401, statusText: 'Unauthorized' });
+
+    (await waitForRefresh()).flush('down', { status: 503, statusText: 'Service Unavailable' });
+
+    await vi.waitFor(() => expect(error?.status).toBe(401));
+    expect(store.accessToken()).toBe(FAKE_ACCESS_TOKEN);
+    expect(store.user()).toEqual(aMe());
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('does not refresh again when the retried request 401s (no loop)', async () => {
     let error: { status: number } | undefined;
     http.get('/api/v1/productos').subscribe({ error: (e) => (error = e) });

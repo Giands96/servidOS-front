@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { aMe, FAKE_ACCESS_TOKEN } from '../../../testing/builders';
 import { expectApi } from '../../../testing/mock-api';
-import { SessionStore } from './session.store';
+import { HYDRATE_TIMEOUT_MS, SessionStore, isAuthRejection } from './session.store';
 
 describe('SessionStore', () => {
   let store: SessionStore;
@@ -55,6 +55,17 @@ describe('SessionStore', () => {
     expect(store.user()).toEqual(aMe());
   });
 
+  it('login is atomic: a failing me() clears the token and rejects', async () => {
+    const done = store.login({ email: 'a@b.test', password: 'secret-pass' });
+    const assertion = expect(done).rejects.toBeDefined();
+    expectApi(ctrl, 'POST', '/auth/login').flush({ accessToken: FAKE_ACCESS_TOKEN });
+    await vi.waitFor(() => expect(store.accessToken()).toBe(FAKE_ACCESS_TOKEN));
+    expectApi(ctrl, 'GET', '/auth/me').flush('boom', { status: 500, statusText: 'Server Error' });
+    await assertion;
+    expect(store.accessToken()).toBeNull();
+    expect(store.user()).toBeNull();
+  });
+
   it('logout clears the session even when the api fails', async () => {
     store.setToken(FAKE_ACCESS_TOKEN);
     store.setUser(aMe());
@@ -88,6 +99,42 @@ describe('SessionStore', () => {
     });
   });
 
+  describe('ensureRefreshed failures', () => {
+    it.each([401, 403])('clears the session when the refresh is rejected with %s', async (status) => {
+      store.setToken(FAKE_ACCESS_TOKEN);
+      store.setUser(aMe());
+      const assertion = expect(store.ensureRefreshed()).rejects.toMatchObject({ status });
+      expectApi(ctrl, 'POST', '/auth/refresh').flush('no', { status, statusText: 'Rejected' });
+      await assertion;
+      expect(store.accessToken()).toBeNull();
+      expect(store.user()).toBeNull();
+    });
+
+    it.each([429, 500, 503])('keeps the session on transient failure (%s) and rejects', async (status) => {
+      store.setToken(FAKE_ACCESS_TOKEN);
+      store.setUser(aMe());
+      const assertion = expect(store.ensureRefreshed()).rejects.toMatchObject({ status });
+      expectApi(ctrl, 'POST', '/auth/refresh').flush('x', { status, statusText: 'x' });
+      await assertion;
+      expect(store.accessToken()).toBe(FAKE_ACCESS_TOKEN);
+      expect(store.user()).toEqual(aMe());
+    });
+
+    it('keeps the session on a network error (status 0)', async () => {
+      store.setToken(FAKE_ACCESS_TOKEN);
+      store.setUser(aMe());
+      const assertion = expect(store.ensureRefreshed()).rejects.toMatchObject({ status: 0 });
+      expectApi(ctrl, 'POST', '/auth/refresh').error(new ProgressEvent('error'));
+      await assertion;
+      expect(store.accessToken()).toBe(FAKE_ACCESS_TOKEN);
+      expect(store.user()).toEqual(aMe());
+    });
+
+    it('isAuthRejection is true only for 401 and 403', () => {
+      expect([0, 401, 403, 429, 500, 503].map(isAuthRejection)).toEqual([false, true, true, false, false, false]);
+    });
+  });
+
   describe('hydrate', () => {
     it('refreshes then loads the user', async () => {
       const done = store.hydrate();
@@ -103,6 +150,25 @@ describe('SessionStore', () => {
       expectApi(ctrl, 'POST', '/auth/refresh').flush('no', { status: 401, statusText: 'Unauthorized' });
       await expect(done).resolves.toBeUndefined();
       expect(store.isAuthenticated()).toBe(false);
+    });
+
+    describe('timeout', () => {
+      beforeEach(() => vi.useFakeTimers());
+      afterEach(() => vi.useRealTimers());
+
+      it('resolves anonymous after HYDRATE_TIMEOUT_MS and ignores a late refresh', async () => {
+        const done = store.hydrate();
+        const pending = expectApi(ctrl, 'POST', '/auth/refresh');
+        await vi.advanceTimersByTimeAsync(HYDRATE_TIMEOUT_MS);
+        await expect(done).resolves.toBeUndefined();
+        expect(store.user()).toBeNull();
+
+        pending.flush({ accessToken: FAKE_ACCESS_TOKEN });
+        await vi.advanceTimersByTimeAsync(0);
+        ctrl.expectNone((r) => r.url.endsWith('/auth/me'));
+        expect(store.accessToken()).toBeNull();
+        expect(store.user()).toBeNull();
+      });
     });
 
     it('resolves anonymous when me fails', async () => {
