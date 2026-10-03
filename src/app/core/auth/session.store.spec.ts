@@ -97,6 +97,35 @@ describe('SessionStore', () => {
       expectApi(ctrl, 'POST', '/auth/refresh').flush({ accessToken: 'fake-new-token' });
       await expect(next).resolves.toBe('fake-new-token');
     });
+
+    it('clear() abandons an in-flight refresh: its late success cannot restore the token', async () => {
+      const stale = store.ensureRefreshed();
+      const staleAssertion = expect(stale).rejects.toBeDefined();
+      const staleReq = expectApi(ctrl, 'POST', '/auth/refresh');
+      store.clear();
+      staleReq.flush({ accessToken: 'fake-stale-token' });
+      await staleAssertion;
+      expect(store.accessToken()).toBeNull();
+    });
+
+    it('clear() lets the next caller start a fresh refresh instead of joining the abandoned one', async () => {
+      const stale = store.ensureRefreshed();
+      stale.catch(() => undefined);
+      const [staleReq] = ctrl.match((req) => req.url.endsWith('/auth/refresh'));
+      store.clear();
+
+      const fresh = store.ensureRefreshed();
+      expect(fresh).not.toBe(stale);
+      const freshReq = ctrl.match((req) => req.url.endsWith('/auth/refresh'));
+      expect(freshReq).toHaveLength(1);
+      freshReq[0].flush({ accessToken: 'fake-new-token' });
+      await expect(fresh).resolves.toBe('fake-new-token');
+
+      // The abandoned flight settling late must not reset the fresh one's state or token.
+      staleReq.flush({ accessToken: 'fake-stale-token' });
+      await Promise.resolve();
+      expect(store.accessToken()).toBe('fake-new-token');
+    });
   });
 
   describe('ensureRefreshed failures', () => {

@@ -5,6 +5,10 @@ import { AuthApi } from './data/auth.api';
 import { LoginRequest, MeResponse } from './auth.types';
 import { scopeOf } from './domain/permissions.rules';
 
+/**
+ * Startup budget for refresh + /auth/me before rendering anonymous. UX choice, not a backend SLA:
+ * long enough for a cold backend, short enough to never leave a blank screen. Safe to tune.
+ */
 export const HYDRATE_TIMEOUT_MS = 8000;
 
 /** The refresh cookie was rejected or revoked (as opposed to a network/server hiccup). */
@@ -39,6 +43,8 @@ export class SessionStore {
 
   clear(): void {
     this.epoch++;
+    // Abandon any in-flight refresh so the next caller starts a fresh one.
+    this.refreshInFlight = null;
     this.accessToken.set(null);
     this.user.set(null);
   }
@@ -68,6 +74,8 @@ export class SessionStore {
    * Single-flight: concurrent callers share one POST /auth/refresh.
    * Only an auth rejection (401/403) ends the session; transient failures
    * (network, 5xx, 429, timeout) reject with the error but keep the session.
+   * A flight abandoned by clear() rejects with a plain Error and never touches
+   * the current session; callers treat it like a transient failure.
    */
   ensureRefreshed(): Promise<string> {
     if (this.refreshInFlight) {
@@ -83,12 +91,15 @@ export class SessionStore {
         this.setToken(accessToken);
         return accessToken;
       } catch (error) {
-        if (error instanceof HttpErrorResponse && isAuthRejection(error.status)) {
+        if (epoch === this.epoch && error instanceof HttpErrorResponse && isAuthRejection(error.status)) {
           this.clear();
         }
         throw error;
       } finally {
-        this.refreshInFlight = null;
+        // Same epoch means this is still the current flight; after clear() a newer one may exist.
+        if (epoch === this.epoch) {
+          this.refreshInFlight = null;
+        }
       }
     })();
     return this.refreshInFlight;
