@@ -25,6 +25,7 @@ const ACTIONS: Action[] = [
   'restaurante.suscripcion.gestionar',
   'catalogo.ver',
   'catalogo.editar',
+  'catalogo.disponibilidad',
   'pedidos.gestionar',
   'pagos.registrar',
   'pagos.reembolsar',
@@ -33,7 +34,7 @@ const ACTIONS: Action[] = [
   'cocina.listo',
 ];
 
-/** Allowed roles per action (FRONTEND_CONTEXT sections 3, 5, 7, 8). */
+/** Allowed roles per action (FRONTEND_CONTEXT sections 3, 7, 9 and 'Flujo - Recepcion Cocina' role matrix). */
 const ALLOWED: Record<Action, Rol[]> = {
   'plataforma.restaurantes.ver': ['SUPERADMIN'],
   'plataforma.restaurantes.crear': ['SUPERADMIN', 'ADMIN'],
@@ -41,12 +42,13 @@ const ALLOWED: Record<Action, Rol[]> = {
   'restaurante.suscripcion.gestionar': ['ADMINISTRADOR'],
   'catalogo.ver': RESTAURANTE,
   'catalogo.editar': ['ADMINISTRADOR'],
-  'pedidos.gestionar': ['ADMINISTRADOR'],
+  'catalogo.disponibilidad': ['ADMINISTRADOR', 'COCINERO'],
+  'pedidos.gestionar': ['ADMINISTRADOR', 'RECEPCION'],
   'pagos.registrar': ['ADMINISTRADOR'],
-  'pagos.reembolsar': ['ADMINISTRADOR'],
+  'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
-  'cocina.ver': ['ADMINISTRADOR', 'RECEPCION'],
-  'cocina.listo': ['ADMINISTRADOR', 'RECEPCION'],
+  'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
+  'cocina.listo': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
 };
 
 const userFor = (rol: Rol): Pick<MeResponse, 'rol' | 'restauranteId'> => ({
@@ -113,8 +115,8 @@ describe('homeFor', () => {
     ['ADMIN', '/plataforma/restaurantes/nuevo'],
     ['MODERADOR', '/sin-modulos'],
     ['ADMINISTRADOR', '/pedidos/nuevo'],
-    ['RECEPCION', '/cocina'],
-    ['COCINERO', '/sin-modulos'],
+    ['RECEPCION', '/pedidos/nuevo'],
+    ['COCINERO', '/cocina'],
     ['MESERO', '/sin-modulos'],
     ['CAJERO', '/sin-modulos'],
     ['REPARTIDOR', '/sin-modulos'],

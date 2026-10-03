@@ -2,7 +2,7 @@ import { MeResponse, PlatformRol, RestauranteRol, Rol } from '../auth.types';
 
 export type Scope = 'plataforma' | 'restaurante';
 
-/** Derived from FRONTEND_CONTEXT sections 3, 5, 7 and 8. */
+/** Derived from FRONTEND_CONTEXT sections 3, 5, 7 and 9 plus the 'Flujo - Recepcion Cocina' role matrix. */
 export type Action =
   | 'plataforma.restaurantes.ver'
   | 'plataforma.restaurantes.crear'
@@ -10,6 +10,7 @@ export type Action =
   | 'restaurante.suscripcion.gestionar'
   | 'catalogo.ver'
   | 'catalogo.editar'
+  | 'catalogo.disponibilidad'
   | 'pedidos.gestionar'
   | 'pagos.registrar'
   | 'pagos.reembolsar'
@@ -39,12 +40,13 @@ const RESTAURANTE_ACTIONS: Partial<Record<Action, readonly RestauranteRol[]>> = 
   'catalogo.ver': RESTAURANTE_ROLES,
   'restaurante.suscripcion.gestionar': ['ADMINISTRADOR'],
   'catalogo.editar': ['ADMINISTRADOR'],
-  'pedidos.gestionar': ['ADMINISTRADOR'],
+  'catalogo.disponibilidad': ['ADMINISTRADOR', 'COCINERO'],
+  'pedidos.gestionar': ['ADMINISTRADOR', 'RECEPCION'],
   'pagos.registrar': ['ADMINISTRADOR'],
-  'pagos.reembolsar': ['ADMINISTRADOR'],
+  'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
-  'cocina.ver': ['ADMINISTRADOR', 'RECEPCION'],
-  'cocina.listo': ['ADMINISTRADOR', 'RECEPCION'],
+  'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
+  'cocina.listo': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
 };
 
 const isPlatformRol = (rol: Rol): rol is PlatformRol => (PLATFORM_ROLES as readonly string[]).includes(rol);

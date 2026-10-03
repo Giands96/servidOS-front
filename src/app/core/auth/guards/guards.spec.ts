@@ -62,7 +62,7 @@ describe('route guards', () => {
 
     it('redirects an authenticated user to their home', async () => {
       signIn('RECEPCION');
-      expect(urlOf(await run(guestGuard))).toBe('/cocina');
+      expect(urlOf(await run(guestGuard))).toBe('/pedidos/nuevo');
     });
   });
 
@@ -72,9 +72,9 @@ describe('route guards', () => {
       expect(await run(roleGuard('pedidos.gestionar'))).toBe(true);
     });
 
-    it('sends RECEPCION on pedidos.gestionar to /sin-permiso', async () => {
+    it('sends RECEPCION on pagos.registrar (caja is ADMINISTRADOR only) to /sin-permiso', async () => {
       signIn('RECEPCION');
-      expect(urlOf(await run(roleGuard('pedidos.gestionar')))).toBe('/sin-permiso');
+      expect(urlOf(await run(roleGuard('pagos.registrar')))).toBe('/sin-permiso');
     });
 
     it('sends anonymous users to /sin-permiso', async () => {
