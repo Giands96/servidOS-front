@@ -60,6 +60,13 @@ describe('routes', () => {
     expect(url()).toBe('/sin-permiso');
   });
 
+  it('lets the tenant ADMINISTRADOR open Restaurante y plan', async () => {
+    signIn({ rol: 'ADMINISTRADOR' });
+    const harness = await RouterTestingHarness.create('/restaurante');
+    expect(url()).toBe('/restaurante');
+    expect(harness.routeNativeElement?.textContent).toContain('Restaurante y plan');
+  });
+
   it.each(['RECEPCION', 'COCINERO'] as const)('keeps %s out of Restaurante y plan', async (rol) => {
     signIn({ rol });
     await RouterTestingHarness.create('/restaurante');
