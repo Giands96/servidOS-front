@@ -1,24 +1,7 @@
+import { MeResponse } from '../app/core/auth/auth.types';
 import { ApiError } from '../app/core/http/api.types';
 
-export type Rol =
-  | 'SUPERADMIN'
-  | 'ADMIN'
-  | 'MODERADOR'
-  | 'ADMINISTRADOR'
-  | 'RECEPCION'
-  | 'COCINERO'
-  | 'MESERO'
-  | 'CAJERO'
-  | 'REPARTIDOR';
-
-export interface MeResponse {
-  usuarioId: number;
-  email: string;
-  nombre: string;
-  /** null for platform sessions (SUPERADMIN). */
-  restauranteId: number | null;
-  rol: Rol;
-}
+export type { MeResponse, Rol } from '../app/core/auth/auth.types';
 
 export function aMe(overrides: Partial<MeResponse> = {}): MeResponse {
   return {
