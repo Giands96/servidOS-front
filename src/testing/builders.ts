@@ -31,10 +31,22 @@ export function aMe(overrides: Partial<MeResponse> = {}): MeResponse {
   };
 }
 
+const STATUS_TEXT: Record<number, string> = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  402: 'Payment Required',
+  403: 'Forbidden',
+  404: 'Not Found',
+  409: 'Conflict',
+  422: 'Unprocessable Entity',
+  429: 'Too Many Requests',
+};
+
+/** Builds the backend envelope; `status` is formatted like Spring: '402 Payment Required'. */
 export function anApiError(status: number, message: string): ApiError {
   return {
     timestamp: '2026-01-01T00:00:00Z',
-    status: String(status),
+    status: STATUS_TEXT[status] ? `${status} ${STATUS_TEXT[status]}` : `${status}`,
     message,
     path: '/api/v1/test',
     traceID: 'fake-trace-id',

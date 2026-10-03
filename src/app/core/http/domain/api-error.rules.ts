@@ -45,6 +45,10 @@ export function parseRetryAfter(header: string | null, now: Date): number | null
   if (/^\d+$/.test(value)) {
     return Number(value);
   }
+  // Numeric-looking but not a non-negative integer ('1.5', '-3', '+5'): invalid, never a date.
+  if (value !== '' && !Number.isNaN(Number(value))) {
+    return null;
+  }
   const target = Date.parse(value);
   if (Number.isNaN(target)) {
     return null;

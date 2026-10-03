@@ -12,9 +12,22 @@ describe('testing helpers', () => {
 
   it('anApiError builds the envelope', () => {
     expect(anApiError(402, 'Subscription required')).toMatchObject({
-      status: '402',
+      status: '402 Payment Required',
       message: 'Subscription required',
     });
+  });
+
+  it.each([
+    [400, '400 Bad Request'],
+    [401, '401 Unauthorized'],
+    [403, '403 Forbidden'],
+    [404, '404 Not Found'],
+    [409, '409 Conflict'],
+    [422, '422 Unprocessable Entity'],
+    [429, '429 Too Many Requests'],
+    [500, '500'],
+  ])('anApiError formats status %i as %s', (code, expected) => {
+    expect(anApiError(code, 'x').status).toBe(expected);
   });
 
   it('expectApi prefixes API_BASE', () => {

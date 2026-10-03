@@ -36,6 +36,10 @@ describe('parseRetryAfter', () => {
     expect(parseRetryAfter('Wed, 31 Dec 2025 23:00:00 GMT', now)).toBe(0);
   });
 
+  it.each(['1.5', '-3', '+5', '1e3', '0x10'])('returns null for numeric-looking non-integer %s', (value) => {
+    expect(parseRetryAfter(value, now)).toBeNull();
+  });
+
   it('returns null for invalid input', () => {
     expect(parseRetryAfter('soon', now)).toBeNull();
     expect(parseRetryAfter('', now)).toBeNull();
