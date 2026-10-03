@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { aMe } from '../testing/builders';
+import { SessionStore } from './core/auth/session.store';
 import { routes } from './app.routes';
 
 describe('routes', () => {
@@ -12,19 +14,56 @@ describe('routes', () => {
     });
   });
 
+  const signIn = (overrides: Parameters<typeof aMe>[0] = {}) => TestBed.inject(SessionStore).setUser(aMe(overrides));
+  const url = () => TestBed.inject(Router).url;
+
   it('redirects anonymous users from "" to /login', async () => {
     await RouterTestingHarness.create('/');
-    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(url()).toBe('/login');
   });
 
   it('renders a not-found page for unknown paths instead of redirecting (no redirect loop)', async () => {
     const harness = await RouterTestingHarness.create('/nope');
-    expect(TestBed.inject(Router).url).toBe('/nope');
+    expect(url()).toBe('/nope');
     expect(harness.routeNativeElement?.textContent).toContain('404');
   });
 
-  it.each(['/sin-permiso', '/sin-modulos', '/paywall', '/suspendido'])('renders placeholder %s', async (url) => {
-    const harness = await RouterTestingHarness.create(url);
-    expect(harness.routeNativeElement?.textContent?.trim().length).toBeGreaterThan(0);
+  it.each(['/cocina', '/sin-permiso', '/sin-modulos', '/paywall', '/suspendido'])(
+    'sends anonymous users from %s to /login',
+    async (target) => {
+      await RouterTestingHarness.create(target);
+      expect(url()).toBe('/login');
+    },
+  );
+
+  it('renders a module inside the shell for an allowed role', async () => {
+    signIn({ rol: 'ADMINISTRADOR' });
+    const harness = await RouterTestingHarness.create('/caja');
+    expect(url()).toBe('/caja');
+    const text = harness.routeNativeElement?.textContent ?? '';
+    expect(text).toContain('Módulo en construcción');
+    expect(text).toContain('Restaurante y plan');
+  });
+
+  it('sends a role without the action to /sin-permiso', async () => {
+    signIn({ rol: 'RECEPCION' });
+    await RouterTestingHarness.create('/usuarios');
+    expect(url()).toBe('/sin-permiso');
+  });
+
+  it('keeps tenant users out of platform routes and vice versa', async () => {
+    signIn({ rol: 'ADMINISTRADOR' });
+    const harness = await RouterTestingHarness.create('/plataforma/restaurantes');
+    expect(url()).toBe('/sin-permiso');
+    TestBed.inject(SessionStore).setUser(aMe({ rol: 'SUPERADMIN', restauranteId: null }));
+    await harness.navigateByUrl('/pedidos/nuevo');
+    expect(url()).toBe('/sin-permiso');
+  });
+
+  it('lets the SUPERADMIN open the platform list', async () => {
+    signIn({ rol: 'SUPERADMIN', restauranteId: null });
+    const harness = await RouterTestingHarness.create('/plataforma/restaurantes');
+    expect(url()).toBe('/plataforma/restaurantes');
+    expect(harness.routeNativeElement?.textContent).toContain('Plataforma');
   });
 });
