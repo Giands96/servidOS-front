@@ -17,9 +17,10 @@ describe('routes', () => {
     expect(TestBed.inject(Router).url).toBe('/login');
   });
 
-  it('redirects unknown paths through "" to /login', async () => {
-    await RouterTestingHarness.create('/nope');
-    expect(TestBed.inject(Router).url).toBe('/login');
+  it('renders a not-found page for unknown paths instead of redirecting (no redirect loop)', async () => {
+    const harness = await RouterTestingHarness.create('/nope');
+    expect(TestBed.inject(Router).url).toBe('/nope');
+    expect(harness.routeNativeElement?.textContent).toContain('404');
   });
 
   it.each(['/sin-permiso', '/sin-modulos', '/paywall', '/suspendido'])('renders placeholder %s', async (url) => {

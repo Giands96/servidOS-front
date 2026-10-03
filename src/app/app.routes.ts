@@ -26,5 +26,9 @@ export const routes: Routes = [
     path: 'suspendido',
     loadComponent: () => import('./shared/pages/suspendido.page').then((m) => m.SuspendidoPage),
   },
-  { path: '**', redirectTo: '' },
+  // Render instead of redirecting to '': a redirect loops while a role's home route does not exist yet.
+  {
+    path: '**',
+    loadComponent: () => import('./shared/pages/not-found.page').then((m) => m.NotFoundPage),
+  },
 ];
