@@ -5,7 +5,7 @@ import { ActivatedRouteSnapshot, Route, Router, RouterStateSnapshot, Routes, pro
 import { RouterTestingHarness } from '@angular/router/testing';
 import { aMe } from '../testing/builders';
 import { SessionStore } from './core/auth/session.store';
-import { routes } from './app.routes';
+import { moduleRoute, routes } from './app.routes';
 import { Rol } from './core/auth/auth.types';
 import { navEntriesFrom, navFor } from './core/auth/domain/navigation.rules';
 import { can, homeFor } from './core/auth/domain/permissions.rules';
@@ -82,6 +82,17 @@ describe('routes', () => {
     const harness = await RouterTestingHarness.create('/plataforma/restaurantes');
     expect(url()).toBe('/plataforma/restaurantes');
     expect(harness.routeNativeElement?.textContent).toContain('Plataforma');
+  });
+
+  it.each(['SUPERADMIN', 'ADMIN'] as const)('lets platform %s open Crear restaurante', async (rol) => {
+    signIn({ rol, restauranteId: null });
+    await RouterTestingHarness.create('/plataforma/restaurantes/nuevo');
+    expect(url()).toBe('/plataforma/restaurantes/nuevo');
+  });
+
+  it('moduleRoute keeps the permission guard first when extra guards are added', () => {
+    const extra = () => true;
+    expect(moduleRoute('pagos.registrar', 'Caja', 'wallet', [extra]).canActivate).toEqual([routeActionGuard, extra]);
   });
 
   it('renders the 403 page with a button to the role home', async () => {

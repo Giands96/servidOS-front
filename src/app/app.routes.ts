@@ -1,4 +1,4 @@
-import { Route, Routes } from '@angular/router';
+import { CanActivateFn, Route, Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 import { homeRedirectGuard } from './core/auth/guards/home-redirect.guard';
@@ -9,9 +9,18 @@ import { routeActionGuard } from './core/auth/guards/route-action.guard';
 
 const placeholder = () => import('./shared/pages/module-placeholder.page').then((m) => m.ModulePlaceholderPage);
 
-/** Placeholder module route: the permission is declared once, in data, and read by the guard and the sidebar. */
-const moduleRoute = (action: Action, label: string, icon: NavIcon): Pick<Route, 'canActivate' | 'loadComponent' | 'data'> => ({
-  canActivate: [routeActionGuard],
+/**
+ * Placeholder module route: the permission is declared once, in data, and read by the guard and the sidebar.
+ * Extra guards (e.g. subscriptionGuard for write modules) go in `guards`, never in a `canActivate` override
+ * after the spread: that would silently drop the permission guard.
+ */
+export const moduleRoute = (
+  action: Action,
+  label: string,
+  icon: NavIcon,
+  guards: CanActivateFn[] = [],
+): Pick<Route, 'canActivate' | 'loadComponent' | 'data'> => ({
+  canActivate: [routeActionGuard, ...guards],
   loadComponent: placeholder,
   data: routeAccess({ action, nav: { label, icon }, title: label }),
 });
