@@ -66,4 +66,25 @@ describe('routes', () => {
     expect(url()).toBe('/plataforma/restaurantes');
     expect(harness.routeNativeElement?.textContent).toContain('Plataforma');
   });
+
+  it('renders the 403 page with a button to the role home', async () => {
+    signIn({ rol: 'RECEPCION' });
+    const harness = await RouterTestingHarness.create('/sin-permiso');
+    const text = harness.routeNativeElement?.textContent ?? '';
+    expect(text).toContain('403 · SIN PERMISO');
+    expect(text).toContain('Ir a Pedidos');
+  });
+
+  it('shows the paywall to the tenant administrator', async () => {
+    signIn({ rol: 'ADMINISTRADOR' });
+    const harness = await RouterTestingHarness.create('/paywall');
+    expect(url()).toBe('/paywall');
+    expect(harness.routeNativeElement?.textContent).toContain('Renovar suscripción');
+  });
+
+  it('keeps the paywall away from roles that cannot renew', async () => {
+    signIn({ rol: 'RECEPCION' });
+    await RouterTestingHarness.create('/paywall');
+    expect(url()).toBe('/sin-permiso');
+  });
 });

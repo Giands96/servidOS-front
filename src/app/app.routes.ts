@@ -56,7 +56,8 @@ export const routes: Routes = [
       },
       {
         path: 'paywall',
-        loadComponent: () => import('./shared/pages/paywall.page').then((m) => m.PaywallPage),
+        canActivate: [roleGuard('restaurante.suscripcion.gestionar')],
+        loadComponent: () => import('./features/restaurante/paywall.page').then((m) => m.PaywallPage),
       },
       {
         path: 'suspendido',
