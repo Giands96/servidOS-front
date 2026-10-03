@@ -60,6 +60,12 @@ describe('routes', () => {
     expect(url()).toBe('/sin-permiso');
   });
 
+  it.each(['RECEPCION', 'COCINERO'] as const)('keeps %s out of Restaurante y plan', async (rol) => {
+    signIn({ rol });
+    await RouterTestingHarness.create('/restaurante');
+    expect(url()).toBe('/sin-permiso');
+  });
+
   it('lets the SUPERADMIN open the platform list', async () => {
     signIn({ rol: 'SUPERADMIN', restauranteId: null });
     const harness = await RouterTestingHarness.create('/plataforma/restaurantes');

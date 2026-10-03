@@ -20,7 +20,8 @@ const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Caja', route: '/caja', icon: 'wallet', action: 'pagos.registrar' },
   { label: 'Catálogo', route: '/catalogo', icon: 'book', action: 'catalogo.ver' },
   { label: 'Usuarios', route: '/usuarios', icon: 'users', action: 'usuarios.gestionar' },
-  { label: 'Restaurante y plan', route: '/restaurante', icon: 'store', action: 'restaurante.ver' },
+  // Plan/subscription management screen: tenant ADMINISTRADOR only (user decision 2026-10-03).
+  { label: 'Restaurante y plan', route: '/restaurante', icon: 'store', action: 'restaurante.suscripcion.gestionar' },
   { label: 'Restaurantes', route: '/plataforma/restaurantes', icon: 'building', action: 'plataforma.restaurantes.ver' },
   {
     label: 'Crear restaurante',

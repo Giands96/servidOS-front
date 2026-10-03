@@ -29,7 +29,7 @@ export const routes: Routes = [
       { path: 'usuarios', canActivate: [roleGuard('usuarios.gestionar')], loadComponent: placeholder, data: { title: 'Usuarios' } },
       {
         path: 'restaurante',
-        canActivate: [roleGuard('restaurante.ver')],
+        canActivate: [roleGuard('restaurante.suscripcion.gestionar')],
         loadComponent: placeholder,
         data: { title: 'Restaurante y plan' },
       },

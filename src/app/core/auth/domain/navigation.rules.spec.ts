@@ -11,11 +11,11 @@ const routesOf = (user: ReturnType<typeof aMe>) => navFor(user).map((item) => it
 describe('navFor', () => {
   it.each([
     ['ADMINISTRADOR', ['/pedidos/nuevo', '/cocina', '/caja', '/catalogo', '/usuarios', '/restaurante']],
-    ['RECEPCION', ['/pedidos/nuevo', '/cocina', '/catalogo', '/restaurante']],
-    ['COCINERO', ['/cocina', '/catalogo', '/restaurante']],
-    ['MESERO', ['/catalogo', '/restaurante']],
-    ['CAJERO', ['/catalogo', '/restaurante']],
-    ['REPARTIDOR', ['/catalogo', '/restaurante']],
+    ['RECEPCION', ['/pedidos/nuevo', '/cocina', '/catalogo']],
+    ['COCINERO', ['/cocina', '/catalogo']],
+    ['MESERO', ['/catalogo']],
+    ['CAJERO', ['/catalogo']],
+    ['REPARTIDOR', ['/catalogo']],
   ] as const)('tenant %s sees %j', (rol, expected) => {
     expect(routesOf(tenant(rol))).toEqual(expected);
   });
