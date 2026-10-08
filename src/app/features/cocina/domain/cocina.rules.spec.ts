@@ -5,8 +5,12 @@ import {
   URGENCY_THRESHOLDS,
   applyKitchenEvent,
   elapsedMinutes,
+  formatClock,
   formatOrderNumber,
+  minutesSince,
+  queueSummary,
   sortByArrival,
+  sortListos,
   tipoLabel,
   urgencyOf,
 } from './cocina.rules';
@@ -160,5 +164,52 @@ describe('applyKitchenEvent', () => {
     applyKitchenEvent(b, event(1, 'EN_PREPARACION', 'LISTO'));
     applyKitchenEvent(b, event(3, 'LISTO', 'ENTREGADO'));
     expect(b).toEqual(snapshot);
+  });
+});
+
+describe('minutesSince', () => {
+  it.each([
+    [0, 0],
+    [59_000, 0],
+    [60_000, 1],
+    [4 * 60_000 + 10_000, 4],
+    [-5_000, 0], // clock skew: never negative
+  ])('%d ms ago -> %d min', (ago, expected) => {
+    const now = new Date(2026, 9, 8, 13, 0, 0);
+    expect(minutesSince(now.getTime() - ago, now)).toBe(expected);
+  });
+});
+
+describe('sortListos', () => {
+  const p = (pedidoId: number) => aColaPedido({ pedidoId, estado: 'LISTO' });
+
+  it('puts the most recently marked first, then orders without a known listoAt by pedidoId descending', () => {
+    const sorted = sortListos([p(1), p(2), p(3), p(4)], { 2: 1000, 3: 2000 });
+    expect(sorted.map((o) => o.pedidoId)).toEqual([3, 2, 4, 1]);
+  });
+
+  it('does not mutate its input', () => {
+    const input = [p(1), p(2)];
+    sortListos(input, {});
+    expect(input.map((o) => o.pedidoId)).toEqual([1, 2]);
+  });
+});
+
+describe('formatClock', () => {
+  it.each([
+    [new Date(2026, 9, 8, 13, 45, 8), '13:45:08'],
+    [new Date(2026, 9, 8, 0, 5, 9), '00:05:09'],
+  ])('%s -> %s', (date, expected) => {
+    expect(formatClock(date)).toBe(expected);
+  });
+});
+
+describe('queueSummary', () => {
+  it.each([
+    [0, '0 pedidos en preparación'],
+    [1, '1 pedido en preparación'],
+    [6, '6 pedidos en preparación'],
+  ])('%d -> %s', (n, expected) => {
+    expect(queueSummary(n)).toBe(expected);
   });
 });

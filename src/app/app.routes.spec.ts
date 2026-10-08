@@ -1,7 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ActivatedRouteSnapshot, Route, Router, RouterStateSnapshot, Routes, provideRouter } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  Route,
+  Router,
+  RouterStateSnapshot,
+  Routes,
+  provideRouter,
+} from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { aMe } from '../testing/builders';
 import { SessionStore } from './core/auth/session.store';
@@ -18,7 +25,8 @@ describe('routes', () => {
     });
   });
 
-  const signIn = (overrides: Parameters<typeof aMe>[0] = {}) => TestBed.inject(SessionStore).setUser(aMe(overrides));
+  const signIn = (overrides: Parameters<typeof aMe>[0] = {}) =>
+    TestBed.inject(SessionStore).setUser(aMe(overrides));
   const url = () => TestBed.inject(Router).url;
 
   it('redirects anonymous users from "" to /login', async () => {
@@ -84,15 +92,36 @@ describe('routes', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Plataforma');
   });
 
-  it.each(['SUPERADMIN', 'ADMIN'] as const)('lets platform %s open Crear restaurante', async (rol) => {
-    signIn({ rol, restauranteId: null });
-    await RouterTestingHarness.create('/plataforma/restaurantes/nuevo');
-    expect(url()).toBe('/plataforma/restaurantes/nuevo');
-  });
+  it.each(['SUPERADMIN', 'ADMIN'] as const)(
+    'lets platform %s open Crear restaurante',
+    async (rol) => {
+      signIn({ rol, restauranteId: null });
+      await RouterTestingHarness.create('/plataforma/restaurantes/nuevo');
+      expect(url()).toBe('/plataforma/restaurantes/nuevo');
+    },
+  );
 
   it('moduleRoute keeps the permission guard first when extra guards are added', () => {
     const extra = () => true;
-    expect(moduleRoute('pagos.registrar', 'Caja', 'wallet', [extra]).canActivate).toEqual([routeActionGuard, extra]);
+    expect(moduleRoute('pagos.registrar', 'Caja', 'wallet', [extra]).canActivate).toEqual([
+      routeActionGuard,
+      extra,
+    ]);
+  });
+
+  it('moduleRoute can swap the placeholder for a real page without dropping the permission guard', () => {
+    const load = () => Promise.resolve(class {});
+    const route = moduleRoute('cocina.ver', 'Cocina', 'flame', [], load);
+    expect(route.loadComponent).toBe(load);
+    expect(route.canActivate).toEqual([routeActionGuard]);
+  });
+
+  it('/cocina has no subscriptionGuard (marking LISTO is allowed under 402) and loads the board page', async () => {
+    const shell = routes.find((r) => (r.children?.length ?? 0) > 0)!;
+    const cocina = shell.children!.find((r) => r.path === 'cocina')!;
+    expect(cocina.canActivate).toEqual([routeActionGuard]);
+    const page = await (cocina.loadComponent as () => Promise<{ name: string }>)();
+    expect(page.name).toMatch(/CocinaPage$/);
   });
 
   it('renders the 403 page with a button to the role home', async () => {
@@ -152,7 +181,10 @@ describe('routes as the single source of module permissions', () => {
   const enterable = (route: Route, user: ReturnType<typeof aMe>): boolean => {
     TestBed.inject(SessionStore).setUser(user);
     const result = TestBed.runInInjectionContext(() =>
-      routeActionGuard({ data: route.data } as unknown as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+      routeActionGuard(
+        { data: route.data } as unknown as ActivatedRouteSnapshot,
+        {} as RouterStateSnapshot,
+      ),
     );
     return result === true;
   };
@@ -175,16 +207,19 @@ describe('routes as the single source of module permissions', () => {
     }
   });
 
-  it.each(ROLES)('homeFor(%s) targets an existing route the role can enter', (rol, restauranteId) => {
-    const user = aMe({ rol, restauranteId });
-    const home = homeFor(user);
-    const found = moduleRoutes().find((m) => m.path === home);
-    if (found) {
-      expect(enterable(found.route, user)).toBe(true);
-      expect(can(user, found.route.data!['action'])).toBe(true);
-    } else {
-      // Not a permissioned module: must still be a declared route (e.g. /sin-modulos).
-      expect(JSON.stringify(routes)).toContain(`"path":"${home.slice(1)}"`);
-    }
-  });
+  it.each(ROLES)(
+    'homeFor(%s) targets an existing route the role can enter',
+    (rol, restauranteId) => {
+      const user = aMe({ rol, restauranteId });
+      const home = homeFor(user);
+      const found = moduleRoutes().find((m) => m.path === home);
+      if (found) {
+        expect(enterable(found.route, user)).toBe(true);
+        expect(can(user, found.route.data!['action'])).toBe(true);
+      } else {
+        // Not a permissioned module: must still be a declared route (e.g. /sin-modulos).
+        expect(JSON.stringify(routes)).toContain(`"path":"${home.slice(1)}"`);
+      }
+    },
+  );
 });

@@ -7,7 +7,8 @@ import { Action } from './core/auth/domain/permissions.rules';
 import { roleGuard } from './core/auth/guards/role.guard';
 import { routeActionGuard } from './core/auth/guards/route-action.guard';
 
-const placeholder = () => import('./shared/pages/module-placeholder.page').then((m) => m.ModulePlaceholderPage);
+const placeholder = () =>
+  import('./shared/pages/module-placeholder.page').then((m) => m.ModulePlaceholderPage);
 
 /**
  * Placeholder module route: the permission is declared once, in data, and read by the guard and the sidebar.
@@ -19,9 +20,10 @@ export const moduleRoute = (
   label: string,
   icon: NavIcon,
   guards: CanActivateFn[] = [],
+  load: Route['loadComponent'] = placeholder,
 ): Pick<Route, 'canActivate' | 'loadComponent' | 'data'> => ({
   canActivate: [routeActionGuard, ...guards],
-  loadComponent: placeholder,
+  loadComponent: load,
   data: routeAccess({ action, nav: { label, icon }, title: label }),
 });
 
@@ -42,7 +44,13 @@ export const routes: Routes = [
     loadComponent: () => import('./core/layout/shell.layout').then((m) => m.ShellLayout),
     children: [
       { path: 'pedidos/nuevo', ...moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt') },
-      { path: 'cocina', ...moduleRoute('cocina.ver', 'Cocina', 'flame') },
+      // No subscriptionGuard: marking LISTO is allowed while the subscription is blocked (402 does not apply).
+      {
+        path: 'cocina',
+        ...moduleRoute('cocina.ver', 'Cocina', 'flame', [], () =>
+          import('./features/cocina/cocina.page').then((m) => m.CocinaPage),
+        ),
+      },
       { path: 'caja', ...moduleRoute('pagos.registrar', 'Caja', 'wallet') },
       { path: 'catalogo', ...moduleRoute('catalogo.ver', 'Catálogo', 'book') },
       { path: 'usuarios', ...moduleRoute('usuarios.gestionar', 'Usuarios', 'users') },
@@ -62,16 +70,19 @@ export const routes: Routes = [
       },
       {
         path: 'sin-permiso',
-        loadComponent: () => import('./shared/pages/sin-permiso.page').then((m) => m.SinPermisoPage),
+        loadComponent: () =>
+          import('./shared/pages/sin-permiso.page').then((m) => m.SinPermisoPage),
       },
       {
         path: 'sin-modulos',
-        loadComponent: () => import('./shared/pages/sin-modulos.page').then((m) => m.SinModulosPage),
+        loadComponent: () =>
+          import('./shared/pages/sin-modulos.page').then((m) => m.SinModulosPage),
       },
       {
         path: 'paywall',
         canActivate: [roleGuard('restaurante.suscripcion.gestionar')],
-        loadComponent: () => import('./features/restaurante/paywall.page').then((m) => m.PaywallPage),
+        loadComponent: () =>
+          import('./features/restaurante/paywall.page').then((m) => m.PaywallPage),
       },
       {
         path: 'suspendido',

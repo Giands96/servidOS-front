@@ -20,7 +20,12 @@ export function elapsedMinutes(createdAt: string, now: Date): number {
   if (Number.isNaN(created)) {
     return 0;
   }
-  return Math.max(0, Math.floor((now.getTime() - created) / MS_PER_MINUTE));
+  return minutesSince(created, now);
+}
+
+/** Whole minutes since an epoch-ms instant. Never negative. */
+export function minutesSince(timestampMs: number, now: Date): number {
+  return Math.max(0, Math.floor((now.getTime() - timestampMs) / MS_PER_MINUTE));
 }
 
 export function urgencyOf(minutes: number): Urgency {
@@ -38,6 +43,30 @@ export function sortByArrival(orders: readonly ColaPedido[]): ColaPedido[] {
   });
 }
 
+/**
+ * Listos panel order: most recently marked first (local `listoAt` epoch ms, by pedidoId),
+ * then orders whose time is unknown (no backend LISTO timestamp), newest pedidoId first.
+ */
+export function sortListos(
+  orders: readonly ColaPedido[],
+  listoAt: Readonly<Record<number, number>>,
+): ColaPedido[] {
+  return [...orders].sort((a, b) => {
+    const ta = listoAt[a.pedidoId];
+    const tb = listoAt[b.pedidoId];
+    if (ta !== undefined && tb !== undefined) {
+      return tb - ta || b.pedidoId - a.pedidoId;
+    }
+    if (ta !== undefined) {
+      return -1;
+    }
+    if (tb !== undefined) {
+      return 1;
+    }
+    return b.pedidoId - a.pedidoId;
+  });
+}
+
 export function tipoLabel(order: Pick<ColaPedido, 'tipoPedido' | 'mesaId'>): string {
   switch (order.tipoPedido) {
     case 'MESA':
@@ -51,6 +80,16 @@ export function tipoLabel(order: Pick<ColaPedido, 'tipoPedido' | 'mesaId'>): str
 
 export function formatOrderNumber(pedidoId: number): string {
   return `#${String(pedidoId).padStart(4, '0')}`;
+}
+
+/** HH:mm:ss in local time. */
+export function formatClock(date: Date): string {
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
+}
+
+export function queueSummary(count: number): string {
+  return `${count} ${count === 1 ? 'pedido' : 'pedidos'} en preparación`;
 }
 
 /** Applies a WebSocket event to the board; `refetch` names the list that must be reloaded for details. */
