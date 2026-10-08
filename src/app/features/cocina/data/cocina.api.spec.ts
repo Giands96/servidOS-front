@@ -10,7 +10,9 @@ describe('CocinaApi', () => {
   let ctrl: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     api = TestBed.inject(CocinaApi);
     ctrl = TestBed.inject(HttpTestingController);
   });

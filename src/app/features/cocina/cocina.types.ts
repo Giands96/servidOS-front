@@ -1,6 +1,7 @@
 export type TipoPedido = 'MESA' | 'DELIVERY' | 'RECOJO';
 
-export type EstadoPedido = 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'EN_ENTREGA' | 'ENTREGADO' | 'CANCELADO';
+export type EstadoPedido =
+  'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'EN_ENTREGA' | 'ENTREGADO' | 'CANCELADO';
 
 export interface ColaItem {
   detalleId: number;
