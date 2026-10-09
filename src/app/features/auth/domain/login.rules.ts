@@ -2,7 +2,12 @@ import { readApiError } from '../../../core/http/domain/api-error.rules';
 
 export const INVALID_CREDENTIALS = 'Credenciales inválidas';
 
-/** m:ss for the rate-limit countdown (e.g. 42 -> "0:42"). Negatives clamp to zero. */
+/*
+  Este archivo contiene reglas de negocio relacionadas con el login,
+   como la interpretación de errores de la API y el formateo de mensajes para mostrar al usuario.
+*/
+
+//* Conteo regresivo para el límite de velocidad (por ejemplo, 42 -> "0:42"). Los negativos se ajustan a cero. */
 export function formatCountdown(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(total / 60);
