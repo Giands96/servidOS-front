@@ -35,6 +35,11 @@ describe('elapsedMinutes', () => {
     expect(elapsedMinutes(`2026-10-08T${created}`, at(now))).toBe(expected);
   });
 
+  it('reads the backend UTC createdAt regardless of the local timezone', () => {
+    const now = new Date(Date.UTC(2026, 9, 8, 17, 45, 0));
+    expect(elapsedMinutes('2026-10-08T17:30:00Z', now)).toBe(15);
+  });
+
   it('treats a timezone-less createdAt as local time', () => {
     const now = new Date(2026, 9, 8, 12, 45, 0);
     expect(elapsedMinutes('2026-10-08T12:30:00', now)).toBe(15);

@@ -11,7 +11,7 @@ export interface ColaItem {
   observacion: string | null;
 }
 
-/** Item of GET /cocina/cola and GET /cocina/listos (same shape). Shape taken from the backend change note; not verified against Swagger. */
+/** Elemento de GET /cocina/cola y GET /cocina/listos (mismo formato: `PreparacionPedidoResponse` en el OpenAPI). */
 export interface ColaPedido {
   pedidoId: number;
   mesaId: number | null;
@@ -19,7 +19,7 @@ export interface ColaPedido {
   estado: EstadoPedido;
   observacion: string | null;
   total: number;
-  /** ISO local date-time without timezone, e.g. '2026-10-08T12:30:00'. */
+  /** Fecha y hora ISO en UTC, p. ej. '2026-10-08T17:30:00Z'. */
   createdAt: string;
   items: ColaItem[];
 }
