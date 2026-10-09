@@ -73,6 +73,8 @@ export class CocinaLive {
   /** Token the current connection was activated with; null while inactive. */
   private activeToken: string | null = null;
   private generation = 0;
+  /** Deactivation still in progress; a new activation must wait for it. */
+  private deactivation: Promise<void> | null = null;
 
   readonly status = this._status.asReadonly();
   /** Emits on every (re)connection: messages are lost while disconnected, so consumers must resync. */
@@ -130,14 +132,32 @@ export class CocinaLive {
     this.activeToken = wanted;
     this._status.set(wanted === null ? 'disconnected' : 'connecting');
     if (wasActive) {
-      void this.client.deactivate().then(() => {
-        if (generation === this.generation && wanted !== null) {
+      this.trackDeactivation(this.client.deactivate());
+    }
+    if (wanted === null) {
+      return;
+    }
+    // stompjs throws if activate() runs while a deactivation is still in progress.
+    if (this.deactivation) {
+      void this.deactivation.then(() => {
+        if (generation === this.generation) {
           this.client.activate();
         }
       });
-    } else if (wanted !== null) {
+    } else {
       this.client.activate();
     }
+  }
+
+  private trackDeactivation(pending: Promise<void>): void {
+    const settled: Promise<void> = pending
+      .catch(() => undefined)
+      .then(() => {
+        if (this.deactivation === settled) {
+          this.deactivation = null;
+        }
+      });
+    this.deactivation = settled;
   }
 
   private onState(state: RxStompState): void {
