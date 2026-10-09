@@ -25,12 +25,31 @@ class FakeStomp implements KitchenStompClient {
   configure(config: RxStompConfig): void {
     this.config = { ...this.config, ...config };
   }
+  /** When set, deactivate() stays pending until finishDeactivate() is called. */
+  holdDeactivate = false;
+  private deactivating: (() => void) | null = null;
+
   activate(): void {
+    // stompjs refuses to activate while a deactivation is still in progress.
+    if (this.deactivating) {
+      throw new Error('Still DEACTIVATING, can not activate now');
+    }
     this.calls.push('activate');
   }
   deactivate(): Promise<void> {
     this.calls.push('deactivate');
-    return Promise.resolve();
+    if (!this.holdDeactivate) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.deactivating = () => {
+        this.deactivating = null;
+        resolve();
+      };
+    });
+  }
+  finishDeactivate(): void {
+    this.deactivating?.();
   }
   watch(destination: string) {
     this.watched.push(destination);
@@ -159,6 +178,50 @@ describe('CocinaLive', () => {
     live.start();
     await settle();
     expect(fake.calls).toEqual(['activate', 'deactivate', 'activate']);
+  });
+
+  it('waits for a pending deactivation before activating again (fast stop then start)', async () => {
+    live.start();
+    await settle();
+    fake.holdDeactivate = true;
+    live.stop();
+    live.start();
+    await settle();
+    expect(fake.calls).toEqual(['activate', 'deactivate']);
+
+    fake.finishDeactivate();
+    await settle();
+    expect(fake.calls).toEqual(['activate', 'deactivate', 'activate']);
+  });
+
+  it('waits for a pending deactivation when the token goes null and then to a new value', async () => {
+    live.start();
+    await settle();
+    fake.holdDeactivate = true;
+    session.setToken(null);
+    await settle();
+    session.setToken('token-2');
+    await settle();
+    expect(fake.calls).toEqual(['activate', 'deactivate']);
+
+    fake.finishDeactivate();
+    await settle();
+    expect(fake.calls).toEqual(['activate', 'deactivate', 'activate']);
+    await fake.connect();
+    expect(fake.config.connectHeaders).toEqual({ Authorization: 'Bearer token-2' });
+  });
+
+  it('does not activate after a pending deactivation if it was stopped again meanwhile', async () => {
+    live.start();
+    await settle();
+    fake.holdDeactivate = true;
+    live.stop();
+    live.start();
+    live.stop();
+    fake.finishDeactivate();
+    await settle();
+    expect(fake.calls).toEqual(['activate', 'deactivate']);
+    expect(live.status()).toBe('disconnected');
   });
 
   it('tracks connection status: connected on open, disconnected on drop, connected again on retry', async () => {
