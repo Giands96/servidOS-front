@@ -1,0 +1,227 @@
+{
+  "main": {
+    "id": "5922eb9b9e5f2849",
+    "type": "split",
+    "children": [
+      {
+        "id": "ce65503be632d872",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d2375c1cb6ecf40f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "01 - Contexto/Contexto del Proyecto.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Contexto del Proyecto"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1c6be0b09ff7fe44",
+    "type": "split",
+    "children": [
+      {
+        "id": "b0d2708d19c8dbf9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "872d77699d8b91a1",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "b564b14cbfbb8ede",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "9f326eb8dec0aae6",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "61f964fc3767b53e",
+    "type": "split",
+    "children": [
+      {
+        "id": "4b53d1e90a57e5bd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "28b03798a55c687a",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes"
+            }
+          },
+          {
+            "id": "3abd27b1fd2a6c06",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes"
+            }
+          },
+          {
+            "id": "5da0ae439296d886",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "9eec0cc6dbd6e5cb",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "9d391fb02a273ff2",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "active": "d2375c1cb6ecf40f",
+  "lastOpenFiles": [
+    "02 - Arquitectura/Buenas practicas.md",
+    "01 - Contexto/Glosario.md",
+    "01 - Contexto/Contexto del Proyecto.md",
+    "09 - Módulos/Core.md",
+    "08 - Fases/Fase 3 - Cocina.md.tmp.2680.945ebcf97494",
+    "10 - Gobierno/Estado Actual.md",
+    "10 - Gobierno/Pendientes y Deuda Técnica.md",
+    "10 - Gobierno/Pendientes y Deuda Técnica.md.tmp.2680.7c37105a57b6",
+    "10 - Gobierno",
+    "09 - Módulos/Plataforma.md",
+    "09 - Módulos/Plataforma.md.tmp.2680.c306b6f809e3",
+    "09 - Módulos/Usuarios.md",
+    "09 - Módulos/Catálogo.md",
+    "09 - Módulos/Catálogo.md.tmp.2680.f2896ab59030",
+    "09 - Módulos/Pagos.md",
+    "09 - Módulos/Pedidos.md",
+    "09 - Módulos/Pedidos.md.tmp.2680.e00273726051",
+    "09 - Módulos/Restaurante.md",
+    "09 - Módulos/Restaurante.md.tmp.2680.81519386d677",
+    "09 - Módulos/Cocina.md",
+    "09 - Módulos/Auth.md",
+    "00 - MOC.md",
+    "05 - API/API.md",
+    "01 - Contexto/Modelo de Negocio.md",
+    "09 - Módulos/Cocina.md.tmp.2680.e11b18395055",
+    "09 - Módulos/Shared.md",
+    "09 - Módulos/Shared.md.tmp.2680.b488b37869c0",
+    "09 - Módulos/Core.md.tmp.2680.a3f9c2764570",
+    "08 - Fases/Fases 4-9 - Planificadas.md",
+    "08 - Fases/Fase 3 - Cocina.md",
+    "08 - Fases/Fase 2 - Login y Shell.md",
+    "08 - Fases/Fase 1 - Core Auth.md",
+    "08 - Fases/Fase 0 - Infra.md",
+    "07 - Styles/Styles y Diseño.md",
+    "06 - Flujo del Sistema/Flujo del Sistema.md",
+    "04 - Seguridad/Seguridad.md"
+  ]
+}
