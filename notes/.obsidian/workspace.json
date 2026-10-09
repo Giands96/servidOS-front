@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01 - Contexto/Contexto del Proyecto.md",
+                "file": "08 - Fases/Fases 4-9 - Planificadas.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Contexto del Proyecto"
+              "title": "Fases 4-9 - Planificadas"
             }
           }
         ]
@@ -187,9 +187,12 @@
   },
   "active": "d2375c1cb6ecf40f",
   "lastOpenFiles": [
+    "08 - Fases/Fase 3 - Cocina.md",
+    "08 - Fases/Fase 2 - Login y Shell.md",
+    "08 - Fases/Fase 1 - Core Auth.md",
+    "01 - Contexto/Contexto del Proyecto.md",
     "02 - Arquitectura/Buenas practicas.md",
     "01 - Contexto/Glosario.md",
-    "01 - Contexto/Contexto del Proyecto.md",
     "09 - Módulos/Core.md",
     "08 - Fases/Fase 3 - Cocina.md.tmp.2680.945ebcf97494",
     "10 - Gobierno/Estado Actual.md",
@@ -216,9 +219,6 @@
     "09 - Módulos/Shared.md.tmp.2680.b488b37869c0",
     "09 - Módulos/Core.md.tmp.2680.a3f9c2764570",
     "08 - Fases/Fases 4-9 - Planificadas.md",
-    "08 - Fases/Fase 3 - Cocina.md",
-    "08 - Fases/Fase 2 - Login y Shell.md",
-    "08 - Fases/Fase 1 - Core Auth.md",
     "08 - Fases/Fase 0 - Infra.md",
     "07 - Styles/Styles y Diseño.md",
     "06 - Flujo del Sistema/Flujo del Sistema.md",

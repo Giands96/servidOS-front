@@ -77,3 +77,4 @@ Cliente Angular del sistema ServidOS (multi-tenant restaurantes). Consume el bac
 - Explicar beneficios y trade-off (si es que hay) del código implementado.
 - Mencionar los siguientes estados | pendientes a realizar
 - En la carpeta docs crear en la carpeta /progress y ahi guardarás el progreso de lo que se está haciendo. Resultado de cada paso, porqué se tomaron ciertas decisiones, archivos que tocaste.
+- Actualizar el Vault de Obsidian
