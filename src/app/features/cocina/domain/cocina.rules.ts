@@ -14,7 +14,7 @@ export type Refetch = 'cola' | 'listos' | null;
 
 const MS_PER_MINUTE = 60_000;
 
-/** Whole minutes since `createdAt` (timezone-less ISO = local time). Never negative; 0 if unparsable. */
+/** Minutos enteros desde `createdAt` (ISO; el backend lo envía en UTC con `Z`). Nunca negativo; 0 si no se puede interpretar. */
 export function elapsedMinutes(createdAt: string, now: Date): number {
   const created = new Date(createdAt).getTime();
   if (Number.isNaN(created)) {
