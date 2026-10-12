@@ -1,26 +1,15 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
-import { SuscripcionApi } from '../data/suscripcion.api';
-import { subscriptionLapsedRoute } from '../domain/permissions.rules';
+import { isTenantWriteBlocked, subscriptionLapsedRoute } from '../domain/permissions.rules';
 import { SessionStore } from '../session.store';
 
 /**
- * For write routes: a CANCELADA tenant is sent to the paywall (admin) or the
- * suspended notice. On request error it fails open: this is UI convenience only,
- * the backend remains authoritative and still answers 402 on writes.
+ * For write routes: a blocked tenant (restaurant INACTIVO, no subscription or vencida,
+ * per GET /auth/me) is sent to the paywall (admin) or the suspended notice. It decides
+ * from the session user without any request: this is UI convenience only, the backend
+ * remains authoritative and still answers 402 on writes.
  */
 export const subscriptionGuard: CanActivateFn = () => {
-  const router = inject(Router);
   const user = inject(SessionStore).user();
-  return inject(SuscripcionApi)
-    .actual()
-    .pipe(
-      map((s) =>
-        s.estado === 'CANCELADA'
-          ? router.parseUrl(subscriptionLapsedRoute(user))
-          : true,
-      ),
-      catchError(() => of(true)),
-    );
+  return isTenantWriteBlocked(user) ? inject(Router).parseUrl(subscriptionLapsedRoute(user)) : true;
 };
