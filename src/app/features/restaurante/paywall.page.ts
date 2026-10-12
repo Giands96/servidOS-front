@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Suscripcion } from '../../core/auth/data/suscripcion.api';
@@ -12,9 +12,16 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RestauranteApi } from './data/restaurante.api';
-import { estadoLabel, estadoVariant, formatPeriod } from './domain/subscription.rules';
+import { PAYMENT_CONTACT } from './domain/payment-contact';
+import {
+  estadoLabel,
+  estadoVariant,
+  formatPeriod,
+  paymentConfirmationMessage,
+  whatsappPaymentLink,
+} from './domain/subscription.rules';
 
-/** 402 destination for ADMINISTRADOR: shows the last subscription and lets them renew it. */
+/** 402 destination for ADMINISTRADOR: shows the last subscription and the manual payment steps (Yape + WhatsApp). */
 @Component({
   selector: 'app-paywall',
   imports: [BadgeComponent, ButtonComponent, IconComponent, ModalComponent],
@@ -40,8 +47,38 @@ import { estadoLabel, estadoVariant, formatPeriod } from './domain/subscription.
           </div>
         </dl>
       }
+      @if (paying()) {
+        <section id="paywall-payment" class="mt-5 flex flex-col items-center gap-3 border-t border-line pt-5 text-center">
+          <img
+            [src]="qrSrc"
+            width="192"
+            height="192"
+            alt="Código QR de Yape para pagar la suscripción de ServidOS"
+            class="rounded-card border border-line"
+          />
+          <p>
+            Escanea el QR con Yape y luego confirma tu pago por WhatsApp. Habilitaremos tu acceso cuando verifiquemos el
+            pago.
+          </p>
+          @if (whatsappLink(); as href) {
+            <a appButton variant="primary" [href]="href" target="_blank" rel="noopener noreferrer">
+              Confirmar pago por WhatsApp
+            </a>
+          } @else {
+            <button appButton type="button" variant="primary" disabled>Confirmar pago por WhatsApp</button>
+          }
+        </section>
+      }
       <button footer appButton type="button" variant="ghost" (click)="continueReadOnly()">Seguir en solo lectura</button>
-      <button footer appButton type="button" variant="primary" [disabled]="renewing()" (click)="renew()">
+      <button
+        footer
+        appButton
+        type="button"
+        variant="primary"
+        aria-controls="paywall-payment"
+        [attr.aria-expanded]="paying()"
+        (click)="showPayment()"
+      >
         <app-icon name="refresh" [size]="18" />Renovar suscripción
       </button>
     </app-modal>
@@ -54,7 +91,13 @@ export class PaywallPage {
   private readonly toasts = inject(ToastService);
 
   protected readonly suscripcion = signal<Suscripcion | null>(null);
-  protected readonly renewing = signal(false);
+  protected readonly paying = signal(false);
+  private readonly restaurante = signal<string | null>(null);
+
+  protected readonly qrSrc = PAYMENT_CONTACT.yapeQrSrc;
+  protected readonly whatsappLink = computed(() =>
+    whatsappPaymentLink(PAYMENT_CONTACT.whatsappNumber, paymentConfirmationMessage(this.restaurante())),
+  );
 
   constructor() {
     this.api
@@ -63,6 +106,14 @@ export class PaywallPage {
       .subscribe({
         next: (s) => this.suscripcion.set(s),
         error: (e: unknown) => this.fail(e),
+      });
+    // The restaurant name only personalizes the WhatsApp message: on error the generic text is used.
+    this.api
+      .actual()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (r) => this.restaurante.set(r.nombre),
+        error: () => this.restaurante.set(null),
       });
   }
 
@@ -74,21 +125,9 @@ export class PaywallPage {
     void this.router.navigateByUrl(homeFor(this.session.user()));
   }
 
-  protected renew(): void {
-    if (this.renewing()) {
-      return;
-    }
-    this.renewing.set(true);
-    this.api.renovar().subscribe({
-      next: () => {
-        this.toasts.show('200', 'Suscripción renovada', 'success');
-        void this.router.navigateByUrl(homeFor(this.session.user()));
-      },
-      error: (e: unknown) => {
-        this.renewing.set(false);
-        this.fail(e);
-      },
-    });
+  /** Renewal is manual (Yape + WhatsApp, enabled by the platform owner): no API call from here. */
+  protected showPayment(): void {
+    this.paying.set(true);
   }
 
   private fail(error: unknown): void {

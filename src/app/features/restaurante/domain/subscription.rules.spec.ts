@@ -1,4 +1,11 @@
-import { estadoLabel, estadoVariant, formatDate, formatPeriod } from './subscription.rules';
+import {
+  estadoLabel,
+  estadoVariant,
+  formatDate,
+  formatPeriod,
+  paymentConfirmationMessage,
+  whatsappPaymentLink,
+} from './subscription.rules';
 
 describe('formatDate', () => {
   it.each([
@@ -19,6 +26,41 @@ describe('formatDate', () => {
 describe('formatPeriod', () => {
   it('joins start and end with an en dash', () => {
     expect(formatPeriod('2026-08-14', '2026-09-14')).toBe('14 ago 2026 – 14 sep 2026');
+  });
+});
+
+describe('whatsappPaymentLink', () => {
+  it('builds a wa.me link with the URL-encoded message', () => {
+    expect(whatsappPaymentLink('51987654321', 'Hola, pagué')).toBe(
+      'https://wa.me/51987654321?text=Hola%2C%20pagu%C3%A9',
+    );
+  });
+
+  it('keeps only the digits of the phone number', () => {
+    expect(whatsappPaymentLink('+51 987-654 (321)', 'Hola')).toBe('https://wa.me/51987654321?text=Hola');
+  });
+
+  it('returns null when the phone has no digits (number not configured)', () => {
+    expect(whatsappPaymentLink('', 'Hola')).toBeNull();
+    expect(whatsappPaymentLink(' +-() ', 'Hola')).toBeNull();
+  });
+});
+
+describe('paymentConfirmationMessage', () => {
+  it('names the restaurant when it is known', () => {
+    expect(paymentConfirmationMessage('La Esquina')).toBe(
+      'Hola, realicé el pago de la suscripción de ServidOS del restaurante La Esquina.',
+    );
+  });
+
+  it('trims the restaurant name', () => {
+    expect(paymentConfirmationMessage('  La Esquina ')).toBe(
+      'Hola, realicé el pago de la suscripción de ServidOS del restaurante La Esquina.',
+    );
+  });
+
+  it.each([null, '', '   '])('falls back to a generic sentence for %j', (nombre) => {
+    expect(paymentConfirmationMessage(nombre)).toBe('Hola, realicé el pago de la suscripción de ServidOS.');
   });
 });
 
