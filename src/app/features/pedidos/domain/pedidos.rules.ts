@@ -132,14 +132,21 @@ export function isEstadoPedido(value: unknown): value is EstadoPedido {
   return ESTADOS_PEDIDO.includes(value as EstadoPedido);
 }
 
+/** Plain label of each tipo (no mesa number); also the wording of the new-order toggle. */
+export const TIPO_LABEL: Readonly<Record<TipoPedido, string>> = {
+  MESA: 'Mesa',
+  DELIVERY: 'Delivery',
+  RECOJO: 'Recojo',
+};
+
 export function tipoLabel(order: Pick<PedidoListado, 'tipoPedido' | 'mesaId'>): string {
   switch (order.tipoPedido) {
     case 'MESA':
-      return order.mesaId === null ? 'Mesa' : `Mesa ${order.mesaId}`;
+      return order.mesaId === null ? TIPO_LABEL.MESA : `${TIPO_LABEL.MESA} ${order.mesaId}`;
     case 'DELIVERY':
-      return 'Delivery';
+      return TIPO_LABEL.DELIVERY;
     case 'RECOJO':
-      return 'Recojo';
+      return TIPO_LABEL.RECOJO;
   }
 }
 
