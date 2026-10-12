@@ -1,7 +1,7 @@
-export type TipoPedido = 'MESA' | 'DELIVERY' | 'RECOJO';
+import { EstadoPedido, TipoPedido } from '../pedidos/pedidos.types';
 
-export type EstadoPedido =
-  'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'EN_ENTREGA' | 'ENTREGADO' | 'CANCELADO';
+// pedidos owns these unions; re-exported so existing cocina imports keep working.
+export type { EstadoPedido, TipoPedido };
 
 export interface ColaItem {
   detalleId: number;
