@@ -32,6 +32,7 @@ import {
   formatMoney,
   formatOrderNumber,
   fallbackPage,
+  isRowBusy,
   observacionText,
   pagerView,
   primaryAction,
@@ -282,6 +283,8 @@ export class PedidosPage {
   private readonly pageIndex = signal(0);
   private readonly now = signal(new Date());
   private readonly pending = signal<ReadonlySet<number>>(new Set());
+  /** Rows whose transition was applied and that wait for the list reload to show their new estado. */
+  private readonly awaitingReload = signal<ReadonlySet<number>>(new Set());
   private readonly cancelTarget = signal<PedidoListado | null>(null);
 
   protected readonly tabs = ESTADO_TABS;
@@ -304,6 +307,7 @@ export class PedidosPage {
   protected readonly rows = computed<RowView[]>(() => {
     const now = this.now();
     const pending = this.pending();
+    const awaitingReload = this.awaitingReload();
     return (this.data()?.content ?? []).map((pedido) => ({
       pedido,
       number: formatOrderNumber(pedido.pedidoId),
@@ -317,7 +321,7 @@ export class PedidosPage {
       pago: estadoPagoLabel(pedido.estadoPago),
       action: primaryAction(pedido),
       cancelable: canCancel(pedido),
-      busy: pending.has(pedido.pedidoId),
+      busy: isRowBusy(pedido.pedidoId, pending, awaitingReload),
     }));
   });
 
@@ -365,7 +369,7 @@ export class PedidosPage {
 
   protected advance(pedido: PedidoListado): void {
     const action = primaryAction(pedido);
-    if (action === null || this.pending().has(pedido.pedidoId)) {
+    if (action === null || this.isBusy(pedido.pedidoId)) {
       return;
     }
     this.run(
@@ -377,7 +381,7 @@ export class PedidosPage {
   }
 
   protected askCancel(pedido: PedidoListado): void {
-    if (!this.pending().has(pedido.pedidoId)) {
+    if (!this.isBusy(pedido.pedidoId)) {
       this.cancelTarget.set(pedido);
     }
   }
@@ -389,7 +393,7 @@ export class PedidosPage {
   protected confirmCancel(): void {
     const target = this.cancelTarget();
     this.cancelTarget.set(null);
-    if (target === null || this.pending().has(target.pedidoId)) {
+    if (target === null || this.isBusy(target.pedidoId)) {
       return;
     }
     this.run(target.pedidoId, this.api.cambiarEstado(target.pedidoId, 'CANCELADO'));
@@ -413,6 +417,7 @@ export class PedidosPage {
 
   private settle(outcome: Outcome): void {
     if (!outcome.ok) {
+      this.releaseReloaded();
       this.loading.set(false);
       this.failed.set(true);
       this.data.set(null);
@@ -425,17 +430,23 @@ export class PedidosPage {
       this.load(this.estado(), fallback, false);
       return;
     }
+    this.releaseReloaded();
     this.data.set(outcome.page);
     this.pageIndex.set(outcome.page.number);
     this.now.set(new Date());
     this.loading.set(false);
   }
 
-  /** Runs one row transition; the row's buttons stay disabled until it answers. */
+  /**
+   * Runs one row transition. The row stays locked until the transition answers and, when it was applied, until the
+   * reload it triggers answers too: releasing it earlier would leave the old estado clickable for the whole reload.
+   */
   private run(pedidoId: number, request: Observable<Pedido>): void {
     this.setPending(pedidoId, true);
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (pedido) => {
+        // Order matters: hand the lock over to awaitingReload before releasing the in-flight one.
+        this.awaitingReload.update((set) => new Set(set).add(pedidoId));
         this.setPending(pedidoId, false);
         this.toasts.show('OK', transitionMessage(pedido.pedidoId, pedido.estado), 'success');
         this.refresh();
@@ -445,6 +456,17 @@ export class PedidosPage {
         this.fail(error);
       },
     });
+  }
+
+  private isBusy(pedidoId: number): boolean {
+    return isRowBusy(pedidoId, this.pending(), this.awaitingReload());
+  }
+
+  /** The latest list request answered (switchMap keeps only the newest), so every applied row is now up to date. */
+  private releaseReloaded(): void {
+    if (this.awaitingReload().size > 0) {
+      this.awaitingReload.set(new Set());
+    }
   }
 
   private setPending(pedidoId: number, on: boolean): void {

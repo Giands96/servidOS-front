@@ -247,3 +247,15 @@ export function cancelCopy(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido'
     message: `Se cancelará el pedido ${number} (${tipoLabel(pedido)}). Esta acción no se puede deshacer.`,
   };
 }
+
+/**
+ * A list row accepts no action while its transition is in flight AND, once applied, until the list reload answers:
+ * in between, the row still shows its old estado, so a second click would re-send a transition already done.
+ */
+export function isRowBusy(
+  pedidoId: number,
+  inFlight: ReadonlySet<number>,
+  awaitingReload: ReadonlySet<number>,
+): boolean {
+  return inFlight.has(pedidoId) || awaitingReload.has(pedidoId);
+}

@@ -17,6 +17,7 @@ import {
   formatMoney,
   formatOrderNumber,
   isEstadoPedido,
+  isRowBusy,
   nextEstados,
   observacionText,
   pagerView,
@@ -429,5 +430,22 @@ describe('cancelCopy', () => {
     expect(
       cancelCopy(aPedidoListado({ pedidoId: 481, tipoPedido: 'DELIVERY', mesaId: null })).message,
     ).toBe('Se cancelará el pedido #0481 (Delivery). Esta acción no se puede deshacer.');
+  });
+});
+
+describe('isRowBusy', () => {
+  const none: ReadonlySet<number> = new Set();
+
+  it('is busy while its transition request is in flight', () => {
+    expect(isRowBusy(7, new Set([7]), none)).toBe(true);
+  });
+
+  it('stays busy after the transition was applied, until the list reload answers', () => {
+    expect(isRowBusy(7, none, new Set([7]))).toBe(true);
+  });
+
+  it('is free when neither set holds the order', () => {
+    expect(isRowBusy(7, none, none)).toBe(false);
+    expect(isRowBusy(7, new Set([8]), new Set([9]))).toBe(false);
   });
 });
