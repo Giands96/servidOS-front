@@ -53,8 +53,8 @@ describe('navEntriesFrom', () => {
 
 describe('navFor', () => {
   it.each([
-    ['ADMINISTRADOR', ['/pedidos/nuevo', '/cocina', '/caja', '/catalogo', '/usuarios', '/restaurante']],
-    ['RECEPCION', ['/pedidos/nuevo', '/cocina', '/catalogo']],
+    ['ADMINISTRADOR', ['/pedidos', '/cocina', '/caja', '/catalogo', '/usuarios', '/restaurante']],
+    ['RECEPCION', ['/pedidos', '/cocina', '/catalogo']],
     ['COCINERO', ['/cocina', '/catalogo']],
     ['MESERO', ['/catalogo']],
     ['CAJERO', ['/catalogo']],
@@ -104,6 +104,27 @@ describe('homeLabel', () => {
     [platform('ADMIN'), 'Crear restaurante'],
   ])('labels the home of %j as %s', (user, expected) => {
     expect(homeLabel(user, entries)).toBe(expected);
+  });
+
+  it('labels a home that lives under a listed module with that module (home /pedidos/nuevo, entry /pedidos)', () => {
+    expect(homeFor(tenant('RECEPCION'))).toBe('/pedidos/nuevo');
+    expect(entries.some((item) => item.route === '/pedidos/nuevo')).toBe(false);
+    expect(homeLabel(tenant('RECEPCION'), entries)).toBe('Pedidos');
+  });
+
+  it('prefers the exact entry, then the longest parent path, and only matches whole segments', () => {
+    const item = (route: string, label: string) => ({
+      route,
+      label,
+      icon: 'book' as const,
+      action: 'catalogo.ver' as const,
+    });
+    const user = platform('SUPERADMIN'); // home: /plataforma/restaurantes
+    expect(homeLabel(user, [item('/plataforma', 'Plataforma'), item('/plataforma/restaurantes', 'Lista')])).toBe(
+      'Lista',
+    );
+    expect(homeLabel(user, [item('/plataforma', 'Plataforma')])).toBe('Plataforma');
+    expect(homeLabel(user, [item('/plataforma/rest', 'Parcial')])).toBeNull();
   });
 
   it('is null when the role has no home module', () => {

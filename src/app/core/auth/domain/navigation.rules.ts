@@ -62,10 +62,23 @@ export function navFor(user: Actor | null, entries: readonly NavItem[]): NavItem
   return hasList ? items.filter((item) => item.action !== 'plataforma.restaurantes.crear') : items;
 }
 
-/** Label of the nav item that is the user's home (for "Ir a ..." buttons); null without a home module. */
+/**
+ * Label of the nav item that is the user's home (for "Ir a ..." buttons); null without a home module.
+ * A home without its own entry (e.g. /pedidos/nuevo, reached from the /pedidos list) takes the label of the
+ * closest listed parent path; only whole path segments match.
+ */
 export function homeLabel(user: Actor | null, entries: readonly NavItem[]): string | null {
   const home = homeFor(user);
-  return entries.find((item) => item.route === home)?.label ?? null;
+  const exact = entries.find((item) => item.route === home);
+  if (exact) {
+    return exact.label;
+  }
+  const parents = entries.filter((item) => home.startsWith(item.route + '/'));
+  const closest = parents.reduce<NavItem | null>(
+    (best, item) => (best === null || item.route.length > best.route.length ? item : best),
+    null,
+  );
+  return closest?.label ?? null;
 }
 
 const ROLE_LABELS: Record<Rol, string> = {

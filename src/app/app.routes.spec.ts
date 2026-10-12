@@ -124,6 +124,35 @@ describe('routes', () => {
     expect(page.name).toMatch(/CocinaPage$/);
   });
 
+  it('moduleRoute without an icon declares the permission and title but no sidebar entry', () => {
+    const route = moduleRoute('pedidos.gestionar', 'Nuevo pedido', null);
+    expect(route.data).toEqual({ action: 'pedidos.gestionar', title: 'Nuevo pedido' });
+    expect(navEntriesFrom([{ path: 'x', ...route }])).toEqual([]);
+  });
+
+  const shellChild = (path: string): Route => {
+    const shell = routes.find((r) => (r.children?.length ?? 0) > 0)!;
+    return shell.children!.find((r) => r.path === path)!;
+  };
+
+  it('/pedidos is the single "Pedidos" sidebar entry, with no subscriptionGuard (a blocked tenant still closes orders)', async () => {
+    const pedidos = shellChild('pedidos');
+    expect(pedidos.canActivate).toEqual([routeActionGuard]);
+    expect(pedidos.data).toMatchObject({
+      action: 'pedidos.gestionar',
+      nav: { label: 'Pedidos', icon: 'receipt' },
+    });
+    const page = await (pedidos.loadComponent as () => Promise<{ name: string }>)();
+    expect(page.name).toMatch(/PedidosPage$/);
+    expect(navEntriesFrom(routes).filter((e) => e.label === 'Pedidos')).toHaveLength(1);
+  });
+
+  it('/pedidos/nuevo stays a permissioned placeholder without its own sidebar entry', () => {
+    const nuevo = shellChild('pedidos/nuevo');
+    expect(nuevo.canActivate).toEqual([routeActionGuard]);
+    expect(nuevo.data).toEqual({ action: 'pedidos.gestionar', title: 'Nuevo pedido' });
+  });
+
   it('renders the 403 page with a button to the role home', async () => {
     signIn({ rol: 'RECEPCION' });
     const harness = await RouterTestingHarness.create('/sin-permiso');
@@ -201,7 +230,10 @@ describe('routes as the single source of module permissions', () => {
     for (const { path, route } of moduleRoutes()) {
       const intentionallyHidden =
         path === '/plataforma/restaurantes/nuevo' && visible.includes('/plataforma/restaurantes');
-      if (!visible.includes(path) && !intentionallyHidden) {
+      if (route.data!['nav'] === undefined) {
+        // Routes without a sidebar entry (e.g. /pedidos/nuevo) are enterable exactly when the action is allowed.
+        expect(enterable(route, user), `${rol} on nav-less ${path}`).toBe(can(user, route.data!['action']));
+      } else if (!visible.includes(path) && !intentionallyHidden) {
         expect(enterable(route, user), `${rol} must not enter hidden ${path}`).toBe(false);
       }
     }
