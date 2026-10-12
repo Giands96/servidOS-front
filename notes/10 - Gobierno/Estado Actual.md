@@ -24,6 +24,7 @@ Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[
 | Login, shell, tokens, fuentes, páginas de estado, paywall | completo | [[Fase 2 - Login y Shell]] |
 | Menú derivado de rutas, `moduleRoute` con guards extra | completo | [[Arquitectura]] |
 | Dependencia `@stomp/rx-stomp` | aprobada y commiteada (`00c94dd`) | [[Decisiones (ADR)]] |
+| Paywall: pago manual por Yape + confirmación por WhatsApp (sin `renovar()`); el tenant no renueva ni cambia de plan | implementado en `fix/paywall-pago-manual`; el dueño debe configurar número y QR | [[Restaurante]] · `docs/progress/06-paywall-pago-manual.md` |
 | Cocina: tipos, API, reglas, cliente STOMP, página y ruta | commiteado (`8591b8c`, `7087023`, `6790b8d`, `2fad5cb`) | [[Cocina]] · [[Fase 3 - Cocina]] |
 
 ## Pendiente de cierre de Cocina
@@ -34,7 +35,7 @@ Prueba manual en navegador con backend, verificación del payload contra Swagger
 
 ## Qué sigue
 1. Cerrar Cocina (prueba manual, Swagger, review nativa).
-2. Implementar los cambios de suscripción anunciados ([[Pendientes y Deuda Técnica]]).
+2. Implementar los cambios de suscripción anunciados que siguen abiertos ([[Pendientes y Deuda Técnica]]); renovar, cambiar de plan y habilitar restaurantes quedan en [[Plataforma]].
 3. Siguiente módulo según el plan (Restaurante, Catálogo, Pedidos, Pagos, Usuarios, Plataforma); varios dependen de endpoints de listado que el backend aún no ofrece.
 
 ## Cómo retomar

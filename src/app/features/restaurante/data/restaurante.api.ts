@@ -21,9 +21,4 @@ export class RestauranteApi {
   suscripcion(): Observable<Suscripcion> {
     return this.http.get<Suscripcion>(`${API_BASE}/restaurantes/actual/suscripcion`);
   }
-
-  /** Creates a new ACTIVA subscription (also reactivates a CANCELADA tenant). No body. */
-  renovar(): Observable<unknown> {
-    return this.http.post<unknown>(`${API_BASE}/restaurantes/actual/suscripcion/renovar`, null);
-  }
 }

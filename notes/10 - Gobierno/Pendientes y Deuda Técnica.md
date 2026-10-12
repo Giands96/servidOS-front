@@ -19,7 +19,9 @@ Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9
 
 ## Checklist de cambios anunciados por el backend (2026-10-08)
 Anunciados por backend, sin verificar contra Swagger.
-- [ ] §1 Quitar `RestauranteApi.renovar()` y el botón del paywall; copy de paywall y `suspendido.page.ts`: "la plataforma regulariza la suscripción" (texto parcial recibido).
+- [x] §1 `RestauranteApi.renovar()` eliminado; el botón del paywall ahora muestra el pago manual por Yape + WhatsApp ([[Restaurante]], `docs/progress/06-paywall-pago-manual.md`). Falta el copy de `suspendido.page.ts` ("la plataforma regulariza la suscripción"; hoy dice "renovar el plan").
+- [ ] Pago manual: el dueño debe completar `whatsappNumber` en `payment-contact.ts` y agregar `public/yape-qr.png`; decidir si se avisa en pantalla cuando el número no está configurado.
+- [ ] Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace).
 - [ ] §2 Cancelar suscripción con `{password}` (400 si falta o es incorrecta); no renueva, opera hasta `fechaFin`.
 - [ ] §3 `subscriptionGuard`: bloquear por `fechaFin < hoy`, no por `CANCELADA`; aviso "Tu suscripción termina el {fechaFin}"; el 402 del backend sigue siendo la fuente de verdad.
 - [ ] §4 Sin suscripción vigente = solo lectura; manejar 400 en `GET /restaurantes/actual/suscripcion`; mensajes 402 terminan en "contactá a la plataforma para regularizar tu suscripción".
@@ -43,7 +45,7 @@ Anunciados por backend, sin verificar contra Swagger.
 - Ruta/permiso duplicado entre `app.routes.ts` y `navigation.rules.ts`: **resuelto** por `02bca02` (menú derivado); queda el test de consistencia como guardia.
 - `navEntriesFrom` solo recorre `children` síncronos (no `loadChildren`); el shell lee rutas una vez (`resetConfig` no actualiza).
 - Tests de paridad del menú: el helper duplica el recorrido de rutas y `homeFor` usa `JSON.stringify` frágil.
-- Login: falta test de página (429, fallback 60 s, formulario deshabilitado). Paywall: falta test del flujo renovar; su texto dice "cancelada" con estado ACTIVA.
+- Login: falta test de página (429, fallback 60 s, formulario deshabilitado). Paywall: sin test de página (el enlace y el mensaje de pago sí tienen test en `subscription.rules.spec`); su texto dice "cancelada" con estado ACTIVA.
 - Toast de éxito: icono de reloj y código "200" inventado.
 - `formatDate` acepta 31/02.
 - `session.store.spec`: usar `vi.waitFor`; fijar que el rechazo abandonado es `Error` plano; `finally` depende de que `clear()` sea el único escritor del epoch.
