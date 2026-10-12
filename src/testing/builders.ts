@@ -1,4 +1,5 @@
 import { MeResponse } from '../app/core/auth/auth.types';
+import { Categoria, Producto } from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
@@ -80,6 +81,31 @@ export function aPage<T>(content: T[], overrides: Partial<Page<T>> = {}): Page<T
     number: 0,
     first: true,
     last: true,
+    ...overrides,
+  };
+}
+
+/** `ProductoResponse` of GET /productos. */
+export function aProducto(overrides: Partial<Producto> = {}): Producto {
+  return {
+    productoId: 7,
+    categoriaId: 1,
+    nombre: 'Lomo saltado',
+    descripcion: null,
+    imagenUrl: null,
+    precio: 25,
+    tiempoPreparacion: 15,
+    estado: 'DISPONIBLE',
+    ...overrides,
+  };
+}
+
+/** `CategoriaResponse` of GET /categorias. */
+export function aCategoria(overrides: Partial<Categoria> = {}): Categoria {
+  return {
+    categoriaId: 1,
+    nombre: 'Platos de fondo',
+    estado: 'HABILITADO',
     ...overrides,
   };
 }
