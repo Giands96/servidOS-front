@@ -1,5 +1,6 @@
 import { Page } from '../../../core/http/api.types';
 import { BadgeVariant } from '../../../shared/ui/badge/badge.component';
+import { IconName } from '../../../shared/ui/icon/icon.component';
 import { EstadoPago, EstadoPedido, PedidoListado, TipoPedido } from '../pedidos.types';
 
 /** Every estado in flow order (tab order of the list). */
@@ -90,6 +91,19 @@ export function primaryAction(
   };
 }
 
+const EM_DASH = '—';
+
+/** Own-key lookup: a value outside the table (or an inherited key such as "constructor") yields `undefined`. */
+function ownValue<V>(table: Readonly<Record<string, V>>, key: unknown): V | undefined {
+  return typeof key === 'string' && Object.hasOwn(table, key) ? table[key] : undefined;
+}
+
+/** Raw value as display text for a value outside the unions; an em dash when it is empty or null-ish. */
+function rawText(value: unknown): string {
+  const text = value === null || value === undefined ? '' : String(value).trim();
+  return text === '' ? EM_DASH : text;
+}
+
 const ESTADO_LABEL: Record<EstadoPedido, string> = {
   PENDIENTE: 'Pendiente',
   EN_PREPARACION: 'En preparación',
@@ -108,12 +122,14 @@ const ESTADO_VARIANT: Record<EstadoPedido, BadgeVariant> = {
   CANCELADO: 'danger',
 };
 
+/** Rows come from an unvalidated API answer: an unknown estado shows its raw text. */
 export function estadoLabel(estado: EstadoPedido): string {
-  return ESTADO_LABEL[estado];
+  return ownValue(ESTADO_LABEL, estado) ?? rawText(estado);
 }
 
+/** An unknown estado gets the neutral badge. */
 export function estadoVariant(estado: EstadoPedido): BadgeVariant {
-  return ESTADO_VARIANT[estado];
+  return ownValue(ESTADO_VARIANT, estado) ?? 'neutral';
 }
 
 export function estadoPagoLabel(estadoPago: EstadoPago | null): string {
@@ -124,6 +140,8 @@ export function estadoPagoLabel(estadoPago: EstadoPago | null): string {
       return 'Reembolsado';
     case null:
       return 'Sin cobrar';
+    default:
+      return rawText(estadoPago);
   }
 }
 
@@ -147,14 +165,25 @@ export function tipoLabel(order: Pick<PedidoListado, 'tipoPedido' | 'mesaId'>): 
       return TIPO_LABEL.DELIVERY;
     case 'RECOJO':
       return TIPO_LABEL.RECOJO;
+    default:
+      return rawText(order.tipoPedido);
   }
+}
+
+const TIPO_ICON: Readonly<Record<TipoPedido, IconName>> = {
+  MESA: 'utensils',
+  DELIVERY: 'bike',
+  RECOJO: 'bag',
+};
+
+/** Icon of a tipo, or null for a value outside the union (own-key lookup, like the other display helpers). */
+export function tipoIcon(tipo: TipoPedido): IconName | null {
+  return ownValue(TIPO_ICON, tipo) ?? null;
 }
 
 export function formatOrderNumber(pedidoId: number): string {
   return `#${String(pedidoId).padStart(4, '0')}`;
 }
-
-const EM_DASH = '—';
 
 const two = (n: number): string => String(n).padStart(2, '0');
 
@@ -238,9 +267,12 @@ export function fallbackPage(page: Pick<Page<unknown>, 'number' | 'totalPages'>)
   return null;
 }
 
-/** Toast text after a successful transition. */
+/** Toast text after a successful transition. Total: an estado outside the union gets a generic text. */
 export function transitionMessage(pedidoId: number, estado: EstadoPedido): string {
-  return `${formatOrderNumber(pedidoId)} ahora está ${estadoLabel(estado).toLowerCase()}`;
+  const label = ownValue(ESTADO_LABEL, estado);
+  return label === undefined
+    ? `${formatOrderNumber(pedidoId)} actualizado`
+    : `${formatOrderNumber(pedidoId)} ahora está ${label.toLowerCase()}`;
 }
 
 /** Copy of the cancel confirmation; it names the order so the wrong row is not cancelled by mistake. */
@@ -265,4 +297,24 @@ export function isRowBusy(
   awaitingReload: ReadonlySet<number>,
 ): boolean {
   return inFlight.has(pedidoId) || awaitingReload.has(pedidoId);
+}
+
+/**
+ * Whether a rejected transition should reload the current view. An HTTP 4xx most likely means the row is stale
+ * (the kitchen already advanced it, someone else cancelled or charged it), so the list must converge. A network
+ * error (status 0) or a 5xx says nothing about the row: only the toast is shown.
+ */
+export function shouldReloadAfterRejection(status: number): boolean {
+  return status >= 400 && status < 500;
+}
+
+export type LoadFailureView = 'keep-rows' | 'error-panel';
+
+/**
+ * What a failed list request shows. A reload of the SAME view (Actualizar, or the automatic reload after an
+ * action) over rows that are already loaded keeps those rows and leaves the toast to report the error; the full
+ * error panel is for loads with no data to show (first load, tab change, page change).
+ */
+export function failedLoadView(load: { hadData: boolean; sameView: boolean }): LoadFailureView {
+  return load.hadData && load.sameView ? 'keep-rows' : 'error-panel';
 }

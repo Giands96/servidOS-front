@@ -11,6 +11,7 @@ import {
   estadoLabel,
   estadoPagoLabel,
   estadoVariant,
+  failedLoadView,
   fallbackPage,
   formatClock,
   formatCreatedAt,
@@ -22,6 +23,8 @@ import {
   observacionText,
   pagerView,
   primaryAction,
+  shouldReloadAfterRejection,
+  tipoIcon,
   tipoLabel,
   transitionMessage,
 } from './pedidos.rules';
@@ -231,6 +234,58 @@ describe('estadoPagoLabel', () => {
     [null, 'Sin cobrar'],
   ])('%s -> %s', (estadoPago, expected) => {
     expect(estadoPagoLabel(estadoPago)).toBe(expected);
+  });
+});
+
+describe('display helpers on values outside the unions (unvalidated API data)', () => {
+  const asEstado = (value: unknown) => value as EstadoPedido;
+  const asEstadoPago = (value: unknown) => value as EstadoPago | null;
+  const asTipo = (value: unknown) => value as TipoPedido;
+
+  it.each([
+    ['ARCHIVADO', 'ARCHIVADO'],
+    ['constructor', 'constructor'],
+    ['__proto__', '__proto__'],
+    ['', '—'],
+    ['   ', '—'],
+    [null, '—'],
+    [undefined, '—'],
+    [7, '7'],
+  ])('estadoLabel(%j) falls back to the raw text %j', (value, expected) => {
+    expect(estadoLabel(asEstado(value))).toBe(expected);
+  });
+
+  it.each([['ARCHIVADO'], ['constructor'], ['toString'], [''], [null], [undefined]])(
+    'estadoVariant(%j) is neutral',
+    (value) => {
+      expect(estadoVariant(asEstado(value))).toBe('neutral');
+    },
+  );
+
+  it.each([
+    ['PARCIAL', 'PARCIAL'],
+    ['constructor', 'constructor'],
+    ['', '—'],
+    [undefined, '—'],
+  ])('estadoPagoLabel(%j) falls back to the raw text %j', (value, expected) => {
+    expect(estadoPagoLabel(asEstadoPago(value))).toBe(expected);
+  });
+
+  it.each([
+    ['BARRA', 'BARRA'],
+    ['constructor', 'constructor'],
+    ['', '—'],
+    [null, '—'],
+    [undefined, '—'],
+  ])('tipoLabel(%j) falls back to the raw text %j', (value, expected) => {
+    expect(tipoLabel({ tipoPedido: asTipo(value), mesaId: null })).toBe(expected);
+  });
+
+  it('transitionMessage never throws and uses a generic text for an unknown estado', () => {
+    expect(transitionMessage(482, asEstado('ARCHIVADO'))).toBe('#0482 actualizado');
+    expect(transitionMessage(482, asEstado('constructor'))).toBe('#0482 actualizado');
+    expect(transitionMessage(482, asEstado(undefined))).toBe('#0482 actualizado');
+    expect(transitionMessage(482, asEstado(null))).toBe('#0482 actualizado');
   });
 });
 
@@ -447,5 +502,53 @@ describe('isRowBusy', () => {
   it('is free when neither set holds the order', () => {
     expect(isRowBusy(7, none, none)).toBe(false);
     expect(isRowBusy(7, new Set([8]), new Set([9]))).toBe(false);
+  });
+});
+
+describe('tipoIcon', () => {
+  it.each<[TipoPedido, string]>([
+    ['MESA', 'utensils'],
+    ['DELIVERY', 'bike'],
+    ['RECOJO', 'bag'],
+  ])('%s -> %s', (tipo, expected) => {
+    expect(tipoIcon(tipo)).toBe(expected);
+  });
+
+  it.each([['BARRA'], ['constructor'], ['toString'], [''], [null], [undefined]])(
+    'has no icon for %j',
+    (value) => {
+      expect(tipoIcon(value as unknown as TipoPedido)).toBeNull();
+    },
+  );
+});
+
+describe('shouldReloadAfterRejection', () => {
+  // A 4xx on a transition most likely means the row is stale (someone else advanced, cancelled or charged it).
+  it.each([400, 401, 402, 403, 404, 409, 422, 499])('reloads after HTTP %d', (status) => {
+    expect(shouldReloadAfterRejection(status)).toBe(true);
+  });
+
+  it.each([0, 200, 204, 399, 500, 502, 503, 504])('does not reload after status %d', (status) => {
+    expect(shouldReloadAfterRejection(status)).toBe(false);
+  });
+
+  it('does not reload for a status that is not a number', () => {
+    expect(shouldReloadAfterRejection(NaN)).toBe(false);
+    expect(shouldReloadAfterRejection(undefined as unknown as number)).toBe(false);
+  });
+});
+
+describe('failedLoadView', () => {
+  it('keeps the rows when a reload of the same view fails and rows were already loaded', () => {
+    expect(failedLoadView({ hadData: true, sameView: true })).toBe('keep-rows');
+  });
+
+  it('shows the error panel when there is no data to keep', () => {
+    expect(failedLoadView({ hadData: false, sameView: true })).toBe('error-panel');
+    expect(failedLoadView({ hadData: false, sameView: false })).toBe('error-panel');
+  });
+
+  it('shows the error panel when the view itself changed (tab or page), even if rows were loaded', () => {
+    expect(failedLoadView({ hadData: true, sameView: false })).toBe('error-panel');
   });
 });
