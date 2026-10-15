@@ -18,6 +18,9 @@ aliases:
 > [!info] Estado del módulo Cocina
 > Cocina está **implementada** en la rama `feat/cocina` (hasta `2fad5cb`), pero sin prueba manual en navegador, con payload sin verificar contra Swagger y con la review nativa pendiente. Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
 
+> [!info] Estado del módulo Pedidos
+> Pedidos (lista + nuevo pedido) está **implementado en cinco ramas locales**, sin push y pendiente de merge (punta `feat/pedidos-04-alta`, 747 tests). Sin prueba manual en navegador. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
+
 ## Navegación
 
 ### 01 - Contexto
@@ -41,7 +44,7 @@ aliases:
 - [[Styles y Diseño]] — tokens Tailwind 4, tipografía, primitivas, índice de pantallas
 
 ### 08 - Fases
-- [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fases 4-9 - Planificadas]]
+- [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fases 4-9 - Planificadas]]
 
 ### 09 - Módulos
 - [[Core]] · [[Shared]] · [[Auth]] · [[Cocina]] · [[Restaurante]] · [[Pedidos]] · [[Pagos]] · [[Catálogo]] · [[Usuarios]] · [[Plataforma]]
@@ -71,6 +74,9 @@ graph TD
     Mods --> Cocina
     Fases --> F3[Fase 3 - Cocina]
     F3 --> Cocina
+    Fases --> F4[Fase 4 - Pedidos]
+    F4 --> Pedidos
+    Mods --> Pedidos
     MOC --> Gob[10 - Gobierno]
     Gob --> Estado[Estado Actual]
     Gob --> Pend[Pendientes y Deuda Técnica]

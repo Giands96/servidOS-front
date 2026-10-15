@@ -1,39 +1,67 @@
 ---
 title: Pedidos
-date: 2026-10-08
+date: 2026-10-14
 tags:
   - servidos
   - modulos
   - pedidos
-  - pendiente
+  - parcial
 aliases:
   - Módulo Pedidos
 ---
 
 # Pedidos
 
-Volver: [[00 - MOC]] · Ver [[Modelo de Negocio]] · [[Flujo del Sistema]] · [[API]] · [[Fases 4-9 - Planificadas]]
+Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] · [[Flujo del Sistema]] · [[API]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Responsabilidad
-> Crear pedidos (MESA, DELIVERY, RECOJO), confirmarlos (mandar a preparar), cambiar estado y entregar. Estado: **placeholder** (ruta `/pedidos/nuevo` con `pedidos.gestionar`, página "Módulo en construcción"). Es el home de ADMINISTRADOR y RECEPCION.
+> Listar pedidos, crear (MESA, DELIVERY, RECOJO), confirmarlos ("Enviar a cocina"), cambiar de estado y cancelar. Es el home de ADMINISTRADOR y RECEPCION (`homeFor` sigue siendo `/pedidos/nuevo`).
+
+> [!warning] Estado: implementado en ramas locales, pendiente de merge, sin prueba manual
+> Lista (`/pedidos`) y nuevo pedido (`/pedidos/nuevo`) en la cadena `feat/pedidos-01-datos` → `02-lista` → `03-alta-datos` → `04-alta`, más `fix/subscription-guard-vigencia`. Sin push. Sin spec de las páginas (AGENTS §6). El tablero kanban queda para después.
 
 ## Archivos
-Solo `src/app/app.routes.ts` (ruta). No hay carpeta `features/pedidos`. Tipos `TipoPedido` y `EstadoPedido` están por ahora en `features/cocina/cocina.types.ts`.
+| Ruta | Contenido |
+|---|---|
+| `features/pedidos/pedidos.types.ts` | `TipoPedido`, `EstadoPedido`, `EstadoPago`, `PedidoListado`, `CrearPedidoRequest`; cocina los re-exporta |
+| `features/pedidos/data/pedidos.api.ts` | `listar`, `confirmar`, `cambiarEstado`, `crear` |
+| `features/pedidos/domain/pedidos.rules.ts` | transiciones, acciones, etiquetas y formato de la lista |
+| `features/pedidos/domain/nuevo-pedido.rules.ts` | borrador, carrito, validación y `toRequest` |
+| `features/pedidos/pedidos.page.ts` | lista (solo orquesta) |
+| `features/pedidos/nuevo-pedido.page.ts` | alta de pedido (solo orquesta) |
+| `features/catalogo/data/catalogo.api.ts` | lectura del menú (ver [[Catálogo]]) |
+| `src/testing/builders.ts` | `aPedidoListado`, `aPage`, `aProducto`, `aCategoria` |
 
-## API (plan)
-`POST /pedidos`, `POST /pedidos/{id}/confirmar`, `PATCH /pedidos/{id}/estado`. **No existe `GET /pedidos`** (bloquea tablero y lista).
+## API (verificada contra `/v3/api-docs` y `FRONTEND_CONTEXT` el 2026-10-11)
+- `GET /pedidos?estado=&fecha=&porCobrar=&page=&size=`: **existe**. Paginado (`size` 1–100, 20 por defecto), más nuevo primero, sin `sort`. Fila: `pedidoId, tipoPedido, mesaId, estado, total, observacion, createdAt, estadoPago` (`PAGADO`, `REEMBOLSADO` o `null`).
+- No existe `GET /pedidos/{id}` y la fila no trae items: no hay panel de detalle.
+- `POST /pedidos` → 201 en `PENDIENTE`. Cuerpo `{ tipoPedido, mesaId?, observacion?, items: [{ productoId, cantidad, observacion? }] }`. Items vacíos o `cantidad < 1` dan 422; los 400 vienen en español y se muestran tal cual.
+- `POST /pedidos/{id}/confirmar` (`PENDIENTE` → `EN_PREPARACION`) y `PATCH /pedidos/{id}/estado` `{ estado }`: ambos responden `PedidoResponse`.
+- `createdAt` llega sin `Z` (hora local de Lima, §10): se parsea sin agregar `Z`. Un enum inválido o una fecha mal formada probablemente devuelve 500: se valida en el cliente.
 
-## Reglas de dominio previstas
-`MESA` exige `mesaId`; el backend calcula precios; `AGOTADO` da 400; transiciones y cancelación según [[Modelo de Negocio]]. Anunciado sin verificar: DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago válido; `mesaId` de otro restaurante da 400.
+## Reglas de dominio
+**Transiciones** (`TRANSITIONS`, `nextEstados`, `primaryAction`): `PENDIENTE` → `EN_PREPARACION` | `CANCELADO`; `EN_PREPARACION` → `LISTO` | `CANCELADO`; `LISTO` (DELIVERY) → `EN_ENTREGA` | `CANCELADO`; `LISTO` (MESA, RECOJO) → `ENTREGADO` | `CANCELADO`; `EN_ENTREGA` → `ENTREGADO` | `CANCELADO`; `ENTREGADO` y `CANCELADO` sin salida. `canCancel` es falso para estados finales y para pedidos `PAGADO` (el backend responde 400). Las reglas degradan a "sin acción" ante estados o tipos fuera de las uniones.
 
-## Permisos
-`pedidos.gestionar`: ADMINISTRADOR, RECEPCION. Estas operaciones se permiten aun con 402 (anunciado §5): `PATCH estado` y `confirmar` no deberían llevar `subscriptionGuard`; `POST /pedidos` es escritura normal.
+**Nuevo pedido** (`nuevo-pedido.rules.ts`): `MESA` exige `mesaId` entero mayor a 0; productos `AGOTADO` no se pueden agregar (el backend da 400); el total en pantalla (`totalReferencial`, centavos enteros) es solo referencial; `toRequest` envía `mesaId` solo para MESA, nunca montos, omite observaciones en blanco y lanza si el borrador es inválido.
 
-## Ventajas y desventajas (diseño previsto)
+**Lista**: `isRowBusy` bloquea la fila desde la petición hasta que llega la última respuesta de la lista; `shouldReloadAfterRejection` recarga ante un 4xx; `failedLoadView` conserva las filas si falla la recarga de la misma vista.
+
+## Rutas y permisos
+`pedidos.gestionar`: ADMINISTRADOR, RECEPCION. `/pedidos` se declara con `moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt', [], load)` y es la única entrada de menú; `/pedidos/nuevo` usa ícono `null` (sin entrada de menú) y `[subscriptionGuard]`.
+
+> [!important] Dónde va el `subscriptionGuard`
+> Solo `POST /pedidos` devuelve 402. Confirmar y `PATCH estado` pasan con el tenant bloqueado, así que la **lista no lleva `subscriptionGuard`** y solo `/pedidos/nuevo` lo lleva. No se ocultan acciones sobre pedidos existentes. El guard bloquea por `/auth/me`: `INACTIVO`, sin suscripción o `vencida`; `CANCELADA` por sí sola no bloquea (PR `fix/subscription-guard-vigencia`, necesario para que `/pedidos/nuevo` siga el contrato).
+
+## Ventajas y desventajas
 | Ventajas | Desventajas |
 |---|---|
-| Reglas en `domain` testeables | Sin listado en el backend no hay tablero real |
-| Tipos compartidos con cocina | Hoy los tipos viven en cocina: moverlos a un lugar común cuando el módulo exista |
+| Reglas de transición y de borrador en `domain`, testeadas (pedidos 308 tests) | Las páginas no tienen spec; no se probó en navegador |
+| La lista sigue operable con el tenant bloqueado | `homeFor` apunta a `/pedidos/nuevo` (con guard): un tenant bloqueado vuelve al paywall desde "Seguir en solo lectura" |
+| El backend calcula precios; el front nunca envía montos | Sin aviso por borrador sin guardar; sin kanban; sin Caja |
+| Pedidos es dueño de los tipos; cocina los re-exporta | `fail()` duplicada en ambas páginas |
 
 ## Cómo extenderlo
-Crear `features/pedidos/{data,domain}`, reutilizar los tipos (o moverlos a un archivo compartido sin romper cocina), sustituir el `load` de `moduleRoute` y confirmar con el usuario el diseño (`Blp89`, `EGPHx`, `QU3DR`).
+- Reglas nuevas en `domain` con test; las páginas solo orquestan.
+- Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior, reutilizando `pedidos.rules.ts`.
+- Cobrar y Reembolsar pertenecen a [[Pagos]]; el acceso de CAJERO a la lista llega con esa fase.
+- No añadas `subscriptionGuard` a `/pedidos`.
