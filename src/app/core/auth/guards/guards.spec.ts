@@ -63,7 +63,7 @@ describe('route guards', () => {
 
     it('redirects an authenticated user to their home', async () => {
       signIn('RECEPCION');
-      expect(urlOf(await run(guestGuard))).toBe('/pedidos/nuevo');
+      expect(urlOf(await run(guestGuard))).toBe('/pedidos');
     });
   });
 

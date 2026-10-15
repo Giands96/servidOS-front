@@ -106,9 +106,9 @@ describe('homeLabel', () => {
     expect(homeLabel(user, entries)).toBe(expected);
   });
 
-  it('labels a home that lives under a listed module with that module (home /pedidos/nuevo, entry /pedidos)', () => {
-    expect(homeFor(tenant('RECEPCION'))).toBe('/pedidos/nuevo');
-    expect(entries.some((item) => item.route === '/pedidos/nuevo')).toBe(false);
+  it('labels the orders home with its own sidebar entry (home /pedidos, entry /pedidos)', () => {
+    expect(homeFor(tenant('RECEPCION'))).toBe('/pedidos');
+    expect(entries.some((item) => item.route === '/pedidos')).toBe(true);
     expect(homeLabel(tenant('RECEPCION'), entries)).toBe('Pedidos');
   });
 

@@ -162,6 +162,17 @@ describe('routes', () => {
     expect(shellChild('pedidos/nuevo').canActivate).toContain(subscriptionGuard);
   });
 
+  // Regression: the paywall's read-only exit goes to homeFor(user); a guarded home bounced blocked tenants back to it.
+  it.each(['ADMINISTRADOR', 'RECEPCION', 'COCINERO', 'MESERO', 'CAJERO', 'REPARTIDOR'] as const)(
+    'the home of a %s tenant carries no subscriptionGuard (a blocked tenant can always reach it)',
+    (rol) => {
+      const home = homeFor(aMe({ rol })).slice(1);
+      const route = shellChild(home);
+      expect(route).toBeDefined();
+      expect(route.canActivate ?? []).not.toContain(subscriptionGuard);
+    },
+  );
+
   it('renders the 403 page with a button to the role home', async () => {
     signIn({ rol: 'RECEPCION' });
     const harness = await RouterTestingHarness.create('/sin-permiso');
