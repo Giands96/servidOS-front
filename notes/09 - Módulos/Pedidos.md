@@ -15,7 +15,7 @@ aliases:
 Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] · [[Flujo del Sistema]] · [[API]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Responsabilidad
-> Listar pedidos, crear (MESA, DELIVERY, RECOJO), confirmarlos ("Enviar a cocina"), cambiar de estado y cancelar. Es el home de ADMINISTRADOR y RECEPCION (`homeFor` sigue siendo `/pedidos/nuevo`).
+> Listar pedidos, crear (MESA, DELIVERY, RECOJO), confirmarlos ("Enviar a cocina"), cambiar de estado y cancelar. La lista (`/pedidos`) es el home de ADMINISTRADOR y RECEPCION.
 
 > [!warning] Estado: implementado en ramas locales, pendiente de merge, sin prueba manual
 > Lista (`/pedidos`) y nuevo pedido (`/pedidos/nuevo`) en la cadena `feat/pedidos-01-datos` → `02-lista` → `03-alta-datos` → `04-alta`, más `fix/subscription-guard-vigencia`. Sin push. Sin spec de las páginas (AGENTS §6). El tablero kanban queda para después.
@@ -56,7 +56,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 | Ventajas | Desventajas |
 |---|---|
 | Reglas de transición y de borrador en `domain`, testeadas (pedidos 308 tests) | Las páginas no tienen spec; no se probó en navegador |
-| La lista sigue operable con el tenant bloqueado | `homeFor` apunta a `/pedidos/nuevo` (con guard): un tenant bloqueado vuelve al paywall desde "Seguir en solo lectura" |
+| La lista sigue operable con el tenant bloqueado | `homeFor` apunta a `/pedidos` (sin guard), así que "Seguir en solo lectura" del paywall lleva a la lista |
 | El backend calcula precios; el front nunca envía montos | Sin aviso por borrador sin guardar; sin kanban; sin Caja |
 | Pedidos es dueño de los tipos; cocina los re-exporta | `fail()` duplicada en ambas páginas |
 

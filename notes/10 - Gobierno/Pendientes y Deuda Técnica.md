@@ -47,7 +47,7 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] `fix/subscription-guard-vigencia` debe estar mergeado para que el guard de `/pedidos/nuevo` siga el contrato (sin él se usa el guard anterior, que consulta la suscripción y bloquea a los `CANCELADA`).
 - [ ] Aviso por borrador sin guardar al salir de `/pedidos/nuevo`.
 - [ ] Specs de las páginas no escritos por decisión (AGENTS §6); las reviews advirtieron la orquestación sin tests en ambas páginas. Reabrir la decisión con el usuario si se quiere cubrirlos.
-- [ ] `homeFor` de ADMINISTRADOR y RECEPCION sigue en `/pedidos/nuevo`, que lleva `subscriptionGuard`: un tenant bloqueado que pulsa "Seguir en solo lectura" vuelve al paywall (observado al leer el código, no probado). Decidir si pasa a `/pedidos`.
+- [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
 - [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior.
 - [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código `pagos.registrar` es solo de ADMINISTRADOR, el contrato §3 también lo da a RECEPCION y CAJERO.

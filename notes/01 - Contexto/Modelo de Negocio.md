@@ -64,7 +64,7 @@ Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `
 |---|---|
 | SUPERADMIN | `/plataforma/restaurantes` |
 | ADMIN (plataforma) | `/plataforma/restaurantes/nuevo` |
-| ADMINISTRADOR, RECEPCION | `/pedidos/nuevo` |
+| ADMINISTRADOR, RECEPCION | `/pedidos` (lista; decisión del usuario 2026-10-14) |
 | COCINERO | `/cocina` |
 | MODERADOR, MESERO, CAJERO, REPARTIDOR | `/sin-modulos` |
 

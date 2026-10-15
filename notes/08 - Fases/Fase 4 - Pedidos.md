@@ -48,7 +48,7 @@ Lista + nuevo pedido (2026-10-11); tablero después; entrega en cadena `stacked-
 - Cancelar un pedido pagado da 400. Detalle de transiciones y reglas en [[Pedidos]].
 
 ## Decisiones
-Defaults del orquestador (a revisar con el usuario): "Pedidos" del menú → `/pedidos`; `homeFor` sin cambio (`/pedidos/nuevo`); refresco manual y tras cada acción (sin polling ni WebSocket); pestañas sin conteos; cancelar con confirmación; tras crear se navega a la lista.
+Defaults del orquestador (a revisar con el usuario): "Pedidos" del menú → `/pedidos`; `homeFor` de ADMINISTRADOR y RECEPCION → `/pedidos` (decisión del usuario 2026-10-14, `3598eb0`); refresco manual y tras cada acción (sin polling ni WebSocket); pestañas sin conteos; cancelar con confirmación; tras crear se navega a la lista.
 
 ## Pendientes
-Aviso por borrador sin guardar; decidir si `homeFor` pasa a `/pedidos` (con el guard actual, un tenant bloqueado vuelve al paywall al pulsar "Seguir en solo lectura"); #04 debe mergearse para que el guard siga el contrato; foto vieja de `/auth/me`; kanban; Caja y CAJERO; CSP y revisión visual en navegador. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].
+Aviso por borrador sin guardar; #04 debe mergearse para que el guard siga el contrato; foto vieja de `/auth/me`; kanban; Caja y CAJERO; CSP y revisión visual en navegador. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].
