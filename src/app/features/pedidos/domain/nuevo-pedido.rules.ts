@@ -1,6 +1,6 @@
-import { Producto } from '../../catalogo/catalogo.types';
+import { Categoria, Producto } from '../../catalogo/catalogo.types';
 import { CrearPedidoItem, CrearPedidoRequest, TipoPedido } from '../pedidos.types';
-import { TIPO_LABEL } from './pedidos.rules';
+import { TIPO_LABEL, formatOrderNumber } from './pedidos.rules';
 
 /**
  * Pure rules of the new-order screen. Every function returns new arrays/objects and never mutates
@@ -170,4 +170,72 @@ export function toRequest(draft: BorradorPedido): CrearPedidoRequest {
     ...(observacion !== '' && { observacion }),
     items,
   };
+}
+
+/** A blank form: MESA is the default of the design. Fresh objects on every call. */
+export function emptyDraft(): BorradorPedido {
+  return { tipoPedido: 'MESA', mesaId: '', observacion: '', lineas: [] };
+}
+
+/** True when the user has typed or added nothing worth a "discard" confirmation (the tipo alone does not count). */
+export function isDraftEmpty(draft: BorradorPedido): boolean {
+  return (
+    draft.lineas.length === 0 && draft.mesaId.trim() === '' && draft.observacion.trim() === ''
+  );
+}
+
+export interface CategoriaTab {
+  /** `null` is "Todos": no category filter. */
+  categoriaId: number | null;
+  label: string;
+}
+
+/**
+ * Tabs above the product grid: "Todos" plus every HABILITADO category in API order. Products of a
+ * DESHABILITADO category have no tab of their own; they are still reachable under "Todos".
+ */
+export function categoryTabs(categorias: readonly Categoria[]): CategoriaTab[] {
+  return [
+    { categoriaId: null, label: 'Todos' },
+    ...categorias
+      .filter((c) => c.estado === 'HABILITADO')
+      .map((c) => ({ categoriaId: c.categoriaId, label: c.nombre })),
+  ];
+}
+
+/** Client-side filter of the loaded menu: `null` (Todos) keeps everything, including products without category. */
+export function productosDeCategoria(
+  productos: readonly Producto[],
+  categoriaId: number | null,
+): Producto[] {
+  return categoriaId === null
+    ? [...productos]
+    : productos.filter((p) => p.categoriaId === categoriaId);
+}
+
+/** precio x cantidad of one line, in integer cents like `totalReferencial`. Display-only. */
+export function subtotalLinea(linea: Pick<LineaPedido, 'precio' | 'cantidad'>): number {
+  return (Math.round(linea.precio * 100) * linea.cantidad) / 100;
+}
+
+/** "2 productos · 3 u." header of the cart; empty for an empty cart. */
+export function resumenItems(lineas: readonly LineaPedido[]): string {
+  if (lineas.length === 0) {
+    return '';
+  }
+  const unidades = lineas.reduce((sum, l) => sum + l.cantidad, 0);
+  return `${lineas.length} ${lineas.length === 1 ? 'producto' : 'productos'} · ${unidades} u.`;
+}
+
+/**
+ * The errors the form shows: none until the first submit attempt (the user is still filling it in), then
+ * every `validateDraft` error, following the draft so a fixed field loses its message at once.
+ */
+export function visibleErrors(draft: BorradorPedido, submitAttempted: boolean): ErroresBorrador {
+  return submitAttempted ? validateDraft(draft) : {};
+}
+
+/** Success toast after a 201. */
+export function pedidoCreadoMessage(pedidoId: number): string {
+  return `Pedido ${formatOrderNumber(pedidoId)} creado`;
 }

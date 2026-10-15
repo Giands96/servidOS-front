@@ -17,6 +17,7 @@ import { Rol } from './core/auth/auth.types';
 import { navEntriesFrom, navFor } from './core/auth/domain/navigation.rules';
 import { can, homeFor } from './core/auth/domain/permissions.rules';
 import { routeActionGuard } from './core/auth/guards/route-action.guard';
+import { subscriptionGuard } from './core/auth/guards/subscription.guard';
 
 describe('routes', () => {
   beforeEach(() => {
@@ -147,10 +148,18 @@ describe('routes', () => {
     expect(navEntriesFrom(routes).filter((e) => e.label === 'Pedidos')).toHaveLength(1);
   });
 
-  it('/pedidos/nuevo stays a permissioned placeholder without its own sidebar entry', () => {
+  it('/pedidos/nuevo loads the new-order page behind the permission and subscription guards, without a sidebar entry', async () => {
     const nuevo = shellChild('pedidos/nuevo');
-    expect(nuevo.canActivate).toEqual([routeActionGuard]);
+    // Creating an order is the one pedidos write a lapsed tenant cannot do (402), so only this route is guarded.
+    expect(nuevo.canActivate).toEqual([routeActionGuard, subscriptionGuard]);
     expect(nuevo.data).toEqual({ action: 'pedidos.gestionar', title: 'Nuevo pedido' });
+    const page = await (nuevo.loadComponent as () => Promise<{ name: string }>)();
+    expect(page.name).toMatch(/NuevoPedidoPage$/);
+  });
+
+  it('/pedidos keeps no subscriptionGuard next to the guarded /pedidos/nuevo', () => {
+    expect(shellChild('pedidos').canActivate).not.toContain(subscriptionGuard);
+    expect(shellChild('pedidos/nuevo').canActivate).toContain(subscriptionGuard);
   });
 
   it('renders the 403 page with a button to the role home', async () => {
