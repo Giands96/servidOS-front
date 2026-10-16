@@ -68,7 +68,13 @@ export const routes: Routes = [
         ),
       },
       { path: 'caja', ...moduleRoute('pagos.registrar', 'Caja', 'wallet') },
-      { path: 'catalogo', ...moduleRoute('catalogo.ver', 'Catálogo', 'book') },
+      // No subscriptionGuard: reading the menu works while the tenant is blocked (402 only hits the writes).
+      {
+        path: 'catalogo',
+        ...moduleRoute('catalogo.ver', 'Catálogo', 'book', [], () =>
+          import('./features/catalogo/catalogo.page').then((m) => m.CatalogoPage),
+        ),
+      },
       { path: 'usuarios', ...moduleRoute('usuarios.gestionar', 'Usuarios', 'users') },
       // Plan/subscription management screen: tenant ADMINISTRADOR only (user decision 2026-10-03).
       {

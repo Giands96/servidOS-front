@@ -184,6 +184,17 @@ describe('routes', () => {
     expect(page.name).toMatch(/CrearRestaurantePage$/);
   });
 
+  it('/catalogo loads the menu page with no subscriptionGuard (reads must work while blocked) and keeps its sidebar entry', async () => {
+    const catalogo = shellChild('catalogo');
+    expect(catalogo.canActivate).toEqual([routeActionGuard]);
+    expect(catalogo.data).toMatchObject({
+      action: 'catalogo.ver',
+      nav: { label: 'Catálogo', icon: 'book' },
+    });
+    const page = await (catalogo.loadComponent as () => Promise<{ name: string }>)();
+    expect(page.name).toMatch(/CatalogoPage$/);
+  });
+
   // Regression: the paywall's read-only exit goes to homeFor(user); a guarded home bounced blocked tenants back to it.
   it.each(['ADMINISTRADOR', 'RECEPCION', 'COCINERO', 'MESERO', 'CAJERO', 'REPARTIDOR'] as const)(
     'the home of a %s tenant carries no subscriptionGuard (a blocked tenant can always reach it)',
