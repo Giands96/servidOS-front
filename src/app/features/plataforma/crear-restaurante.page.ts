@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { CrearRestauranteFormComponent } from './crear-restaurante-form.component';
 import { restauranteCreadoMessage } from './domain/crear-restaurante.rules';
-import { Restaurante } from './plataforma.types';
+import { RestauranteCreado } from './plataforma.types';
 
 /**
  * Standalone create-restaurant screen for the platform ADMIN (who cannot see the list). After a creation or a
@@ -17,7 +17,7 @@ import { Restaurante } from './plataforma.types';
       <header>
         <h1 class="text-3xl font-bold tracking-tight">Crear restaurante</h1>
         <p class="mt-1 text-sm text-muted">
-          Registra un restaurante en la plataforma. El usuario administrador del restaurante se crea aparte.
+          Registra un restaurante y la cuenta de su dueño.
         </p>
       </header>
 
@@ -35,8 +35,8 @@ export class CrearRestaurantePage {
   /** Changing the key re-creates the form with a blank draft. */
   protected readonly formKey = signal(0);
 
-  protected onCreated(restaurante: Restaurante): void {
-    this.toasts.show('OK', restauranteCreadoMessage(restaurante.nombre), 'success');
+  protected onCreated(restaurante: RestauranteCreado): void {
+    this.toasts.show('OK', restauranteCreadoMessage(restaurante), 'success');
     this.reset();
   }
 

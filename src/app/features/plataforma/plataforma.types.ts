@@ -60,6 +60,30 @@ export interface Plan {
   moneda: string;
 }
 
+/** Owner account created together with the restaurant (`AdministradorRequest`). */
+export interface AdministradorRequest {
+  /** 2-100 characters. */
+  nombre: string;
+  /** Up to 100 characters, not blank. */
+  apellido: string;
+  /** Up to 150 characters; unique in the whole platform. */
+  email: string;
+  /** 8-72 characters; write-only, the backend never returns it. */
+  password: string;
+}
+
+/** Owner summary inside `RestauranteCreadoResponse`. */
+export interface AdministradorResumen {
+  usuarioId: number;
+  email: string;
+  nombre: string;
+}
+
+/** `RestauranteCreadoResponse` of POST /restaurantes: the restaurant plus its new owner. */
+export interface RestauranteCreado extends Restaurante {
+  administrador: AdministradorResumen;
+}
+
 export interface CrearRestauranteRequest {
   slug: string;
   nombre: string;
@@ -68,6 +92,7 @@ export interface CrearRestauranteRequest {
   demo?: boolean;
   /** 1-30; only meaningful when `demo` is true. */
   demoDias?: number;
+  administrador: AdministradorRequest;
 }
 
 export interface RenovarSuscripcionRequest {
