@@ -1,6 +1,6 @@
 ---
 title: Estado Actual
-date: 2026-10-15
+date: 2026-10-16
 tags:
   - servidos
   - gobierno
@@ -11,10 +11,10 @@ aliases:
 
 # Estado Actual
 
-Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fases 4-9 - Planificadas]]
+Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fase 5 - Plataforma]] · [[Fases 4-9 - Planificadas]]
 
-> [!abstract] Foto al 2026-10-15
-> Rama principal `main` en `c66c3ff`. **Fases 0 a 4 en `main`**: el 2026-10-15 se mergeó por squash la cadena de Pedidos (PRs #8 a #12) y se borraron las ramas remotas. Cocina y Pedidos siguen sin prueba manual en navegador: falta crear un restaurante desde la plataforma para poder probar las pantallas del tenant.
+> [!abstract] Foto al 2026-10-16
+> Rama principal `main` en `c66c3ff`. **Fases 0 a 4 en `main`**: el 2026-10-15 se mergeó por squash la cadena de Pedidos (PRs #8 a #12) y se borraron las ramas remotas. **Fase 5 (Plataforma) implementada en cinco ramas locales apiladas, pendiente de merge** (punta `86de23a`: 24 archivos / 907 tests, build OK); aún no está en `main` ni publicada. Cocina, Pedidos y Plataforma siguen sin prueba manual en navegador.
 
 ## Hecho
 | Área | Estado | Referencia |
@@ -31,6 +31,11 @@ Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[
 | Pedidos: página de la lista (`/pedidos`) | en `main`: PR #10 (`87f0cd9`) | [[Pedidos]] |
 | Catálogo: API de lectura (`GET /productos`, `GET /categorias`) y reglas del nuevo pedido | en `main`: PR #11 (`40930c5`) | [[Catálogo]] |
 | Pedidos: página de nuevo pedido (`/pedidos/nuevo`) | en `main`: PR #12 (`c66c3ff`) | [[Pedidos]] · `docs/progress/07-fase-4-pedidos.md` |
+| Plataforma: datos y permisos (`feat/plataforma-01-datos`, `0003c47`) | implementada en rama, pendiente de merge | [[Plataforma]] · [[Fase 5 - Plataforma]] |
+| Plataforma: reglas del dashboard y del alta (`feat/plataforma-02-reglas`, `2596829`) | implementada en rama, pendiente de merge | [[Plataforma]] |
+| Plataforma: lista con panel de detalle (`feat/plataforma-03-lista`, `28efe2e`) | implementada en rama, pendiente de merge; sin prueba en navegador | [[Plataforma]] |
+| Plataforma: alta de restaurantes, modal y `/nuevo` (`feat/plataforma-04-alta`, `3923b7a`) | implementada en rama, pendiente de merge; sin prueba en navegador | [[Plataforma]] |
+| Plataforma: Renovar, Cambiar plan, Suspender/Reactivar (`feat/plataforma-05-acciones`, `86de23a`) | implementada en rama, pendiente de merge; sin prueba en navegador | [[Plataforma]] · `docs/progress/08-fase-5-plataforma.md` |
 
 ## Pendiente de cierre de Cocina
 Prueba manual en navegador con backend, verificación del payload contra Swagger y zona horaria de `createdAt`.
@@ -38,19 +43,25 @@ Prueba manual en navegador con backend, verificación del payload contra Swagger
 ## Pendiente de Pedidos
 Prueba manual en navegador con backend; aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación hecha por la plataforma; tablero kanban; Cobrar (fase de Caja). Detalle en [[Pendientes y Deuda Técnica]].
 
+## Pendiente de Plataforma
+Mergear la cadena de cinco ramas en orden (squash, reubicando cada rama sobre `main` tras cada merge); prueba en navegador de todas las pantallas; Escape para cerrar panel y modal; partir `restaurantes.page.ts` (847 líneas); crear el ADMINISTRADOR del tenant (sin endpoint). Detalle en [[Pendientes y Deuda Técnica]].
+
 ## Tests
 - **`main` (`c66c3ff`): 21 archivos, 770 tests en verde** (`npx ng test --watch=false`); `npx ng build` OK. Ver [[Testing]].
+- **Punta de la cadena de Plataforma (`feat/plataforma-05-acciones`, `86de23a`): 24 archivos, 907 tests en verde**; `npx ng build` OK. No es el estado de `main`.
 - En el merge se resolvió un conflicto en `src/testing/builders.ts`: `aMe` asigna ahora cada campo de forma explícita en lugar de `...overrides`, con los mismos valores por defecto (restaurante `ACTIVO`, suscripción `ACTIVA` con `fechaFin` 2099-12-31).
 
 ## Decisiones recientes
 - `homeFor` de ADMINISTRADOR y RECEPCION es `/pedidos` (la lista, sin `subscriptionGuard`; `3598eb0`). Decisión cerrada.
-- **Plan (decisión del usuario, 2026-10-15):** la siguiente fase es **Plataforma**, porque hay que poder crear un restaurante desde la plataforma antes de probar en navegador cualquier pantalla del tenant. El backend ya tiene credenciales de plataforma de desarrollo (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); se consultan allí, no se documentan aquí.
+- **Plan (decisión del usuario, 2026-10-15):** la siguiente fase era **Plataforma**, porque hay que poder crear un restaurante desde la plataforma antes de probar en navegador cualquier pantalla del tenant. Ya está implementada en ramas (ver arriba). El backend ya tiene credenciales de plataforma de desarrollo (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); se consultan allí, no se documentan aquí.
+- **Alcance de Plataforma (decisión del usuario, 2026-10-15): "Diseño + acciones"** (lista, alta y acciones Renovar, Cambiar plan y Suspender/Reactivar). Los defaults del orquestador están en [[Fase 5 - Plataforma]].
+- **Crear el ADMINISTRADOR del tenant no tiene endpoint**: en desarrollo se usa el script del backend `scripts/sql/crear_admin.sql` (cambiar antes su correo por defecto, que choca con el del usuario de arranque de la plataforma).
 
 ## Qué sigue
-1. **Plataforma** (listar y crear restaurantes, detalle y suscripción): [[Plataforma]].
+1. **Mergear la cadena de Plataforma** en orden (squash) y probar en navegador sus pantallas: [[Plataforma]] · [[Fase 5 - Plataforma]].
 2. Prueba en navegador de las interfaces del tenant (Cocina y Pedidos), con el restaurante creado desde Plataforma.
 3. Cerrar Cocina (prueba manual, Swagger, zona horaria de `createdAt`).
 4. Módulos restantes: Restaurante, pantallas de Catálogo, tablero kanban de Pedidos y Cobrar, Pagos/Caja, Usuarios (bloqueado: no existe `GET /usuarios`). Los cambios de suscripción anunciados que siguen abiertos están en [[Pendientes y Deuda Técnica]].
 
 ## Cómo retomar
-Verificar `git status`, correr `npx ng build` y `npx ng test --watch=false`, leer `odd/tasks/pedidos.md` y `docs/progress`. Mantener la nota de progreso de cada fase (memoria del proyecto: documentar cada fase, feature y fix).
+Verificar `git status`, correr `npx ng build` y `npx ng test --watch=false`, leer `odd/tasks/plataforma.md` y `docs/progress`. Mantener la nota de progreso de cada fase (memoria del proyecto: documentar cada fase, feature y fix).

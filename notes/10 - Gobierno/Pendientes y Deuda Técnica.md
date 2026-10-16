@@ -1,6 +1,6 @@
 ---
 title: Pendientes y Deuda Técnica
-date: 2026-10-15
+date: 2026-10-16
 tags:
   - servidos
   - gobierno
@@ -12,7 +12,7 @@ aliases:
 
 # Pendientes y Deuda Técnica
 
-Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9 - Planificadas]]
+Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9 - Planificadas]] · [[Fase 5 - Plataforma]]
 
 > [!abstract] Alcance
 > Todo lo abierto según `docs/progress/*`, `odd/tasks/*` y lo observado al leer el código. Cada ítem indica su origen.
@@ -21,7 +21,7 @@ Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9
 Anunciados por backend, sin verificar contra Swagger.
 - [x] §1 `RestauranteApi.renovar()` eliminado; el botón del paywall ahora muestra el pago manual por Yape + WhatsApp ([[Restaurante]], `docs/progress/06-paywall-pago-manual.md`). Falta el copy de `suspendido.page.ts` ("la plataforma regulariza la suscripción"; hoy dice "renovar el plan").
 - [ ] Pago manual: el dueño debe completar `whatsappNumber` en `payment-contact.ts` y agregar `public/yape-qr.png`; decidir si se avisa en pantalla cuando el número no está configurado.
-- [ ] Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace).
+- [ ] (implementado en ramas, pendiente de merge) Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace). Acciones Renovar, Cambiar plan y Suspender/Reactivar en `feat/plataforma-05-acciones` (`86de23a`); sin prueba en navegador.
 - [ ] §2 Cancelar suscripción con `{password}` (400 si falta o es incorrecta); no renueva, opera hasta `fechaFin`.
 - [ ] (parcial) §3 `subscriptionGuard`: bloquear por `fechaFin < hoy`, no por `CANCELADA`. **Guard hecho y en `main`** (PR #8, `2b812b0`; ver [[Pedidos]]). Falta el aviso "Tu suscripción termina el {fechaFin}"; el 402 del backend sigue siendo la fuente de verdad.
 - [ ] §4 Sin suscripción vigente = solo lectura; manejar 400 en `GET /restaurantes/actual/suscripcion`; mensajes 402 terminan en "contactá a la plataforma para regularizar tu suscripción".
@@ -51,10 +51,22 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
 - [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior.
 - [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código `pagos.registrar` es solo de ADMINISTRADOR, el contrato §3 también lo da a RECEPCION y CAJERO.
-- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Bloqueada hasta tener [[Plataforma]] (hay que crear un restaurante desde la plataforma primero; plan del usuario, 2026-10-15).
+- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Depende de crear un restaurante desde [[Plataforma]] (ya implementada en ramas; falta mergear la cadena; plan del usuario, 2026-10-15) y de crear su ADMINISTRADOR (ver la sección de Plataforma).
 - [ ] `fail()` duplicada en `pedidos.page.ts` y `nuevo-pedido.page.ts`.
 - [ ] Advertencias menores: `cantidad` sin tope superior y `productoId` duplicado sin validar; el cargador de catálogo confía en la forma de la página; copy del paywall aún dice "cancelada"; `core/auth/data/suscripcion.api.ts` solo contiene un tipo; nombre y documentación de `subscriptionLapsedRoute`.
 - [ ] Comentario de ocurrencia del defecto #4441 de Gentle AI sin publicar (sin acceso autenticado a GitHub); texto en `docs/gentle-ai-ocurrencia-4441.md`.
+
+## Plataforma (Fase 5, implementada en ramas, pendiente de merge)
+Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver [[Plataforma]] y [[Fase 5 - Plataforma]].
+- [ ] Mergear la cadena en orden (squash): `feat/plataforma-01-datos` (`0003c47`), `-02-reglas` (`2596829`), `-03-lista` (`28efe2e`), `-04-alta` (`3923b7a`), `-05-acciones` (`86de23a`); reubicar cada rama sobre `main` tras cada merge. Cuatro piden `size:exception`. La rama `docs/obsidian-pedidos-merge` (notas del Vault) es independiente.
+- [ ] Prueba manual en navegador de todas las pantallas (lista, panel, alta, acciones): **no hecha**. Después, las pantallas del tenant (Cocina, Pedidos) con el restaurante creado.
+- [ ] Cerrar con Escape el panel de detalle y el modal.
+- [ ] Partir `restaurantes.page.ts` (847 líneas, casi todo plantilla) en componentes (tabla, panel, modales de acción) tras la prueba en navegador.
+- [ ] **Crear el ADMINISTRADOR del tenant no tiene endpoint** (`POST /restaurantes` no lo crea). En desarrollo se usa el script del backend `scripts/sql/crear_admin.sql`. Advertencia: su correo por defecto coincide con el del usuario de arranque de la plataforma y el login resuelve primero el tenant; hay que cambiarlo antes de ejecutarlo.
+- [ ] Gestión de usuarios de plataforma: fuera de alcance, bloqueada (no existe `GET /usuarios`; `PATCH /usuarios/{id}/rol` necesita ids de rol).
+- [ ] Sin filtros ni búsqueda en la lista (el backend no los ofrece); solo se ordena por nombre (un `sort` desconocido responde 500).
+- [ ] Copy del pie del diseño "Solo CANCELADA bloquea escrituras": no copiado a propósito (desactualizado frente al contrato §5); confirmar con el usuario si se quiere un texto equivalente actualizado.
+- [ ] Comentarios de ocurrencia de los defectos #4208 y #4655 de Gentle AI sin publicar (sin acceso autenticado a GitHub); borradores en `docs/gentle-ai-ocurrencia-4208.md` y `docs/gentle-ai-ocurrencia-4655.md`.
 
 ## Deuda técnica y advisories de las reviews
 - Ruta/permiso duplicado entre `app.routes.ts` y `navigation.rules.ts`: **resuelto** por `02bca02` (menú derivado); queda el test de consistencia como guardia.

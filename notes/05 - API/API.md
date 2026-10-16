@@ -1,6 +1,6 @@
 ---
 title: API
-date: 2026-10-15
+date: 2026-10-16
 tags:
   - servidos
   - api
@@ -58,9 +58,15 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 | `PATCH /restaurantes/actual/plan` (`{nuevoPlanId, confirmado:true, password}`) | ADMINISTRADOR, SUPERADMIN | plan |
 | `POST /restaurantes/actual/suscripcion/renovar` | ADMINISTRADOR, SUPERADMIN | impl (`renovar()`), ver cambio anunciado |
 | `POST /restaurantes/actual/suscripcion/cancelar` | ADMINISTRADOR, SUPERADMIN | plan |
-| `POST /restaurantes` (crear) | SUPERADMIN, ADMIN | plan |
-| `GET /restaurantes?page=&size=` | SUPERADMIN | plan |
-| `GET /restaurantes/{id}`, `/{id}/suscripcion` | SUPERADMIN | plan |
+| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30; 201, 400 slug duplicado o plan inexistente, 422; no crea al ADMINISTRADOR del tenant) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (rama `feat/plataforma-01-datos`, pendiente de merge) |
+| `GET /restaurantes?page=&size=&sort=` (`size` 10 por defecto; `sort=nombre,asc` o `nombre,desc`; un campo desconocido da 500) | SUPERADMIN | impl `PlataformaApi.listar` (ídem) |
+| `GET /restaurantes/{id}`, `/{id}/suscripcion` | SUPERADMIN | impl `PlataformaApi.detalle` y `.suscripcion` (ídem) |
+| `POST /restaurantes/{id}/suscripcion/renovar` (`{planId?}`; un mes pagado; `planId` obligatorio sin suscripción previa; `INACTIVO` pasa a `ACTIVO`) | SUPERADMIN | impl `PlataformaApi.renovar` (ídem) |
+| `PATCH /restaurantes/{id}/estado` (`{estado}`; 400 si ya está en ese estado; no toca la suscripción) | SUPERADMIN | impl `PlataformaApi.cambiarEstado` (ídem) |
+| `PATCH /restaurantes/{id}/plan` (`{nuevoPlanId}`; 400 si la suscripción no está activa) | SUPERADMIN | impl `PlataformaApi.cambiarPlan` (ídem) |
+| `GET /planes` (solo `ACTIVO`, por precio ascendente) | los usa el alta (SUPERADMIN y ADMIN); roles del endpoint sin verificar | impl `PlataformaApi.planes` (ídem) |
+
+Verificados contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Los roles de las filas de plataforma salen del contrato §3/§7 (no figuran en OpenAPI). Fase [[Fase 5 - Plataforma]], módulo [[Plataforma]]. No existe endpoint para crear el ADMINISTRADOR del tenant.
 
 ### Catálogo
 | Endpoint | Roles | Front |

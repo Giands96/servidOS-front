@@ -1,6 +1,6 @@
 ---
 title: ServidOS Front - MOC
-date: 2026-10-15
+date: 2026-10-16
 tags:
   - servidos
   - frontend
@@ -19,7 +19,10 @@ aliases:
 > Cocina está **implementada y en `main`** (hasta `2fad5cb`), pero sin prueba manual en navegador, con payload sin verificar contra Swagger y con la review nativa pendiente. Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Pedidos
-> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`, 770 tests). Sin prueba manual en navegador. La siguiente fase es [[Plataforma]], necesaria para crear un restaurante y probar las pantallas del tenant. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
+> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`, 770 tests). Sin prueba manual en navegador. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
+
+> [!info] Estado del módulo Plataforma
+> Plataforma (lista, alta y acciones de restaurantes) está **implementada en cinco ramas locales, pendiente de merge** (2026-10-16, punta `86de23a`, 907 tests); aún no está en `main` ni se probó en navegador. Es necesaria para crear un restaurante y probar las pantallas del tenant. Ver [[Fase 5 - Plataforma]], [[Plataforma]] y [[Estado Actual]].
 
 ## Navegación
 
@@ -44,7 +47,7 @@ aliases:
 - [[Styles y Diseño]] — tokens Tailwind 4, tipografía, primitivas, índice de pantallas
 
 ### 08 - Fases
-- [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fases 4-9 - Planificadas]]
+- [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fase 5 - Plataforma]] · [[Fases 4-9 - Planificadas]]
 
 ### 09 - Módulos
 - [[Core]] · [[Shared]] · [[Auth]] · [[Cocina]] · [[Restaurante]] · [[Pedidos]] · [[Pagos]] · [[Catálogo]] · [[Usuarios]] · [[Plataforma]]
@@ -76,7 +79,10 @@ graph TD
     F3 --> Cocina
     Fases --> F4[Fase 4 - Pedidos]
     F4 --> Pedidos
+    Fases --> F5[Fase 5 - Plataforma]
+    F5 --> Plataforma
     Mods --> Pedidos
+    Mods --> Plataforma
     MOC --> Gob[10 - Gobierno]
     Gob --> Estado[Estado Actual]
     Gob --> Pend[Pendientes y Deuda Técnica]

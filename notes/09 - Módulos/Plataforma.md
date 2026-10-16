@@ -1,11 +1,11 @@
 ---
 title: Plataforma
-date: 2026-10-15
+date: 2026-10-16
 tags:
   - servidos
   - modulos
   - plataforma
-  - pendiente
+  - implementado-en-ramas
 aliases:
   - Módulo Plataforma
   - Restaurantes (plataforma)
@@ -13,28 +13,69 @@ aliases:
 
 # Plataforma
 
-Volver: [[00 - MOC]] · Ver [[Modelo de Negocio]] · [[API]] · [[Fases 4-9 - Planificadas]]
+Volver: [[00 - MOC]] · Fase: [[Fase 5 - Plataforma]] · Ver [[Modelo de Negocio]] · [[API]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Responsabilidad
-> Nivel plataforma: listar y crear restaurantes y ver suscripciones. Estado: **placeholder** (`/plataforma/restaurantes` y `/plataforma/restaurantes/nuevo`).
+> Nivel plataforma: listar restaurantes con su suscripción, crear restaurantes y operarlos (renovar, cambiar de plan, suspender o reactivar). El tenant paga al dueño por Yape, fuera de la app; el dueño confirma y habilita **desde aquí**.
 
-> [!important] Siguiente fase (decisión del usuario, 2026-10-15)
-> Plataforma es la próxima fase: hay que crear un restaurante desde la plataforma antes de poder probar en navegador cualquier pantalla del tenant. Ver [[Fases 4-9 - Planificadas]] y [[Estado Actual]].
+> [!warning] Estado: implementada en 5 ramas locales, pendiente de merge (2026-10-16)
+> Las pantallas existen en `feat/plataforma-01-datos` … `feat/plataforma-05-acciones` (punta `86de23a`, 24 archivos / 907 tests, build OK), pero **todavía no están en `main`**. En `main` (`c66c3ff`) las rutas siguen siendo placeholders. Sin prueba manual en navegador y sin spec de las páginas (AGENTS §6). Detalle en [[Fase 5 - Plataforma]].
 
-## Archivos
-Solo las rutas en `src/app/app.routes.ts`.
+## Pantallas
+| Ruta | Rol | Qué hace |
+|---|---|---|
+| `/plataforma/restaurantes` | SUPERADMIN | Tabla de restaurantes (10 por página, orden por nombre A–Z / Z–A, paginador numerado) y panel de detalle con las acciones. Diseño `x9DxqV` |
+| modal "Crear restaurante" sobre la lista | SUPERADMIN | Formulario de alta. Al crear cierra el modal y recarga la lista. Diseño `z8ZbK` |
+| `/plataforma/restaurantes/nuevo` | SUPERADMIN y ADMIN | El mismo formulario como página (ADMIN no ve la lista). Al crear: aviso de éxito y formulario reiniciado |
 
-## API (plan)
-`GET /restaurantes?page=&size=` (SUPERADMIN), `POST /restaurantes` (SUPERADMIN, ADMIN; `demo=true` exige `demoDias` 1–30; `demo=false` crea suscripción de 30 días), `GET /restaurantes/{id}` y `/{id}/suscripcion` (SUPERADMIN).
+La insignia de suscripción muestra Activa, Cancelada, **Vencida** (derivada: `fechaFin` anterior a hoy en hora de Lima) o "Sin suscripción" (`suscripcion` nulo).
+
+## Acciones del panel (solo SUPERADMIN, con modal de confirmación)
+- **Renovar suscripción**: registra un mes pagado. El plan viene precargado con el actual; es obligatorio si no hay suscripción previa. Si la actual sigue vigente, la nueva empieza el día siguiente a su fin; un restaurante `INACTIVO` pasa a `ACTIVO`.
+- **Cambiar plan**: solo con suscripción `ACTIVA` y no vencida. No reactiva un `INACTIVO`.
+- **Suspender / Reactivar**: `INACTIVO` deja al tenant en solo lectura (escrituras con 402). **No toca la suscripción**: reactivar un tenant vencido lo deja bloqueado y el modal avisa que hay que Renovar.
+- Los mensajes 400 del backend se muestran tal cual y, ante un 4xx, la lista se recarga. Tras el éxito también se recarga.
+
+## Archivos (en las ramas)
+| Ruta | Contenido |
+|---|---|
+| `features/plataforma/plataforma.types.ts` | restaurante del dashboard, suscripción, plan y requests |
+| `features/plataforma/data/plataforma.api.ts` | `listar`, `crear`, `detalle`, `suscripcion`, `renovar`, `cambiarEstado`, `cambiarPlan`, `planes` |
+| `features/plataforma/domain/plataforma.rules.ts` | vista de suscripción (`estadoCopy`), acciones disponibles, paginador, `canConfirmAction`, `planChoiceOptions`, `renovarPlanIdToSend` |
+| `features/plataforma/domain/crear-restaurante.rules.ts` | validación del alta, `toRequest`, mapeo del 400/422 al campo |
+| `features/plataforma/restaurantes.page.ts` | lista, panel y acciones (solo orquesta; **847 líneas**, por partir en componentes) |
+| `features/plataforma/crear-restaurante-form.component.ts` | formulario compartido (modal y página) |
+| `features/plataforma/crear-restaurante.page.ts` | página de `/nuevo` para ADMIN |
+| `shared/ui/modal`, `shared/ui/text-field` | ampliados: `form` y `closed` en el modal; `mono`, `hint` e `inputmode` en el campo |
+
+## API usada
+Verificada contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Tabla de endpoints y roles en [[API]].
+- `GET /restaurantes?page&size&sort` (SUPERADMIN). `size` por defecto 10; **un `sort` desconocido da 500**, así que solo se envía `nombre`.
+- `POST /restaurantes` (SUPERADMIN y ADMIN): `slug` 3–100 `^[a-z0-9-]+$`, `nombre` ≤150, `direccion` ≤255, `planId`, `demo` y `demoDias` 1–30. 400 por slug duplicado, plan inexistente o demo inválido; 422 por validación. **No crea al ADMINISTRADOR del tenant.**
+- `GET /restaurantes/{id}` y `/{id}/suscripcion`, `POST /restaurantes/{id}/suscripcion/renovar`, `PATCH /restaurantes/{id}/estado`, `PATCH /restaurantes/{id}/plan` (SUPERADMIN).
+- `GET /planes`: solo planes `ACTIVO`, por precio ascendente.
 
 ## Permisos
-`plataforma.restaurantes.ver`: SUPERADMIN; `plataforma.restaurantes.crear`: SUPERADMIN y ADMIN. `navFor` oculta "Crear restaurante" si el rol ya ve la lista (SUPERADMIN la alcanza desde esa pantalla). Existe prueba de que SUPERADMIN y ADMIN abren la ruta de crear.
+`plataforma.restaurantes.ver`: SUPERADMIN. `plataforma.restaurantes.crear`: SUPERADMIN y ADMIN. `plataforma.suscripcion.gestionar` (renovar y cambiar plan) y `plataforma.restaurantes.estado` (suspender y reactivar): solo SUPERADMIN, agregadas en T5.1. `navFor` oculta "Crear restaurante" si el rol ya ve la lista. MODERADOR no tiene módulos y mantiene `/sin-modulos`.
+
+## Decisiones
+- Usuario (2026-10-15): "Diseño + acciones".
+- Defaults del orquestador, a revisar con el usuario: modal sobre la lista para SUPERADMIN y página `/nuevo` para ADMIN; estados derivados "Vencida" y "Sin suscripción"; ids simples en el panel; plan precargado al Renovar; "Cambiar plan" solo con `ACTIVA` vigente.
+- El pie del diseño "Solo CANCELADA bloquea escrituras" no se copió: contradice el contrato §5 (`CANCELADA` opera hasta `fechaFin`; bloquea `INACTIVO`, sin suscripción o vencida).
+
+## Huecos conocidos
+- **Crear el ADMINISTRADOR del tenant no tiene endpoint.** En desarrollo se usa el script del backend `scripts/sql/crear_admin.sql`. Advertencia: su correo por defecto coincide con el del usuario de arranque de la plataforma y el login resuelve primero el tenant; hay que cambiarlo antes de ejecutarlo. Sin esto, un restaurante nuevo no tiene quién entre a sus pantallas.
+- **Usuarios de plataforma fuera de alcance**: `PATCH /usuarios/{id}/rol` necesita una lista de usuarios y ids de rol que no existen (no hay `GET /usuarios`). Ver [[Usuarios]].
+- Sin filtros ni búsqueda (el backend no los ofrece).
+- Tras renovar, el tenant sigue en `/paywall` hasta recargar su sesión (foto vieja de `/auth/me`; ver [[Pendientes y Deuda Técnica]]).
 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |
 |---|---|
-| Permisos y homes ya cubiertos por tests | Sin pantallas |
-| Aislamiento por scope evita mezclar plataforma y tenant | Sin filtros ni búsqueda en el dashboard (el backend no los ofrece) |
+| El dueño crea, habilita, renueva y suspende sin tocar la base de datos; desbloquea la prueba de Cocina y Pedidos | Página única de 847 líneas, sin spec por AGENTS §6 |
+| Reglas puras con tests; las páginas solo orquestan | Sin prueba en navegador; panel y modal no cierran con Escape |
+| Los mensajes del backend se muestran sin reinterpretar | Solo se ordena por nombre (un `sort` desconocido da 500) |
+| Aislamiento por scope evita mezclar plataforma y tenant | El ADMINISTRADOR del tenant sigue creándose fuera de la web |
 
 ## Cómo extenderlo
-Usar `Page<T>` de `core/http/api.types.ts`; no mezclar acciones de tenant; confirmar diseño (`x9DxqV`, `z8ZbK`). Posible rol MODERADOR sin módulos (home `/sin-modulos`) hasta que haya permisos.
+Usar `Page<T>` de `core/http/api.types.ts`; no mezclar acciones de tenant; la lógica nueva va en `domain/*.rules.ts` con test. Antes de agregar más acciones, partir `restaurantes.page.ts` en componentes (tabla, panel y modales de acción). Rutas y permisos viven en `app.routes.ts` y `permissions.rules.ts`.

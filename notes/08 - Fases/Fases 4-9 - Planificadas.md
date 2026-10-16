@@ -1,6 +1,6 @@
 ---
 title: Fases 4-9 - Planificadas
-date: 2026-10-15
+date: 2026-10-16
 tags:
   - servidos
   - fases
@@ -12,13 +12,13 @@ aliases:
 
 # Fases 4-9 — Planificadas
 
-Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en `main`: [[Fase 4 - Pedidos]] · Estado: [[Estado Actual]]
+Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en `main`: [[Fase 4 - Pedidos]] · Plataforma implementada en ramas, pendiente de merge: [[Fase 5 - Plataforma]] · Estado: [[Estado Actual]]
 
 > [!abstract] Fuente
-> `docs/progress/00-plan-general.md` (2026-10-02) y los cambios del backend del 2026-10-08. Salvo lo indicado en Pedidos y Catálogo, nada de esto está construido: hoy son rutas placeholder (`module-placeholder.page.ts`).
+> `docs/progress/00-plan-general.md` (2026-10-02) y los cambios del backend del 2026-10-08. Salvo lo indicado en Pedidos, Catálogo y Plataforma, nada de esto está construido: hoy son rutas placeholder (`module-placeholder.page.ts`).
 
-> [!important] Siguiente fase: Plataforma (decisión del usuario, 2026-10-15)
-> Un restaurante debe crearse desde la plataforma antes de poder probar en navegador cualquier pantalla del tenant. Orden acordado: 1) **Plataforma**; 2) prueba en navegador de Cocina y Pedidos; 3) módulos restantes (Restaurante, pantallas de Catálogo, kanban de Pedidos y Cobrar, Pagos/Caja, Usuarios). Esto prima sobre el orden del plan general.
+> [!important] Plataforma implementada en ramas, pendiente de merge (2026-10-16)
+> Un restaurante debe crearse desde la plataforma antes de poder probar en navegador cualquier pantalla del tenant (decisión del usuario, 2026-10-15). Plataforma ya está implementada en cinco ramas locales (punta `86de23a`, 907 tests); falta mergear la cadena. Orden acordado: 1) **mergear la cadena de Plataforma** y probar en navegador sus pantallas; 2) prueba en navegador de Cocina y Pedidos con el restaurante creado; 3) módulos restantes (Restaurante, pantallas de Catálogo, kanban de Pedidos y Cobrar, Pagos/Caja, Usuarios). Esto prima sobre el orden del plan general.
 
 > [!warning] Numeración
 > El plan general numeraba: 3 Restaurante, 4 Catálogo, 5 Pedidos, 6 Cocina, 7 Pagos, 8 Usuarios, 9 Plataforma. El usuario eligió Cocina primero, por lo que Cocina pasó a ser la fase 3 (ver [[Fase 3 - Cocina]]). Las fases siguientes no tienen renumeración oficial; aquí se mantiene el orden del plan general excluyendo Cocina.
@@ -47,9 +47,12 @@ Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en 
 ## Usuarios ([[Usuarios]])
 - Crear con rol, cambiar rol, eliminar (409 por último ADMINISTRADOR). Diseño `VHQeZ`. **Bloqueo**: no existe `GET /usuarios`. Cambios anunciados: validaciones cross-tenant a 400.
 
-## Plataforma ([[Plataforma]]) — SIGUIENTE fase
-- **Por qué va ahora**: sin poder crear un restaurante desde la plataforma no se puede probar en navegador ninguna pantalla del tenant (Cocina, Pedidos). Las credenciales de plataforma de desarrollo existen en la configuración del backend (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); no se documentan en estas notas.
-- Dashboard SUPERADMIN paginado, crear restaurante (demo exige `demoDias` 1–30), detalle. Diseño `x9DxqV`, `z8ZbK`.
+## Plataforma ([[Plataforma]]) — Fase 5, ver [[Fase 5 - Plataforma]]
+- **Estado: implementada en ramas, pendiente de merge (2026-10-16).** Cinco ramas apiladas `feat/plataforma-01-datos` … `feat/plataforma-05-acciones` (punta `86de23a`; 24 archivos / 907 tests, build OK). Aún no están en `main`, no se publicó nada y no hay prueba en navegador.
+- **Por qué fue primero**: sin poder crear un restaurante desde la plataforma no se puede probar en navegador ninguna pantalla del tenant (Cocina, Pedidos). Las credenciales de plataforma de desarrollo existen en la configuración del backend (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); no se documentan en estas notas.
+- **Construido**: lista SUPERADMIN paginada con panel de detalle (`x9DxqV`), alta de restaurante (`z8ZbK`; `demo` exige `demoDias` 1–30) y acciones Renovar, Cambiar plan y Suspender/Reactivar.
+- **Huecos**: crear el ADMINISTRADOR del tenant (sin endpoint) y gestionar usuarios de plataforma (sin `GET /usuarios`).
+- **Siguiente**: mergear la cadena y probar en navegador las pantallas de plataforma y del tenant.
 
 ## Riesgos generales
 - Cada módulo de escritura debe montar `subscriptionGuard` por el parámetro `guards` de `moduleRoute` (excepto operaciones permitidas aun con 402).
