@@ -6,6 +6,8 @@ export type Scope = 'plataforma' | 'restaurante';
 export type Action =
   | 'plataforma.restaurantes.ver'
   | 'plataforma.restaurantes.crear'
+  | 'plataforma.suscripcion.gestionar'
+  | 'plataforma.restaurantes.estado'
   | 'restaurante.ver'
   | 'restaurante.suscripcion.gestionar'
   | 'catalogo.ver'
@@ -33,6 +35,8 @@ const RESTAURANTE_ROLES: readonly RestauranteRol[] = [
 const PLATFORM_ACTIONS: Partial<Record<Action, readonly PlatformRol[]>> = {
   'plataforma.restaurantes.ver': ['SUPERADMIN'],
   'plataforma.restaurantes.crear': ['SUPERADMIN', 'ADMIN'],
+  'plataforma.suscripcion.gestionar': ['SUPERADMIN'],
+  'plataforma.restaurantes.estado': ['SUPERADMIN'],
 };
 
 const RESTAURANTE_ACTIONS: Partial<Record<Action, readonly RestauranteRol[]>> = {
