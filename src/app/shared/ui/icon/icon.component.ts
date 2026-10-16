@@ -106,6 +106,9 @@ const ICONS = {
     'M12 17h.01',
   ],
   spinner: ['M21 12a9 9 0 1 1-6.219-8.56'],
+  sort: ['m21 16-4 4-4-4', 'M17 20V4', 'm3 8 4-4 4 4', 'M7 4v16'],
+  chevronLeft: ['m15 18-6-6 6-6'],
+  chevronRight: ['m9 18 6-6-6-6'],
 } as const;
 
 export type IconName = keyof typeof ICONS;

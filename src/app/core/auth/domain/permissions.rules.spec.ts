@@ -24,6 +24,8 @@ const RESTAURANTE: RestauranteRol[] = [
 const ACTIONS: Action[] = [
   'plataforma.restaurantes.ver',
   'plataforma.restaurantes.crear',
+  'plataforma.suscripcion.gestionar',
+  'plataforma.restaurantes.estado',
   'restaurante.ver',
   'restaurante.suscripcion.gestionar',
   'catalogo.ver',
@@ -41,6 +43,8 @@ const ACTIONS: Action[] = [
 const ALLOWED: Record<Action, Rol[]> = {
   'plataforma.restaurantes.ver': ['SUPERADMIN'],
   'plataforma.restaurantes.crear': ['SUPERADMIN', 'ADMIN'],
+  'plataforma.suscripcion.gestionar': ['SUPERADMIN'],
+  'plataforma.restaurantes.estado': ['SUPERADMIN'],
   'restaurante.ver': RESTAURANTE,
   'restaurante.suscripcion.gestionar': ['ADMINISTRADOR'],
   'catalogo.ver': RESTAURANTE,

@@ -3,6 +3,12 @@ import { Categoria, Producto } from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
+import {
+  Plan,
+  Restaurante,
+  RestauranteDashboard,
+  SuscripcionPlataforma,
+} from '../app/features/plataforma/plataforma.types';
 
 export type { MeResponse, Rol } from '../app/core/auth/auth.types';
 
@@ -118,6 +124,67 @@ export function aCategoria(overrides: Partial<Categoria> = {}): Categoria {
     categoriaId: 1,
     nombre: 'Platos de fondo',
     estado: 'HABILITADO',
+    ...overrides,
+  };
+}
+
+/** Row of GET /restaurantes (platform dashboard). */
+export function aRestauranteDashboard(overrides: Partial<RestauranteDashboard> = {}): RestauranteDashboard {
+  return {
+    restauranteId: 12,
+    slug: 'la-cevicheria',
+    nombre: 'La Cevichería',
+    direccion: 'Av. Brasil 123',
+    estado: 'ACTIVO',
+    suscripcion: {
+      suscripcionId: 30,
+      planId: 1,
+      nombrePlan: 'Estándar',
+      estado: 'ACTIVA',
+      fechaInicio: '2026-10-01',
+      fechaFin: '2026-10-31',
+    },
+    ...overrides,
+  };
+}
+
+/** `RestauranteResponse` of POST /restaurantes and PATCH /restaurantes/{id}/estado. */
+export function aRestaurante(overrides: Partial<Restaurante> = {}): Restaurante {
+  return {
+    restauranteId: 12,
+    slug: 'la-cevicheria',
+    nombre: 'La Cevichería',
+    direccion: 'Av. Brasil 123',
+    estado: 'ACTIVO',
+    ...overrides,
+  };
+}
+
+/** `SuscripcionResponse` of the platform subscription endpoints. */
+export function aSuscripcionPlataforma(overrides: Partial<SuscripcionPlataforma> = {}): SuscripcionPlataforma {
+  return {
+    suscripcionId: 30,
+    restauranteId: 12,
+    planId: 1,
+    nombrePlan: 'Estándar',
+    monto: 34.9,
+    moneda: 'PEN',
+    estado: 'ACTIVA',
+    fechaInicio: '2026-10-01',
+    fechaFin: '2026-10-31',
+    ...overrides,
+  };
+}
+
+/** `PlanResponse` of GET /planes. */
+export function aPlan(overrides: Partial<Plan> = {}): Plan {
+  return {
+    planId: 1,
+    nombre: 'Estándar',
+    precio: 34.9,
+    descripcion: null,
+    estado: 'ACTIVO',
+    moneda: 'PEN',
     ...overrides,
   };
 }
