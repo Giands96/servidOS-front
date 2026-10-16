@@ -14,7 +14,7 @@ aliases:
 Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fase 5 - Plataforma]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Foto al 2026-10-16
-> Rama principal `main` en `c66c3ff`. **Fases 0 a 4 en `main`**: el 2026-10-15 se mergeó por squash la cadena de Pedidos (PRs #8 a #12) y se borraron las ramas remotas. **Fase 5 (Plataforma) implementada en cinco ramas locales apiladas, pendiente de merge** (punta `86de23a`: 24 archivos / 907 tests, build OK); aún no está en `main` ni publicada. Cocina, Pedidos y Plataforma siguen sin prueba manual en navegador.
+> Rama principal `main` en `c66c3ff`. **Fases 0 a 4 en `main`**: el 2026-10-15 se mergeó por squash la cadena de Pedidos (PRs #8 a #12) y se borraron las ramas remotas. **Fase 5 (Plataforma) implementada en seis ramas locales apiladas, pendiente de merge** (punta `c6085d9`: 24 archivos / 939 tests, build OK); aún no está en `main` ni publicada. Cocina, Pedidos y Plataforma siguen sin prueba manual en navegador.
 
 ## Hecho
 | Área | Estado | Referencia |

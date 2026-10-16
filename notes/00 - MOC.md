@@ -22,7 +22,7 @@ aliases:
 > Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`, 770 tests). Sin prueba manual en navegador. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Plataforma
-> Plataforma (lista, alta y acciones de restaurantes) está **implementada en cinco ramas locales, pendiente de merge** (2026-10-16, punta `86de23a`, 907 tests); aún no está en `main` ni se probó en navegador. Es necesaria para crear un restaurante y probar las pantallas del tenant. Ver [[Fase 5 - Plataforma]], [[Plataforma]] y [[Estado Actual]].
+> Plataforma (lista, alta y acciones de restaurantes) está **implementada en seis ramas locales, pendiente de merge** (2026-10-16, punta `c6085d9`, 939 tests); aún no está en `main` ni se probó en navegador. Es necesaria para crear un restaurante y probar las pantallas del tenant. Ver [[Fase 5 - Plataforma]], [[Plataforma]] y [[Estado Actual]].
 
 ## Navegación
 
