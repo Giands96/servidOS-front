@@ -1,4 +1,5 @@
 import { MeResponse } from '../app/core/auth/auth.types';
+import { Categoria, Producto } from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
