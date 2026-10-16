@@ -58,23 +58,28 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 | `PATCH /restaurantes/actual/plan` (`{nuevoPlanId, confirmado:true, password}`) | ADMINISTRADOR, SUPERADMIN | plan |
 | `POST /restaurantes/actual/suscripcion/renovar` | ADMINISTRADOR, SUPERADMIN | impl (`renovar()`), ver cambio anunciado |
 | `POST /restaurantes/actual/suscripcion/cancelar` | ADMINISTRADOR, SUPERADMIN | plan |
-| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30, `administrador {nombre, apellido, email, password}`; 201 `RestauranteCreadoResponse` con `administrador {usuarioId, email, nombre}`, 400 slug duplicado o plan inexistente, 409 email ya registrado, 422; crea restaurante y dueño en una sola transacción) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (ramas `feat/plataforma-01-datos` y `-06-administrador`, pendientes de merge) |
-| `GET /restaurantes?page=&size=&sort=` (`size` 10 por defecto; `sort=nombre,asc` o `nombre,desc`; un campo desconocido da 500) | SUPERADMIN | impl `PlataformaApi.listar` (ídem) |
-| `GET /restaurantes/{id}`, `/{id}/suscripcion` | SUPERADMIN | impl `PlataformaApi.detalle` y `.suscripcion` (ídem) |
-| `POST /restaurantes/{id}/suscripcion/renovar` (`{planId?}`; un mes pagado; `planId` obligatorio sin suscripción previa; `INACTIVO` pasa a `ACTIVO`) | SUPERADMIN | impl `PlataformaApi.renovar` (ídem) |
-| `PATCH /restaurantes/{id}/estado` (`{estado}`; 400 si ya está en ese estado; no toca la suscripción) | SUPERADMIN | impl `PlataformaApi.cambiarEstado` (ídem) |
-| `PATCH /restaurantes/{id}/plan` (`{nuevoPlanId}`; 400 si la suscripción no está activa) | SUPERADMIN | impl `PlataformaApi.cambiarPlan` (ídem) |
-| `GET /planes` (solo `ACTIVO`, por precio ascendente) | los usa el alta (SUPERADMIN y ADMIN); roles del endpoint sin verificar | impl `PlataformaApi.planes` (ídem) |
+| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30, `administrador {nombre, apellido, email, password}`; 201 `RestauranteCreadoResponse` con `administrador {usuarioId, email, nombre}`, 400 slug duplicado o plan inexistente, 409 email ya registrado, 422; crea restaurante y dueño en una sola transacción) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (en `main` sin `administrador`; el cuerpo con `administrador` está en `feat/plataforma-06-administrador`, pendiente de PR: hasta entonces la creación desde `main` da 422) |
+| `GET /restaurantes?page=&size=&sort=` (`size` 10 por defecto; `sort=nombre,asc` o `nombre,desc`; un campo desconocido da 500) | SUPERADMIN | impl `PlataformaApi.listar` (en `main`) |
+| `GET /restaurantes/{id}`, `/{id}/suscripcion` | SUPERADMIN | impl `PlataformaApi.detalle` y `.suscripcion` (en `main`) |
+| `POST /restaurantes/{id}/suscripcion/renovar` (`{planId?}`; un mes pagado; `planId` obligatorio sin suscripción previa; `INACTIVO` pasa a `ACTIVO`) | SUPERADMIN | impl `PlataformaApi.renovar` (en `main`) |
+| `PATCH /restaurantes/{id}/estado` (`{estado}`; 400 si ya está en ese estado; no toca la suscripción) | SUPERADMIN | impl `PlataformaApi.cambiarEstado` (en `main`) |
+| `PATCH /restaurantes/{id}/plan` (`{nuevoPlanId}`; 400 si la suscripción no está activa) | SUPERADMIN | impl `PlataformaApi.cambiarPlan` (en `main`) |
+| `GET /planes` (solo `ACTIVO`, por precio ascendente) | los usa el alta (SUPERADMIN y ADMIN); roles del endpoint sin verificar | impl `PlataformaApi.planes` (en `main`) |
 
 Verificados contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Los roles de las filas de plataforma salen del contrato §3/§7 (no figuran en OpenAPI). Fase [[Fase 5 - Plataforma]], módulo [[Plataforma]]. Desde el 2026-10-16 `POST /restaurantes` crea también al ADMINISTRADOR del tenant (cambio de backend).
 
 ### Catálogo
+Verificado contra el OpenAPI local el 2026-10-16. Clientes en `features/catalogo/data/catalogo.api.ts`; las escrituras están en las ramas `feat/catalogo-01-datos` a `-03-formularios` (locales, sin publicar). Fase [[Fase 6 - Catálogo]], módulo [[Catálogo]].
+
 | Endpoint | Roles | Front |
 |---|---|---|
-| `GET /productos?categoriaId=&page=`, `GET /categorias` | autenticados | impl `catalogo.api.ts` (solo lectura, en `main` por el PR #11) |
-| `GET /productos/{id}` | autenticados | plan |
-| `POST /productos`, `PUT /productos/{id}`, `POST /categorias` | ADMINISTRADOR | plan |
-| `PATCH /productos/{id}/estado` (`DISPONIBLE`/`AGOTADO`) | ADMINISTRADOR, COCINERO | plan (fuera de alcance de cocina por ahora) |
+| `GET /productos?categoriaId=&page=&size=&sort=` (`size` 20 por defecto) → `Page<ProductoResponse>` (`productoId, categoriaId, nombre, descripcion, imagenUrl, precio, tiempoPreparacion, estado`), `GET /categorias?page=&size=&sort=` → `Page<CategoriaResponse>` (`categoriaId, nombre, estado`) | autenticados | impl `catalogo.api.ts` (lectura, en `main` por el PR #11) |
+| `GET /productos/{id}` | autenticados | impl `CatalogoApi.producto` (ramas de Catálogo) |
+| `POST /productos`, `PUT /productos/{id}` (`nombre` mín. 1 y único por tenant, `precio` ≥ 0, `descripcion`, `categoriaId`, `tiempoPreparacion` ≥ 0, `estado` `AGOTADO`/`DISPONIBLE`, `imagenUrl` texto libre; el `PUT` reemplaza todo, así que el front reenvía el `estado` actual; 400 por datos inválidos o categoría ajena, 403, 422 `campo: mensaje`) | ADMINISTRADOR | impl `crearProducto` y `actualizarProducto` (ramas) |
+| `POST /categorias` (`nombre` mín. 1, `estado` `HABILITADO`/`DESHABILITADO`; 400 por nombre duplicado) | ADMINISTRADOR | impl `crearCategoria` (ramas) |
+| `PATCH /productos/{id}/estado` (`{estado}` → `ProductoResponse`; un `AGOTADO` no se puede pedir) | ADMINISTRADOR, COCINERO | impl `cambiarEstadoProducto` (ramas) |
+
+Las escrituras de catálogo dan 402 con el tenant bloqueado (contrato §5; no figura en OpenAPI); por eso `/catalogo` no lleva `subscriptionGuard` y deshabilita sus controles. Los enums inválidos probablemente den 500, así que el cliente los valida. No existe endpoint para eliminar producto o categoría, renombrar o deshabilitar categoría, subir imágenes ni buscar.
 
 ### Pedidos
 Verificado contra `/v3/api-docs` y `FRONTEND_CONTEXT` el 2026-10-11. Clientes en `features/pedidos/data/pedidos.api.ts` (Fase 4, en `main` por los PRs #9 a #12; ver [[Pedidos]]).
