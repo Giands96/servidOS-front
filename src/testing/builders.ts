@@ -1,5 +1,9 @@
 import { MeResponse } from '../app/core/auth/auth.types';
-import { Categoria, Producto } from '../app/features/catalogo/catalogo.types';
+import {
+  Categoria,
+  GuardarProductoRequest,
+  Producto,
+} from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
@@ -125,6 +129,22 @@ export function aCategoria(overrides: Partial<Categoria> = {}): Categoria {
     categoriaId: 1,
     nombre: 'Platos de fondo',
     estado: 'HABILITADO',
+    ...overrides,
+  };
+}
+
+/** Body of POST /productos and PUT /productos/{id}. */
+export function aGuardarProductoRequest(
+  overrides: Partial<GuardarProductoRequest> = {},
+): GuardarProductoRequest {
+  return {
+    nombre: 'Lomo saltado',
+    precio: 25,
+    descripcion: null,
+    categoriaId: 1,
+    tiempoPreparacion: 15,
+    estado: 'DISPONIBLE',
+    imagenUrl: null,
     ...overrides,
   };
 }

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Observable } from 'rxjs';
-import { aCategoria, aPage, aProducto } from '../../../../testing/builders';
+import { aCategoria, aGuardarProductoRequest, aPage, aProducto } from '../../../../testing/builders';
 import { expectApi } from '../../../../testing/mock-api';
 import { CatalogoApi, CATALOGO_MAX_PAGES, CATALOGO_PAGE_SIZE } from './catalogo.api';
 
@@ -71,6 +71,72 @@ describe('CatalogoApi', () => {
       expect(params.get('page')).toBe('0');
       expect(params.get('size')).toBe('10');
       expect(params.has('sort')).toBe(false);
+    });
+  });
+
+  describe('producto', () => {
+    it('GETs /productos/{id} and returns the product', () => {
+      const producto = aProducto({ productoId: 9 });
+      let result: unknown;
+      api.producto(9).subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'GET', '/productos/9');
+      req.flush(producto);
+      expect(result).toEqual(producto);
+    });
+  });
+
+  describe('crearProducto', () => {
+    it('POSTs the full body to /productos and returns the created product', () => {
+      const body = aGuardarProductoRequest({
+        nombre: 'Ceviche',
+        descripcion: 'Fresco',
+        imagenUrl: 'https://img.test/c.png',
+      });
+      const created = aProducto({ productoId: 21, nombre: 'Ceviche' });
+      let result: unknown;
+      api.crearProducto(body).subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'POST', '/productos');
+      expect(req.request.body).toEqual(body);
+      req.flush(created);
+      expect(result).toEqual(created);
+    });
+  });
+
+  describe('actualizarProducto', () => {
+    it('PUTs the full body to /productos/{id}, estado included, and returns the product', () => {
+      const body = aGuardarProductoRequest({ estado: 'AGOTADO', categoriaId: null });
+      const updated = aProducto({ productoId: 9, estado: 'AGOTADO', categoriaId: null });
+      let result: unknown;
+      api.actualizarProducto(9, body).subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'PUT', '/productos/9');
+      expect(req.request.body).toEqual(body);
+      expect(req.request.body.estado).toBe('AGOTADO');
+      req.flush(updated);
+      expect(result).toEqual(updated);
+    });
+  });
+
+  describe('cambiarEstadoProducto', () => {
+    it('PATCHes /productos/{id}/estado with only { estado } and returns the product', () => {
+      const updated = aProducto({ productoId: 9, estado: 'AGOTADO' });
+      let result: unknown;
+      api.cambiarEstadoProducto(9, 'AGOTADO').subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'PATCH', '/productos/9/estado');
+      expect(req.request.body).toEqual({ estado: 'AGOTADO' });
+      req.flush(updated);
+      expect(result).toEqual(updated);
+    });
+  });
+
+  describe('crearCategoria', () => {
+    it('POSTs { nombre, estado } to /categorias and returns the created category', () => {
+      const created = aCategoria({ categoriaId: 5, nombre: 'Postres' });
+      let result: unknown;
+      api.crearCategoria({ nombre: 'Postres', estado: 'HABILITADO' }).subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'POST', '/categorias');
+      expect(req.request.body).toEqual({ nombre: 'Postres', estado: 'HABILITADO' });
+      req.flush(created);
+      expect(result).toEqual(created);
     });
   });
 
