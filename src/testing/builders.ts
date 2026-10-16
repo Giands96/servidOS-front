@@ -11,6 +11,17 @@ export function aMe(overrides: Partial<MeResponse> = {}): MeResponse {
     nombre: 'Test User',
     restauranteId: 7,
     rol: 'ADMINISTRADOR',
+    restauranteEstado: 'ACTIVO',
+    suscripcion: {
+      planId: 1,
+      nombrePlan: 'Plan Test',
+      monto: 99,
+      moneda: 'PEN',
+      estado: 'ACTIVA',
+      fechaFin: '2099-12-31',
+      diasRestantes: 30,
+      vencida: false,
+    },
     ...overrides,
   };
 }
