@@ -2,6 +2,7 @@ import {
   CrearRestauranteDraft,
   emptyCrearDraft,
   isValidCrearDraft,
+  restauranteCreadoMessage,
   slugError,
   toCrearRequest,
   validateCrearDraft,
@@ -138,10 +139,27 @@ describe('slugError', () => {
     expect(slugError(400, 'Slug duplicado')).toBe('Slug duplicado');
   });
 
+  it('returns a 422 "slug: ..." message as is, as the design shows it under the field', () => {
+    expect(slugError(422, 'slug: solo minúsculas, números y guiones')).toBe(
+      'slug: solo minúsculas, números y guiones',
+    );
+  });
+
+  it('is null for a 422 about another field or for a 400 without the slug', () => {
+    expect(slugError(422, 'nombre: no debe estar vacío')).toBeNull();
+    expect(slugError(422, 'planId: no debe ser nulo')).toBeNull();
+  });
+
   it('is null for other messages, statuses or a missing message', () => {
     expect(slugError(400, 'Plan no encontrado')).toBeNull();
     expect(slugError(422, 'El slug ya está en uso')).toBeNull();
     expect(slugError(500, 'slug')).toBeNull();
     expect(slugError(400, null)).toBeNull();
+  });
+});
+
+describe('restauranteCreadoMessage', () => {
+  it('quotes the restaurant name in the success toast', () => {
+    expect(restauranteCreadoMessage('Chifa Wa Lok')).toBe('Restaurante "Chifa Wa Lok" creado');
   });
 });

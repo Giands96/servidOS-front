@@ -15,9 +15,13 @@ import { readApiError } from '../../core/http/domain/api-error.rules';
 import { BadgeComponent, BadgeVariant } from '../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.component';
+import { ToastService } from '../../shared/ui/toast/toast.service';
 import { formatDate } from '../restaurante/domain/subscription.rules';
+import { CrearRestauranteFormComponent } from './crear-restaurante-form.component';
 import { PlataformaApi } from './data/plataforma.api';
+import { restauranteCreadoMessage } from './domain/crear-restaurante.rules';
 import {
   limaToday,
   nextSort,
@@ -29,7 +33,7 @@ import {
   suscripcionView,
   totalLabel,
 } from './domain/plataforma.rules';
-import { OrdenRestaurantes, RestauranteDashboard } from './plataforma.types';
+import { OrdenRestaurantes, Restaurante, RestauranteDashboard } from './plataforma.types';
 
 const PAGE_SIZE = 10;
 const EM_DASH = '—';
@@ -70,7 +74,14 @@ interface PanelView {
 /** SUPERADMIN restaurants list with a read-only detail panel. Orchestration only: the logic lives in plataforma.rules. */
 @Component({
   selector: 'app-restaurantes',
-  imports: [BadgeComponent, ButtonComponent, IconComponent, StatePanelComponent],
+  imports: [
+    BadgeComponent,
+    ButtonComponent,
+    CrearRestauranteFormComponent,
+    IconComponent,
+    ModalComponent,
+    StatePanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="min-h-screen bg-surface p-6">
@@ -317,7 +328,9 @@ interface PanelView {
       </div>
 
       @if (creating()) {
-        <!-- Create-restaurant modal slot: T5.4 renders the form here. -->
+        <app-modal heading="Crear restaurante" [form]="true" (closed)="stopCreate()">
+          <app-crear-restaurante-form (created)="onCreated($event)" (cancelled)="stopCreate()" />
+        </app-modal>
       }
     </section>
   `,
@@ -325,6 +338,7 @@ interface PanelView {
 export class RestaurantesPage {
   private readonly api = inject(PlataformaApi);
   private readonly session = inject(SessionStore);
+  private readonly toasts = inject(ToastService);
   private readonly requests$ = new Subject<LoadRequest>();
 
   private readonly selectedId = signal<number | null>(null);
@@ -340,7 +354,7 @@ export class RestaurantesPage {
   protected readonly data = signal<Page<RestauranteDashboard> | null>(null);
   protected readonly loading = signal(true);
   protected readonly failed = signal(false);
-  /** Set by "Crear restaurante"; T5.4 renders the create form while it is true. */
+  /** Set by "Crear restaurante"; the create modal is open while it is true. */
   protected readonly creating = signal(false);
 
   protected readonly canCreate = computed(() =>
@@ -453,6 +467,17 @@ export class RestaurantesPage {
 
   protected startCreate(): void {
     this.creating.set(true);
+  }
+
+  protected stopCreate(): void {
+    this.creating.set(false);
+  }
+
+  /** Closes the modal, confirms with a toast and reloads from the first page so the new restaurant is counted. */
+  protected onCreated(restaurante: Restaurante): void {
+    this.creating.set(false);
+    this.toasts.show('OK', restauranteCreadoMessage(restaurante.nombre), 'success');
+    this.load(0);
   }
 
   private load(page: number): void {

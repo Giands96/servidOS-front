@@ -13,6 +13,7 @@ let nextId = 0;
     <label class="mb-1.5 block text-sm font-medium text-ink" [for]="id">{{ label() }}</label>
     <input
       class="w-full rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-subtle focus:border-ink disabled:bg-surface disabled:text-muted"
+      [class.font-mono]="mono()"
       [class.border-line]="!error() && !invalid()"
       [class.border-danger]="error() || invalid()"
       [id]="id"
@@ -23,7 +24,8 @@ let nextId = 0;
       [disabled]="disabled()"
       [attr.aria-invalid]="error() || invalid() ? 'true' : null"
       [required]="required()"
-      [attr.aria-describedby]="error() ? id + '-error' : null"
+      [attr.aria-describedby]="error() ? id + '-error' : hint() ? id + '-hint' : null"
+      [attr.inputmode]="inputmode()"
       [value]="value()"
       (input)="value.set($any($event.target).value)"
     />
@@ -32,6 +34,8 @@ let nextId = 0;
         <app-icon name="alert" [size]="14" />
         {{ error() }}
       </p>
+    } @else if (hint()) {
+      <p class="mt-1.5 text-xs text-muted" [id]="id + '-hint'">{{ hint() }}</p>
     }
   `,
 })
@@ -48,5 +52,10 @@ export class TextFieldComponent {
   readonly required = input(false);
   /** Highlights the field without a per-field message (e.g. one backend message for the whole form). */
   readonly invalid = input(false);
+  /** Monospaced input text (slugs, codes). */
+  readonly mono = input(false);
+  /** Helper text under the input; replaced by the error while there is one. */
+  readonly hint = input<string | null>(null);
+  readonly inputmode = input<'numeric' | null>(null);
   readonly value = model('');
 }

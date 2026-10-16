@@ -94,8 +94,20 @@ export function toCrearRequest(d: CrearRestauranteDraft): CrearRestauranteReques
 
 /**
  * The message to show under the Slug field for a rejected create (as the design does), or null when the
- * rejection is not about the slug and the page shows a toast instead.
+ * rejection is not about the slug and the page shows a toast instead. A 400 qualifies when its message names
+ * the slug (duplicate); a 422 when it is the validation message of the `slug` field ("slug: ...").
  */
 export function slugError(status: number, message: string | null): string | null {
-  return status === 400 && message !== null && /slug/i.test(message) ? message : null;
+  if (message === null) {
+    return null;
+  }
+  if (status === 400 && /slug/i.test(message)) {
+    return message;
+  }
+  return status === 422 && /^slug\s*:/i.test(message) ? message : null;
+}
+
+/** Success toast shared by the list modal and the standalone page. */
+export function restauranteCreadoMessage(nombre: string): string {
+  return `Restaurante "${nombre}" creado`;
 }

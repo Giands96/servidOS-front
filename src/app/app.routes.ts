@@ -84,7 +84,9 @@ export const routes: Routes = [
       },
       {
         path: 'plataforma/restaurantes/nuevo',
-        ...moduleRoute('plataforma.restaurantes.crear', 'Crear restaurante', 'plus'),
+        ...moduleRoute('plataforma.restaurantes.crear', 'Crear restaurante', 'plus', [], () =>
+          import('./features/plataforma/crear-restaurante.page').then((m) => m.CrearRestaurantePage),
+        ),
       },
       {
         path: 'sin-permiso',
