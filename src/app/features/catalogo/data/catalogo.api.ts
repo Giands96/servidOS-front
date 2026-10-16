@@ -3,7 +3,15 @@ import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, expand, reduce, throwError } from 'rxjs';
 import { API_BASE } from '../../../core/http/api.config';
 import { Page } from '../../../core/http/api.types';
-import { Categoria, CategoriasQuery, Producto, ProductosQuery } from '../catalogo.types';
+import {
+  Categoria,
+  CategoriasQuery,
+  CrearCategoriaRequest,
+  EstadoProducto,
+  GuardarProductoRequest,
+  Producto,
+  ProductosQuery,
+} from '../catalogo.types';
 
 /**
  * Page size used when the whole catalog is loaded. Only `/pedidos` documents a range (1-100); for
@@ -18,7 +26,7 @@ export const CATALOGO_PAGE_SIZE = 50;
  */
 export const CATALOGO_MAX_PAGES = 20;
 
-/** Read-only catalog access. Catalog writes belong to another phase. */
+/** Catalog access: reads plus the product/category writes. */
 @Injectable({ providedIn: 'root' })
 export class CatalogoApi {
   private readonly http = inject(HttpClient);
@@ -38,6 +46,28 @@ export class CatalogoApi {
     return this.http.get<Page<Categoria>>(`${API_BASE}/categorias`, {
       params: withPaging(new HttpParams(), query),
     });
+  }
+
+  /** One product by id. */
+  producto(id: number): Observable<Producto> {
+    return this.http.get<Producto>(`${API_BASE}/productos/${id}`);
+  }
+
+  crearProducto(req: GuardarProductoRequest): Observable<Producto> {
+    return this.http.post<Producto>(`${API_BASE}/productos`, req);
+  }
+
+  /** Full replace: the caller sends every field, `estado` included. */
+  actualizarProducto(id: number, req: GuardarProductoRequest): Observable<Producto> {
+    return this.http.put<Producto>(`${API_BASE}/productos/${id}`, req);
+  }
+
+  cambiarEstadoProducto(id: number, estado: EstadoProducto): Observable<Producto> {
+    return this.http.patch<Producto>(`${API_BASE}/productos/${id}/estado`, { estado });
+  }
+
+  crearCategoria(req: CrearCategoriaRequest): Observable<Categoria> {
+    return this.http.post<Categoria>(`${API_BASE}/categorias`, req);
   }
 
   /** The whole menu: every page from 0 until `last`, in order. Any failing page fails the whole load. */
