@@ -178,6 +178,49 @@ export function defaultRenovarPlanId(
   return planes[0]?.planId ?? null;
 }
 
+/**
+ * Plan to send to POST renovar: `undefined` renews the current plan. Only a plan that is required (no prior
+ * subscription) or that differs from the current one travels; nothing is sent without a choice.
+ */
+export function renovarPlanIdToSend(
+  r: Pick<RestauranteDashboard, 'suscripcion'>,
+  chosenPlanId: number | null,
+): number | undefined {
+  if (chosenPlanId === null) {
+    return undefined;
+  }
+  if (renovarPlanRequired(r) || chosenPlanId !== r.suscripcion?.planId) {
+    return chosenPlanId;
+  }
+  return undefined;
+}
+
+/** Options of a plan select: cambiar plan never offers the plan the restaurant already has. */
+export function planChoiceOptions<T extends Pick<Plan, 'planId'>>(
+  kind: Extract<PanelActionKind, 'renovar' | 'plan'>,
+  r: Pick<RestauranteDashboard, 'suscripcion'>,
+  planes: readonly T[],
+): T[] {
+  const current = r.suscripcion?.planId;
+  return kind === 'plan' ? planes.filter((p) => p.planId !== current) : [...planes];
+}
+
+/** Whether the confirm button of an action modal may be pressed (in-flight locking is the page's job). */
+export function canConfirmAction(
+  kind: PanelActionKind,
+  r: Pick<RestauranteDashboard, 'suscripcion'>,
+  chosenPlanId: number | null,
+): boolean {
+  switch (kind) {
+    case 'renovar':
+      return !renovarPlanRequired(r) || chosenPlanId !== null;
+    case 'plan':
+      return chosenPlanId !== null && chosenPlanId !== r.suscripcion?.planId;
+    case 'estado':
+      return true;
+  }
+}
+
 export interface ActionCopy {
   heading: string;
   body: string;

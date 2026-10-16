@@ -8,6 +8,7 @@ import { RestauranteDashboard } from '../plataforma.types';
 import {
   actionSuccessMessage,
   cambiarPlanCopy,
+  canConfirmAction,
   defaultRenovarPlanId,
   estadoCopy,
   formatPrecio,
@@ -16,10 +17,12 @@ import {
   nextSort,
   pageNumbers,
   panelActions,
+  planChoiceOptions,
   planLabel,
   planOptionLabel,
   rangeLabel,
   renovarCopy,
+  renovarPlanIdToSend,
   renovarPlanRequired,
   restauranteEstadoLabel,
   restauranteEstadoVariant,
@@ -348,5 +351,69 @@ describe('price formatting', () => {
     expect(planOptionLabel(aPlan({ nombre: 'Estándar', precio: 34.9, moneda: 'PEN' }))).toBe(
       'Estándar · S/ 34.90',
     );
+  });
+});
+
+describe('plan choice', () => {
+  const planes = [
+    aPlan({ planId: 1, nombre: 'Estándar' }),
+    aPlan({ planId: 2, nombre: 'Pro' }),
+    aPlan({ planId: 3, nombre: 'Max' }),
+  ];
+
+  describe('planChoiceOptions', () => {
+    it('offers every plan to renovar', () => {
+      expect(planChoiceOptions('renovar', withSuscripcion({ planId: 2 }), planes)).toEqual(planes);
+    });
+
+    it('excludes the current plan from cambiar plan', () => {
+      expect(planChoiceOptions('plan', withSuscripcion({ planId: 2 }), planes).map((p) => p.planId)).toEqual([1, 3]);
+    });
+
+    it('keeps every plan for cambiar plan when there is no subscription', () => {
+      expect(planChoiceOptions('plan', withSuscripcion(null), planes)).toEqual(planes);
+    });
+  });
+
+  describe('renovarPlanIdToSend', () => {
+    it('sends the chosen plan when the restaurant has no subscription', () => {
+      expect(renovarPlanIdToSend(withSuscripcion(null), 3)).toBe(3);
+    });
+
+    it('sends nothing for the current plan, so the backend renews it', () => {
+      expect(renovarPlanIdToSend(withSuscripcion({ planId: 2 }), 2)).toBeUndefined();
+    });
+
+    it('sends the chosen plan when it differs from the current one', () => {
+      expect(renovarPlanIdToSend(withSuscripcion({ planId: 2 }), 3)).toBe(3);
+    });
+
+    it('sends nothing when no plan is chosen (plans not loaded) and the current one is renewed', () => {
+      expect(renovarPlanIdToSend(withSuscripcion({ planId: 2 }), null)).toBeUndefined();
+    });
+
+    it('sends nothing without a choice even when the plan is required (confirm is disabled then)', () => {
+      expect(renovarPlanIdToSend(withSuscripcion(null), null)).toBeUndefined();
+    });
+  });
+
+  describe('canConfirmAction', () => {
+    it('renovar needs a chosen plan only when one is required', () => {
+      expect(canConfirmAction('renovar', withSuscripcion(null), null)).toBe(false);
+      expect(canConfirmAction('renovar', withSuscripcion(null), 1)).toBe(true);
+      expect(canConfirmAction('renovar', withSuscripcion({ planId: 2 }), null)).toBe(true);
+      expect(canConfirmAction('renovar', withSuscripcion({ planId: 2 }), 2)).toBe(true);
+    });
+
+    it('cambiar plan needs a plan different from the current one', () => {
+      const r = withSuscripcion({ planId: 2 });
+      expect(canConfirmAction('plan', r, null)).toBe(false);
+      expect(canConfirmAction('plan', r, 2)).toBe(false);
+      expect(canConfirmAction('plan', r, 3)).toBe(true);
+    });
+
+    it('estado is always confirmable', () => {
+      expect(canConfirmAction('estado', withSuscripcion({}), null)).toBe(true);
+    });
   });
 });

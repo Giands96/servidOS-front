@@ -1,43 +1,64 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, Subject, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, Subject, Subscription, catchError, map, of, switchMap } from 'rxjs';
 import { can } from '../../core/auth/domain/permissions.rules';
 import { SessionStore } from '../../core/auth/session.store';
 import { Page } from '../../core/http/api.types';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { BadgeComponent, BadgeVariant } from '../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
-import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { ModalComponent } from '../../shared/ui/modal/modal.component';
+import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
+import { ModalComponent, ModalTone } from '../../shared/ui/modal/modal.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { shouldReloadAfterRejection } from '../pedidos/domain/pedidos.rules';
 import { formatDate } from '../restaurante/domain/subscription.rules';
 import { CrearRestauranteFormComponent } from './crear-restaurante-form.component';
 import { PlataformaApi } from './data/plataforma.api';
 import { restauranteCreadoMessage } from './domain/crear-restaurante.rules';
 import {
+  ActionCopy,
+  PanelActionKind,
+  actionSuccessMessage,
+  cambiarPlanCopy,
+  canConfirmAction,
+  defaultRenovarPlanId,
+  estadoCopy,
   limaToday,
   nextSort,
   pageNumbers,
+  panelActions,
+  planChoiceOptions,
   planLabel,
+  planOptionLabel,
   rangeLabel,
+  renovarCopy,
+  renovarPlanIdToSend,
   restauranteEstadoLabel,
   sortLabel,
   suscripcionView,
   totalLabel,
 } from './domain/plataforma.rules';
-import { OrdenRestaurantes, Restaurante, RestauranteDashboard } from './plataforma.types';
+import {
+  OrdenRestaurantes,
+  Plan,
+  Restaurante,
+  RestauranteDashboard,
+  SuscripcionPlataforma,
+} from './plataforma.types';
 
 const PAGE_SIZE = 10;
 const EM_DASH = '—';
 const DEFAULT_ERROR = 'Revisa tu conexión e inténtalo de nuevo.';
+const ACTION_ERROR = 'No se pudo completar la operación';
 
 type Outcome = { ok: true; page: Page<RestauranteDashboard> } | { ok: false; message: string };
 
@@ -71,7 +92,36 @@ interface PanelView {
   } | null;
 }
 
-/** SUPERADMIN restaurants list with a read-only detail panel. Orchestration only: the logic lives in plataforma.rules. */
+/** Owner actions the signed-in user may run on the open panel; `estado` is null when hidden. */
+interface ActionsView {
+  renovar: boolean;
+  cambiarPlan: boolean;
+  estado: { label: string; destructive: boolean } | null;
+}
+
+/** The confirmation modal that is open: which action and the row it was opened for. */
+interface ActionModal {
+  kind: PanelActionKind;
+  restaurante: RestauranteDashboard;
+}
+
+interface PlanOptionView {
+  planId: number;
+  label: string;
+}
+
+interface ActionModalView {
+  kind: PanelActionKind;
+  copy: ActionCopy;
+  tone: ModalTone;
+  icon: IconName;
+  destructive: boolean;
+  /** Which plan select to show; null for the estado action. */
+  planSelect: { options: PlanOptionView[]; placeholder: string | null } | null;
+  canConfirm: boolean;
+}
+
+/** SUPERADMIN restaurants list with a detail panel and the owner actions. Orchestration only: the logic lives in plataforma.rules. */
 @Component({
   selector: 'app-restaurantes',
   imports: [
@@ -321,8 +371,46 @@ interface PanelView {
               }
             </section>
 
-            <!-- Owner actions slot: T5.5 adds Renovar, Suspender/Reactivar and Cambiar plan here. -->
-            <div class="px-6 pb-6" data-slot="panel-actions"></div>
+            <div class="border-t border-line p-6" data-slot="panel-actions">
+              @if (actions(); as acts) {
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-muted">Acciones</h3>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                  @if (acts.renovar) {
+                    <button
+                      appButton
+                      type="button"
+                      variant="primary"
+                      [disabled]="loading()"
+                      (click)="openAction('renovar')"
+                    >
+                      <app-icon name="refresh" [size]="18" />Renovar suscripción
+                    </button>
+                  }
+                  @if (acts.cambiarPlan) {
+                    <button
+                      appButton
+                      type="button"
+                      variant="secondary"
+                      [disabled]="loading()"
+                      (click)="openAction('plan')"
+                    >
+                      Cambiar plan
+                    </button>
+                  }
+                  @if (acts.estado; as estado) {
+                    <button
+                      appButton
+                      type="button"
+                      [variant]="estado.destructive ? 'destructive' : 'secondary'"
+                      [disabled]="loading()"
+                      (click)="openAction('estado')"
+                    >
+                      {{ estado.label }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
           </aside>
         }
       </div>
@@ -332,6 +420,74 @@ interface PanelView {
           <app-crear-restaurante-form (created)="onCreated($event)" (cancelled)="stopCreate()" />
         </app-modal>
       }
+
+      @if (modal(); as m) {
+        <app-modal [heading]="m.copy.heading" [tone]="m.tone">
+          <app-icon icon [name]="m.icon" [size]="24" />
+          {{ m.copy.body }}
+          @if (m.planSelect; as select) {
+            <div class="mt-4">
+              <label class="mb-1.5 block text-sm font-medium text-ink" for="panel-action-plan">Plan</label>
+              @if (planesFailed()) {
+                <div
+                  class="flex flex-wrap items-center justify-between gap-3 rounded-control border border-danger bg-danger-soft px-3.5 py-3 text-sm text-danger"
+                  role="alert"
+                >
+                  <span class="flex items-center gap-1.5">
+                    <app-icon name="alert" [size]="14" />No se pudieron cargar los planes
+                  </span>
+                  <button
+                    appButton
+                    type="button"
+                    variant="secondary"
+                    [disabled]="acting()"
+                    (click)="loadPlanes()"
+                  >
+                    <app-icon name="refresh" [size]="18" />Reintentar
+                  </button>
+                </div>
+              } @else {
+                <select
+                  id="panel-action-plan"
+                  name="planId"
+                  class="w-full rounded-control border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
+                  [disabled]="planes() === null || acting()"
+                  (change)="selectPlan($event)"
+                >
+                  @if (planes() === null) {
+                    <option value="">Cargando planes…</option>
+                  } @else if (select.placeholder; as placeholder) {
+                    <option value="" [selected]="chosenPlanId() === null">{{ placeholder }}</option>
+                  }
+                  @for (option of select.options; track option.planId) {
+                    <option [value]="option.planId" [selected]="option.planId === chosenPlanId()">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
+                @if (planes() !== null && select.options.length === 0) {
+                  <p class="mt-1.5 text-xs text-muted">No hay otros planes disponibles.</p>
+                }
+              }
+            </div>
+          }
+          <button footer appButton type="button" variant="secondary" [disabled]="acting()" (click)="closeAction()">
+            Cancelar
+          </button>
+          <button
+            footer
+            appButton
+            type="button"
+            [variant]="m.destructive ? 'destructive' : 'primary'"
+            [disabled]="acting() || !m.canConfirm"
+            (click)="confirmAction()"
+          >
+            @if (acting()) {
+              <app-icon name="spinner" [size]="18" class="animate-spin" />
+            }{{ m.copy.confirm }}
+          </button>
+        </app-modal>
+      }
     </section>
   `,
 })
@@ -339,6 +495,8 @@ export class RestaurantesPage {
   private readonly api = inject(PlataformaApi);
   private readonly session = inject(SessionStore);
   private readonly toasts = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private planesRequest: Subscription | null = null;
   private readonly requests$ = new Subject<LoadRequest>();
 
   private readonly selectedId = signal<number | null>(null);
@@ -356,6 +514,15 @@ export class RestaurantesPage {
   protected readonly failed = signal(false);
   /** Set by "Crear restaurante"; the create modal is open while it is true. */
   protected readonly creating = signal(false);
+
+  // Owner-action modal: one state for the three actions.
+  private readonly actionModal = signal<ActionModal | null>(null);
+  /** Plans for the select of the open modal; null while loading. */
+  protected readonly planes = signal<readonly Plan[] | null>(null);
+  protected readonly planesFailed = signal(false);
+  protected readonly chosenPlanId = signal<number | null>(null);
+  /** True while the confirmed action is in flight: the modal can be neither closed nor confirmed again. */
+  protected readonly acting = signal(false);
 
   protected readonly canCreate = computed(() =>
     can(this.session.user(), 'plataforma.restaurantes.crear'),
@@ -407,6 +574,69 @@ export class RestaurantesPage {
               fin: view.vence,
             },
     };
+  });
+
+  protected readonly actions = computed<ActionsView | null>(() => {
+    const view = this.panel();
+    const user = this.session.user();
+    const manage = can(user, 'plataforma.suscripcion.gestionar');
+    const manageEstado = can(user, 'plataforma.restaurantes.estado');
+    if (view === null || (!manage && !manageEstado)) {
+      return null;
+    }
+    const available = panelActions(view.restaurante, this.today());
+    return {
+      renovar: manage,
+      cambiarPlan: manage && available.cambiarPlan,
+      estado: manageEstado
+        ? { label: available.estado.label, destructive: available.estado.target === 'INACTIVO' }
+        : null,
+    };
+  });
+
+  protected readonly modal = computed<ActionModalView | null>(() => {
+    const open = this.actionModal();
+    if (open === null) {
+      return null;
+    }
+    const { kind, restaurante } = open;
+    const today = this.today();
+    const planes = this.planes() ?? [];
+    const base = { kind, canConfirm: canConfirmAction(kind, restaurante, this.chosenPlanId()) };
+    switch (kind) {
+      case 'renovar':
+        return {
+          ...base,
+          copy: renovarCopy(restaurante),
+          tone: 'brand',
+          icon: 'refresh',
+          destructive: false,
+          planSelect: { options: planOptionViews('renovar', restaurante, planes), placeholder: null },
+        };
+      case 'plan':
+        return {
+          ...base,
+          copy: cambiarPlanCopy(restaurante),
+          tone: 'brand',
+          icon: 'wallet',
+          destructive: false,
+          planSelect: {
+            options: planOptionViews('plan', restaurante, planes),
+            placeholder: 'Elige un plan',
+          },
+        };
+      case 'estado': {
+        const suspend = panelActions(restaurante, today).estado.target === 'INACTIVO';
+        return {
+          ...base,
+          copy: estadoCopy(restaurante, today),
+          tone: suspend ? 'danger' : 'brand',
+          icon: suspend ? 'ban' : 'checkCircle',
+          destructive: suspend,
+          planSelect: null,
+        };
+      }
+    }
   });
 
   protected readonly range = computed(() => {
@@ -465,6 +695,96 @@ export class RestaurantesPage {
     this.selectedId.set(null);
   }
 
+  /** Opens the confirmation of an owner action for the selected row; plan selects load the plans fresh. */
+  protected openAction(kind: PanelActionKind): void {
+    const restaurante = this.panel()?.restaurante;
+    if (restaurante === undefined || this.loading() || this.acting()) {
+      return;
+    }
+    this.chosenPlanId.set(null);
+    this.actionModal.set({ kind, restaurante });
+    if (kind === 'estado') {
+      this.planes.set(null);
+      this.planesFailed.set(false);
+    } else {
+      this.loadPlanes();
+    }
+  }
+
+  protected closeAction(): void {
+    if (this.acting()) {
+      return;
+    }
+    this.planesRequest?.unsubscribe();
+    this.actionModal.set(null);
+    this.chosenPlanId.set(null);
+  }
+
+  protected loadPlanes(): void {
+    this.planesRequest?.unsubscribe();
+    this.planesFailed.set(false);
+    this.planes.set(null);
+    this.planesRequest = this.api
+      .planes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (planes) => {
+          this.planes.set(planes);
+          const open = this.actionModal();
+          if (open?.kind === 'renovar') {
+            this.chosenPlanId.set(defaultRenovarPlanId(open.restaurante, planes));
+          }
+        },
+        error: () => this.planesFailed.set(true),
+      });
+  }
+
+  protected selectPlan(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.chosenPlanId.set(value === '' ? null : Number(value));
+  }
+
+  protected confirmAction(): void {
+    const open = this.actionModal();
+    const chosen = this.chosenPlanId();
+    if (open === null || this.acting() || !canConfirmAction(open.kind, open.restaurante, chosen)) {
+      return;
+    }
+    const { kind, restaurante } = open;
+    const id = restaurante.restauranteId;
+    let request: Observable<SuscripcionPlataforma | Restaurante>;
+    if (kind === 'renovar') {
+      request = this.api.renovar(id, renovarPlanIdToSend(restaurante, chosen));
+    } else if (kind === 'plan') {
+      // canConfirmAction guarantees a chosen plan for this action.
+      request = this.api.cambiarPlan(id, chosen as number);
+    } else {
+      request = this.api.cambiarEstado(id, restaurante.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO');
+    }
+    this.acting.set(true);
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (result) => {
+        this.acting.set(false);
+        this.closeAction();
+        // Reload before the toast: nothing that builds the message may skip the reload.
+        this.load(this.pageIndex(), true);
+        this.toasts.show('OK', actionSuccessMessage(kind, restaurante, result), 'success');
+      },
+      error: (error: unknown) => {
+        // The modal stays open so the owner can retry or cancel; a 4xx most likely means the row is stale.
+        this.acting.set(false);
+        if (error instanceof HttpErrorResponse) {
+          this.toasts.show(error.status, readApiError(error.error)?.message ?? ACTION_ERROR);
+          if (shouldReloadAfterRejection(error.status)) {
+            this.load(this.pageIndex(), true);
+          }
+        } else {
+          this.toasts.show('Error', ACTION_ERROR);
+        }
+      },
+    });
+  }
+
   protected startCreate(): void {
     this.creating.set(true);
   }
@@ -480,10 +800,13 @@ export class RestaurantesPage {
     this.load(0);
   }
 
-  private load(page: number): void {
+  /** `keepSelection` is for the reload after an owner action: the rows and the open panel stay while it loads. */
+  private load(page: number, keepSelection = false): void {
     this.pageIndex.set(page);
-    this.selectedId.set(null);
-    this.data.set(null);
+    if (!keepSelection) {
+      this.selectedId.set(null);
+      this.data.set(null);
+    }
     this.failed.set(false);
     this.loading.set(true);
     this.requests$.next({ page, sort: this.sort() });
@@ -502,6 +825,17 @@ export class RestaurantesPage {
     this.totalElements.set(outcome.page.totalElements);
     this.data.set(outcome.page);
   }
+}
+
+function planOptionViews(
+  kind: 'renovar' | 'plan',
+  restaurante: RestauranteDashboard,
+  planes: readonly Plan[],
+): PlanOptionView[] {
+  return planChoiceOptions(kind, restaurante, planes).map((plan) => ({
+    planId: plan.planId,
+    label: planOptionLabel(plan),
+  }));
 }
 
 /** The backend `message` as is (its 400/4xx messages already come in Spanish), else a generic hint. */
