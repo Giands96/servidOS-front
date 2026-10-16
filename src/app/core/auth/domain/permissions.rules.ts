@@ -107,7 +107,25 @@ export function homeFor(user: Actor | null): string {
   return '/sin-modulos';
 }
 
-/** Single destination for a lapsed subscription (HTTP 402 or CANCELADA): admins can renew, others see a notice. */
+/** Single destination for a lapsed subscription (HTTP 402 or a blocked tenant): admins can renew, others see a notice. */
 export function subscriptionLapsedRoute(user: Actor | null): '/paywall' | '/suspendido' {
   return can(user, 'restaurante.suscripcion.gestionar') ? '/paywall' : '/suspendido';
+}
+
+/**
+ * Contract section 5: a tenant is blocked for writes when its restaurant is INACTIVO,
+ * it has no subscription, or the subscription is vencida. A CANCELADA subscription that
+ * is not vencida does NOT block (the restaurant operates until fechaFin inclusive).
+ * UI shortcut only: HTTP 402 stays the source of truth.
+ * Platform sessions (restauranteId null) and a null user are never blocked here; anonymous
+ * sessions are handled by authGuard and the backend remains authoritative.
+ */
+export function isTenantWriteBlocked(
+  user: Pick<MeResponse, 'restauranteId' | 'restauranteEstado' | 'suscripcion'> | null,
+): boolean {
+  if (user === null || scopeOf(user) === 'plataforma') {
+    return false;
+  }
+  // `?.`: a response without the field (unknown) fails open instead of throwing inside the guard.
+  return user.restauranteEstado === 'INACTIVO' || user.suscripcion === null || user.suscripcion?.vencida === true;
 }

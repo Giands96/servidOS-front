@@ -7,13 +7,25 @@ import { PedidoListado } from '../app/features/pedidos/pedidos.types';
 export type { MeResponse, Rol } from '../app/core/auth/auth.types';
 
 export function aMe(overrides: Partial<MeResponse> = {}): MeResponse {
+  const defaultSuscripcion: NonNullable<MeResponse['suscripcion']> = {
+    planId: 1,
+    nombrePlan: 'Plan Test',
+    monto: 99,
+    moneda: 'PEN',
+    estado: 'ACTIVA',
+    fechaFin: '2099-12-31',
+    diasRestantes: 30,
+    vencida: false,
+  };
   return {
-    usuarioId: 1,
-    email: 'user@example.test',
-    nombre: 'Test User',
-    restauranteId: 7,
-    rol: 'ADMINISTRADOR',
-    ...overrides,
+    usuarioId: overrides.usuarioId ?? 1,
+    email: overrides.email ?? 'user@example.test',
+    nombre: overrides.nombre ?? 'Test User',
+    restauranteId: overrides.restauranteId !== undefined ? overrides.restauranteId : 7,
+    rol: overrides.rol ?? 'ADMINISTRADOR',
+    restauranteEstado:
+      overrides.restauranteEstado !== undefined ? overrides.restauranteEstado : 'ACTIVO',
+    suscripcion: overrides.suscripcion !== undefined ? overrides.suscripcion : defaultSuscripcion,
   };
 }
 

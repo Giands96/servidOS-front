@@ -1,10 +1,12 @@
-import { MeResponse, PlatformRol, RestauranteRol, Rol } from '../auth.types';
+import { aMe } from '../../../../testing/builders';
+import { MeResponse, PlatformRol, ResumenSuscripcion, RestauranteRol, Rol } from '../auth.types';
 import {
   Action,
   can,
   canGrantPlatformRol,
   grantableRestauranteRoles,
   homeFor,
+  isTenantWriteBlocked,
   scopeOf,
   subscriptionLapsedRoute,
 } from './permissions.rules';
@@ -141,5 +143,46 @@ describe('subscriptionLapsedRoute', () => {
 
   it('sends a null user to /suspendido', () => {
     expect(subscriptionLapsedRoute(null)).toBe('/suspendido');
+  });
+});
+
+describe('isTenantWriteBlocked', () => {
+  const subscription = (overrides: Partial<ResumenSuscripcion> = {}): ResumenSuscripcion => ({
+    ...aMe().suscripcion!,
+    ...overrides,
+  });
+
+  it.each([
+    ['healthy tenant (ACTIVO + ACTIVA)', aMe(), false],
+    ['restaurant INACTIVO', aMe({ restauranteEstado: 'INACTIVO' }), true],
+    ['no subscription', aMe({ suscripcion: null }), true],
+    ['ACTIVA vencida', aMe({ suscripcion: subscription({ estado: 'ACTIVA', vencida: true }) }), true],
+    ['CANCELADA vencida', aMe({ suscripcion: subscription({ estado: 'CANCELADA', vencida: true }) }), true],
+    [
+      'CANCELADA not vencida (operates until fechaFin)',
+      aMe({ suscripcion: subscription({ estado: 'CANCELADA', vencida: false }) }),
+      false,
+    ],
+    [
+      'INACTIVO wins over a healthy subscription',
+      aMe({ restauranteEstado: 'INACTIVO', suscripcion: subscription() }),
+      true,
+    ],
+    [
+      'platform session (no tenant, even with null estado/suscripcion)',
+      aMe({ rol: 'SUPERADMIN', restauranteId: null, restauranteEstado: null, suscripcion: null }),
+      false,
+    ],
+  ] as const)('%s -> blocked: %s', (_name, user, expected) => {
+    expect(isTenantWriteBlocked(user)).toBe(expected);
+  });
+
+  it('does not block a null user (authGuard owns anonymous sessions)', () => {
+    expect(isTenantWriteBlocked(null)).toBe(false);
+  });
+
+  it('fails open when /auth/me omits suscripcion (unknown is not "no subscription")', () => {
+    const { suscripcion: _omitted, ...withoutSubscription } = aMe();
+    expect(isTenantWriteBlocked(withoutSubscription as ReturnType<typeof aMe>)).toBe(false);
   });
 });

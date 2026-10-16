@@ -9,9 +9,8 @@ import {
   provideRouter,
 } from '@angular/router';
 import { Observable, firstValueFrom, isObservable } from 'rxjs';
-import { aMe, anApiError } from '../../../../testing/builders';
-import { expectApi } from '../../../../testing/mock-api';
-import { Rol } from '../auth.types';
+import { aMe } from '../../../../testing/builders';
+import { ResumenSuscripcion, Rol } from '../auth.types';
 import { SessionStore } from '../session.store';
 import { authGuard } from './auth.guard';
 import { guestGuard } from './guest.guard';
@@ -120,41 +119,45 @@ describe('route guards', () => {
   });
 
   describe('subscriptionGuard', () => {
-    const subscription = (estado: 'ACTIVA' | 'CANCELADA') => ({
-      suscripcionId: 1,
-      restauranteId: 7,
-      planId: 1,
-      estado,
-      fechaInicio: '2026-01-01',
-      fechaFin: '2026-02-01',
+    const base = aMe().suscripcion!;
+    const withSubscription = (overrides: Partial<ResumenSuscripcion>) => ({
+      suscripcion: { ...base, ...overrides },
     });
-    const check = async (respond: (req: ReturnType<typeof expectApi>) => void): Promise<GuardResult> => {
-      const pending = run(subscriptionGuard);
-      respond(expectApi(ctrl, 'GET', '/restaurantes/actual/suscripcion'));
-      return pending;
-    };
 
-    it('allows an ACTIVA subscription', async () => {
+    // The decision comes from the session user (GET /auth/me); the guard makes no HTTP call
+    // (ctrl.verify() in afterEach fails on any unexpected request).
+    const blockedCases = [
+      ['restaurant INACTIVO', { restauranteEstado: 'INACTIVO' }],
+      ['no subscription', { suscripcion: null }],
+      ['ACTIVA vencida', withSubscription({ estado: 'ACTIVA', vencida: true })],
+      ['CANCELADA vencida', withSubscription({ estado: 'CANCELADA', vencida: true })],
+    ] as const;
+
+    it.each(blockedCases)('sends an ADMINISTRADOR with %s to /paywall', async (_name, overrides) => {
+      store.setUser(aMe({ rol: 'ADMINISTRADOR', ...overrides }));
+      expect(urlOf(await run(subscriptionGuard))).toBe('/paywall');
+    });
+
+    it.each(blockedCases)('sends a non-admin with %s to /suspendido', async (_name, overrides) => {
+      store.setUser(aMe({ rol: 'MESERO', ...overrides }));
+      expect(urlOf(await run(subscriptionGuard))).toBe('/suspendido');
+    });
+
+    it('allows a healthy tenant (ACTIVO + ACTIVA, not vencida)', async () => {
       signIn('ADMINISTRADOR');
-      expect(await check((r) => r.flush(subscription('ACTIVA')))).toBe(true);
+      expect(await run(subscriptionGuard)).toBe(true);
     });
 
-    it('sends an ADMINISTRADOR with CANCELADA to /paywall', async () => {
-      signIn('ADMINISTRADOR');
-      expect(urlOf(await check((r) => r.flush(subscription('CANCELADA'))))).toBe('/paywall');
+    it('allows CANCELADA while not vencida (operates until fechaFin)', async () => {
+      store.setUser(aMe({ ...withSubscription({ estado: 'CANCELADA', vencida: false }) }));
+      expect(await run(subscriptionGuard)).toBe(true);
     });
 
-    it('sends a non-admin with CANCELADA to /suspendido', async () => {
-      signIn('MESERO');
-      expect(urlOf(await check((r) => r.flush(subscription('CANCELADA'))))).toBe('/suspendido');
-    });
-
-    it('fails open on request error (the backend still enforces 402)', async () => {
-      signIn('ADMINISTRADOR');
-      const result = await check((r) =>
-        r.flush(anApiError(500, 'boom'), { status: 500, statusText: 'Server Error' }),
+    it('allows a platform session (no tenant to block)', async () => {
+      store.setUser(
+        aMe({ rol: 'SUPERADMIN', restauranteId: null, restauranteEstado: null, suscripcion: null }),
       );
-      expect(result).toBe(true);
+      expect(await run(subscriptionGuard)).toBe(true);
     });
   });
 });
