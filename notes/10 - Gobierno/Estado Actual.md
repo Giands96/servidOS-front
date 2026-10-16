@@ -48,7 +48,7 @@ Mergear la cadena de seis ramas en orden (squash, reubicando cada rama sobre `ma
 
 ## Tests
 - **`main` (`c66c3ff`): 21 archivos, 770 tests en verde** (`npx ng test --watch=false`); `npx ng build` OK. Ver [[Testing]].
-- **Punta de la cadena de Plataforma (`feat/plataforma-05-acciones`, `86de23a`): 24 archivos, 907 tests en verde**; `npx ng build` OK. No es el estado de `main`.
+- **Punta de la cadena de Plataforma (`feat/plataforma-06-administrador`, `c6085d9`): 24 archivos, 939 tests en verde**; `npx ng build` OK. No es el estado de `main`.
 - En el merge se resolvió un conflicto en `src/testing/builders.ts`: `aMe` asigna ahora cada campo de forma explícita en lugar de `...overrides`, con los mismos valores por defecto (restaurante `ACTIVO`, suscripción `ACTIVA` con `fechaFin` 2099-12-31).
 
 ## Decisiones recientes
