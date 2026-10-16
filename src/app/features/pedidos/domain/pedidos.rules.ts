@@ -39,7 +39,7 @@ export const TRANSITIONS: Readonly<Record<EstadoPedido, Transitions>> = {
  * Table lookup that survives a value outside the unions (the row comes from an unvalidated API answer):
  * an unknown estado or tipo has no transitions, and inherited keys such as "constructor" are not read.
  */
-function transitionsOf(tipo: TipoPedido, estado: EstadoPedido): readonly EstadoPedido[] {
+export function transitionsOf(tipo: TipoPedido, estado: EstadoPedido): readonly EstadoPedido[] {
   if (!Object.hasOwn(TRANSITIONS, estado)) {
     return [];
   }
