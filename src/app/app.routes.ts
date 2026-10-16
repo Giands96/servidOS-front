@@ -78,7 +78,9 @@ export const routes: Routes = [
       {
         path: 'plataforma/restaurantes',
         pathMatch: 'full',
-        ...moduleRoute('plataforma.restaurantes.ver', 'Restaurantes', 'building'),
+        ...moduleRoute('plataforma.restaurantes.ver', 'Restaurantes', 'building', [], () =>
+          import('./features/plataforma/restaurantes.page').then((m) => m.RestaurantesPage),
+        ),
       },
       {
         path: 'plataforma/restaurantes/nuevo',

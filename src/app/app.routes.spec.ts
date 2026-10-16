@@ -162,6 +162,17 @@ describe('routes', () => {
     expect(shellChild('pedidos/nuevo').canActivate).toContain(subscriptionGuard);
   });
 
+  it('/plataforma/restaurantes loads the restaurants list page behind the permission guard and keeps its sidebar entry', async () => {
+    const lista = shellChild('plataforma/restaurantes');
+    expect(lista.canActivate).toEqual([routeActionGuard]);
+    expect(lista.data).toMatchObject({
+      action: 'plataforma.restaurantes.ver',
+      nav: { label: 'Restaurantes', icon: 'building' },
+    });
+    const page = await (lista.loadComponent as () => Promise<{ name: string }>)();
+    expect(page.name).toMatch(/RestaurantesPage$/);
+  });
+
   // Regression: the paywall's read-only exit goes to homeFor(user); a guarded home bounced blocked tenants back to it.
   it.each(['ADMINISTRADOR', 'RECEPCION', 'COCINERO', 'MESERO', 'CAJERO', 'REPARTIDOR'] as const)(
     'the home of a %s tenant carries no subscriptionGuard (a blocked tenant can always reach it)',
