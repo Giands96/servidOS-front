@@ -1,6 +1,6 @@
 ---
 title: Estado Actual
-date: 2026-10-14
+date: 2026-10-15
 tags:
   - servidos
   - gobierno
@@ -13,8 +13,8 @@ aliases:
 
 Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] · [[Fases 4-9 - Planificadas]]
 
-> [!abstract] Foto al 2026-10-14
-> Rama de trabajo `feat/pedidos-04-alta` (principal: `main`, `fe42e14`). Fases 0 a 3 en `main`; **Fase 4 (Pedidos: lista + nuevo pedido) implementada en cinco ramas locales sin push**, pendientes de merge. Cocina y Pedidos sin prueba manual en navegador.
+> [!abstract] Foto al 2026-10-15
+> Rama principal `main` en `c66c3ff`. **Fases 0 a 4 en `main`**: el 2026-10-15 se mergeó por squash la cadena de Pedidos (PRs #8 a #12) y se borraron las ramas remotas. Cocina y Pedidos siguen sin prueba manual en navegador: falta crear un restaurante desde la plataforma para poder probar las pantallas del tenant.
 
 ## Hecho
 | Área | Estado | Referencia |
@@ -24,27 +24,33 @@ Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[
 | Login, shell, tokens, fuentes, páginas de estado, paywall | completo | [[Fase 2 - Login y Shell]] |
 | Menú derivado de rutas, `moduleRoute` con guards extra | completo | [[Arquitectura]] |
 | Dependencia `@stomp/rx-stomp` | aprobada y commiteada (`00c94dd`) | [[Decisiones (ADR)]] |
-| Paywall: pago manual por Yape + confirmación por WhatsApp (sin `renovar()`); el tenant no renueva ni cambia de plan | implementado en `fix/paywall-pago-manual`; el dueño debe configurar número y QR | [[Restaurante]] · `docs/progress/06-paywall-pago-manual.md` |
-| Cocina: tipos, API, reglas, cliente STOMP, página y ruta | commiteado (`8591b8c`, `7087023`, `6790b8d`, `2fad5cb`) | [[Cocina]] · [[Fase 3 - Cocina]] |
-| Pedidos: API y reglas de transición (`1e8fece`), página de la lista (`f38f2da`, `eb75ba9`, `5d173bc`), página de nuevo pedido (`b37b47d`) | commiteado en `feat/pedidos-01-datos` → `02-lista` → `03-alta-datos` → `04-alta`; sin push, pendiente de merge | [[Pedidos]] · [[Fase 4 - Pedidos]] · `docs/progress/07-fase-4-pedidos.md` |
-| Catálogo: API de lectura (`9b43b5d`) | commiteado en `feat/pedidos-03-alta-datos`; pendiente de merge | [[Catálogo]] |
-| `subscriptionGuard` según contrato §5 (`/auth/me`: INACTIVO, sin suscripción o vencida) | commiteado en `fix/subscription-guard-vigencia` (`6c42861`); pendiente de merge | [[Pedidos]] |
+| Paywall: pago manual por Yape + confirmación por WhatsApp (sin `renovar()`); el tenant no renueva ni cambia de plan | implementado; el dueño debe configurar número y QR | [[Restaurante]] · `docs/progress/06-paywall-pago-manual.md` |
+| Cocina: tipos, API, reglas, cliente STOMP, página y ruta | en `main` (`8591b8c`, `7087023`, `6790b8d`, `2fad5cb`); sin prueba manual | [[Cocina]] · [[Fase 3 - Cocina]] |
+| `subscriptionGuard` según contrato §5 (`/auth/me`: INACTIVO, sin suscripción o vencida) | en `main`: PR #8 (`2b812b0`) | [[Pedidos]] |
+| Pedidos: API y reglas de transición | en `main`: PR #9 (`04b462f`) | [[Pedidos]] · [[Fase 4 - Pedidos]] |
+| Pedidos: página de la lista (`/pedidos`) | en `main`: PR #10 (`87f0cd9`) | [[Pedidos]] |
+| Catálogo: API de lectura (`GET /productos`, `GET /categorias`) y reglas del nuevo pedido | en `main`: PR #11 (`40930c5`) | [[Catálogo]] |
+| Pedidos: página de nuevo pedido (`/pedidos/nuevo`) | en `main`: PR #12 (`c66c3ff`) | [[Pedidos]] · `docs/progress/07-fase-4-pedidos.md` |
 
 ## Pendiente de cierre de Cocina
-Prueba manual en navegador con backend, verificación del payload contra Swagger, zona horaria de `createdAt` y review nativa de `00c94dd..2fad5cb`.
+Prueba manual en navegador con backend, verificación del payload contra Swagger y zona horaria de `createdAt`.
 
-## Pendiente de cierre de Pedidos
-Merge en orden: `fix/subscription-guard-vigencia` (independiente, antes de `04-alta`), luego `feat/pedidos-01-datos`, `02-lista`, `03-alta-datos` y `04-alta`; tras cada squash merge, rebase de la siguiente sobre `main`. Prueba manual en navegador con backend, aviso por borrador sin guardar y decisión sobre `homeFor`. Detalle en [[Pendientes y Deuda Técnica]].
+## Pendiente de Pedidos
+Prueba manual en navegador con backend; aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación hecha por la plataforma; tablero kanban; Cobrar (fase de Caja). Detalle en [[Pendientes y Deuda Técnica]].
 
 ## Tests
-- **Punta `feat/pedidos-04-alta`: 21 archivos, 747 tests en verde** (`ng build` OK). Base `main`: 17 archivos / 419. Por rama: `fix/subscription-guard-vigencia` 436, `feat/pedidos-01-datos` 503, `feat/pedidos-02-lista` 583, `feat/pedidos-03-alta-datos` 670, `feat/pedidos-04-alta` 747.
-- Cocina, antes: 17 archivos, 407 tests tras `2fad5cb` (base 340). Ver [[Testing]].
+- **`main` (`c66c3ff`): 21 archivos, 770 tests en verde** (`npx ng test --watch=false`); `npx ng build` OK. Ver [[Testing]].
+- En el merge se resolvió un conflicto en `src/testing/builders.ts`: `aMe` asigna ahora cada campo de forma explícita en lugar de `...overrides`, con los mismos valores por defecto (restaurante `ACTIVO`, suscripción `ACTIVA` con `fechaFin` 2099-12-31).
+
+## Decisiones recientes
+- `homeFor` de ADMINISTRADOR y RECEPCION es `/pedidos` (la lista, sin `subscriptionGuard`; `3598eb0`). Decisión cerrada.
+- **Plan (decisión del usuario, 2026-10-15):** la siguiente fase es **Plataforma**, porque hay que poder crear un restaurante desde la plataforma antes de probar en navegador cualquier pantalla del tenant. El backend ya tiene credenciales de plataforma de desarrollo (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); se consultan allí, no se documentan aquí.
 
 ## Qué sigue
-0. Mergear la cadena de Pedidos y probarla en navegador.
-1. Cerrar Cocina (prueba manual, Swagger, review nativa).
-2. Implementar los cambios de suscripción anunciados que siguen abiertos ([[Pendientes y Deuda Técnica]]); renovar, cambiar de plan y habilitar restaurantes quedan en [[Plataforma]].
-3. Siguiente módulo según el plan (Restaurante, Catálogo, tablero kanban de Pedidos, Pagos, Usuarios, Plataforma); `GET /usuarios` aún no existe.
+1. **Plataforma** (listar y crear restaurantes, detalle y suscripción): [[Plataforma]].
+2. Prueba en navegador de las interfaces del tenant (Cocina y Pedidos), con el restaurante creado desde Plataforma.
+3. Cerrar Cocina (prueba manual, Swagger, zona horaria de `createdAt`).
+4. Módulos restantes: Restaurante, pantallas de Catálogo, tablero kanban de Pedidos y Cobrar, Pagos/Caja, Usuarios (bloqueado: no existe `GET /usuarios`). Los cambios de suscripción anunciados que siguen abiertos están en [[Pendientes y Deuda Técnica]].
 
 ## Cómo retomar
-Verificar `git status`, correr `npx ng build` y `npx ng test --watch=false`, leer `odd/tasks/cocina.md` y `docs/progress`. Mantener la nota de progreso de cada fase (memoria del proyecto: documentar cada fase, feature y fix).
+Verificar `git status`, correr `npx ng build` y `npx ng test --watch=false`, leer `odd/tasks/pedidos.md` y `docs/progress`. Mantener la nota de progreso de cada fase (memoria del proyecto: documentar cada fase, feature y fix).

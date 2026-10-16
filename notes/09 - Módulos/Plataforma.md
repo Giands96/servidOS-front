@@ -1,6 +1,6 @@
 ---
 title: Plataforma
-date: 2026-10-08
+date: 2026-10-15
 tags:
   - servidos
   - modulos
@@ -17,6 +17,9 @@ Volver: [[00 - MOC]] · Ver [[Modelo de Negocio]] · [[API]] · [[Fases 4-9 - Pl
 
 > [!abstract] Responsabilidad
 > Nivel plataforma: listar y crear restaurantes y ver suscripciones. Estado: **placeholder** (`/plataforma/restaurantes` y `/plataforma/restaurantes/nuevo`).
+
+> [!important] Siguiente fase (decisión del usuario, 2026-10-15)
+> Plataforma es la próxima fase: hay que crear un restaurante desde la plataforma antes de poder probar en navegador cualquier pantalla del tenant. Ver [[Fases 4-9 - Planificadas]] y [[Estado Actual]].
 
 ## Archivos
 Solo las rutas en `src/app/app.routes.ts`.

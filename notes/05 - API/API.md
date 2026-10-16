@@ -1,6 +1,6 @@
 ---
 title: API
-date: 2026-10-14
+date: 2026-10-15
 tags:
   - servidos
   - api
@@ -65,13 +65,13 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 ### Catálogo
 | Endpoint | Roles | Front |
 |---|---|---|
-| `GET /productos?categoriaId=&page=`, `GET /categorias` | autenticados | impl `catalogo.api.ts` (solo lectura, rama `feat/pedidos-03-alta-datos`, pendiente de merge) |
+| `GET /productos?categoriaId=&page=`, `GET /categorias` | autenticados | impl `catalogo.api.ts` (solo lectura, en `main` por el PR #11) |
 | `GET /productos/{id}` | autenticados | plan |
 | `POST /productos`, `PUT /productos/{id}`, `POST /categorias` | ADMINISTRADOR | plan |
 | `PATCH /productos/{id}/estado` (`DISPONIBLE`/`AGOTADO`) | ADMINISTRADOR, COCINERO | plan (fuera de alcance de cocina por ahora) |
 
 ### Pedidos
-Verificado contra `/v3/api-docs` y `FRONTEND_CONTEXT` el 2026-10-11. Clientes en `features/pedidos/data/pedidos.api.ts` (ramas de la Fase 4, pendientes de merge; ver [[Pedidos]]).
+Verificado contra `/v3/api-docs` y `FRONTEND_CONTEXT` el 2026-10-11. Clientes en `features/pedidos/data/pedidos.api.ts` (Fase 4, en `main` por los PRs #9 a #12; ver [[Pedidos]]).
 
 | Endpoint | Roles | Front |
 |---|---|---|

@@ -1,6 +1,6 @@
 ---
 title: Pendientes y Deuda Técnica
-date: 2026-10-14
+date: 2026-10-15
 tags:
   - servidos
   - gobierno
@@ -23,11 +23,11 @@ Anunciados por backend, sin verificar contra Swagger.
 - [ ] Pago manual: el dueño debe completar `whatsappNumber` en `payment-contact.ts` y agregar `public/yape-qr.png`; decidir si se avisa en pantalla cuando el número no está configurado.
 - [ ] Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace).
 - [ ] §2 Cancelar suscripción con `{password}` (400 si falta o es incorrecta); no renueva, opera hasta `fechaFin`.
-- [ ] (parcial) §3 `subscriptionGuard`: bloquear por `fechaFin < hoy`, no por `CANCELADA`. **Guard hecho** en `fix/subscription-guard-vigencia` (`6c42861`, pendiente de merge; ver [[Pedidos]]). Falta el aviso "Tu suscripción termina el {fechaFin}"; el 402 del backend sigue siendo la fuente de verdad.
+- [ ] (parcial) §3 `subscriptionGuard`: bloquear por `fechaFin < hoy`, no por `CANCELADA`. **Guard hecho y en `main`** (PR #8, `2b812b0`; ver [[Pedidos]]). Falta el aviso "Tu suscripción termina el {fechaFin}"; el 402 del backend sigue siendo la fuente de verdad.
 - [ ] §4 Sin suscripción vigente = solo lectura; manejar 400 en `GET /restaurantes/actual/suscripcion`; mensajes 402 terminan en "contactá a la plataforma para regularizar tu suscripción".
-- [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple en `feat/pedidos-02-lista` (pendiente de merge); falta pagos al construirlos.
+- [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple y está en `main` (PR #10); falta pagos al construirlos.
 - [ ] §6 Reembolso cancela pedidos no entregados; ocultar "Cobrar" en pedidos reembolsados.
-- [ ] (parcial) §7 DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago. La tabla de transiciones de `pedidos.rules.ts` ya lo contempla (ramas de Pedidos, pendientes de merge); falta verificarlo contra un backend real.
+- [ ] (parcial) §7 DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago. La tabla de transiciones de `pedidos.rules.ts` ya lo contempla (en `main`, PR #9); falta verificarlo contra un backend real.
 - [ ] §8 Validaciones cross-tenant a 400 (mostrar `message`).
 - [x] §9 `POST /pedidos` corregido (sin impacto).
 - [x] §10 `GET /cocina/listos` (cliente `cocina.api.ts` hecho).
@@ -41,20 +41,19 @@ Anunciados por backend, sin verificar contra Swagger.
 - [ ] Verificar forma de `/cocina/cola` y `/listos` contra Swagger.
 - [ ] Actualizar `docs/FRONTEND_CONTEXT.md` §9 (aún dice "no existen WebSockets de cocina") y el flujo de polling de `Flujo - Recepcion Cocina.md`, `DESIGN_BRIEF` §6.6 y `frontend-alineacion-seguridad.md`.
 
-## Pedidos (Fase 4, implementada en ramas locales)
+## Pedidos (Fase 4, mergeada en `main` el 2026-10-15)
 Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Pedidos]] y [[Fase 4 - Pedidos]].
-- [ ] Mergear la cadena en orden (`fix/subscription-guard-vigencia`, `feat/pedidos-01-datos`, `02-lista`, `03-alta-datos`, `04-alta`) con rebase de la siguiente rama tras cada squash merge.
-- [ ] `fix/subscription-guard-vigencia` debe estar mergeado para que el guard de `/pedidos/nuevo` siga el contrato (sin él se usa el guard anterior, que consulta la suscripción y bloquea a los `CANCELADA`).
+- [x] Cadena mergeada por squash en orden: PRs #8 (`2b812b0`), #9 (`04b462f`), #10 (`87f0cd9`), #11 (`40930c5`), #12 (`c66c3ff`). Ramas remotas borradas. `main`: 21 archivos / 770 tests en verde, `ng build` OK. Conflicto en `src/testing/builders.ts` resuelto (`aMe` asigna cada campo de forma explícita).
+- [x] El guard de `/pedidos/nuevo` ya sigue el contrato §5 (PR #8 en `main`).
 - [ ] Aviso por borrador sin guardar al salir de `/pedidos/nuevo`.
 - [ ] Specs de las páginas no escritos por decisión (AGENTS §6); las reviews advirtieron la orquestación sin tests en ambas páginas. Reabrir la decisión con el usuario si se quiere cubrirlos.
 - [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
 - [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior.
 - [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código `pagos.registrar` es solo de ADMINISTRADOR, el contrato §3 también lo da a RECEPCION y CAJERO.
-- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto.
+- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Bloqueada hasta tener [[Plataforma]] (hay que crear un restaurante desde la plataforma primero; plan del usuario, 2026-10-15).
 - [ ] `fail()` duplicada en `pedidos.page.ts` y `nuevo-pedido.page.ts`.
 - [ ] Advertencias menores: `cantidad` sin tope superior y `productoId` duplicado sin validar; el cargador de catálogo confía en la forma de la página; copy del paywall aún dice "cancelada"; `core/auth/data/suscripcion.api.ts` solo contiene un tipo; nombre y documentación de `subscriptionLapsedRoute`.
-- [ ] `size:exception` solicitado en cuatro PRs de la cadena (617, 974, 1.004 y 1.132 líneas); el PR de `fix/subscription-guard-vigencia` (196) cumple el presupuesto.
 - [ ] Comentario de ocurrencia del defecto #4441 de Gentle AI sin publicar (sin acceso autenticado a GitHub); texto en `docs/gentle-ai-ocurrencia-4441.md`.
 
 ## Deuda técnica y advisories de las reviews
@@ -67,7 +66,7 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - `session.store.spec`: usar `vi.waitFor`; fijar que el rechazo abandonado es `Error` plano; `finally` depende de que `clear()` sea el único escritor del epoch.
 - `SuscripcionApi` (core) y `RestauranteApi.suscripcion()` duplican el GET.
 - Core importa `features/restaurante` (shell); `subscription.rules` importa `BadgeVariant` de `shared/ui`.
-- Tipos de pedido en `cocina.types.ts`: **resuelto** en `feat/pedidos-01-datos` (`pedidos.types.ts` es el dueño y cocina los re-exporta); pendiente de merge.
+- Tipos de pedido en `cocina.types.ts`: **resuelto** y en `main` (PR #9; `pedidos.types.ts` es el dueño y cocina los re-exporta).
 
 ## Decisiones de producto abiertas
 - Foto del panel de login; confirmar campo `nombre` de `GET /restaurantes/actual`.

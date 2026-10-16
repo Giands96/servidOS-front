@@ -1,6 +1,6 @@
 ---
 title: Catálogo
-date: 2026-10-14
+date: 2026-10-15
 tags:
   - servidos
   - modulos
@@ -15,7 +15,7 @@ aliases:
 Volver: [[00 - MOC]] · Ver [[Modelo de Negocio]] · [[API]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Responsabilidad
-> Productos y categorías, y disponibilidad de platos. Estado: **parcial**. Existe la **API de lectura** (commit `9b43b5d`, rama `feat/pedidos-03-alta-datos`, pendiente de merge) que usa el nuevo pedido de [[Pedidos]]; la pantalla `/catalogo` (acción `catalogo.ver`) sigue siendo **placeholder** y la edición está pendiente.
+> Productos y categorías, y disponibilidad de platos. Estado: **parcial**. Existe la **API de lectura** (commit `9b43b5d`, en `main` por el PR #11) que usa el nuevo pedido de [[Pedidos]]; la pantalla `/catalogo` (acción `catalogo.ver`) sigue siendo **placeholder** y la edición está pendiente.
 
 ## Archivos
 | Ruta | Contenido |

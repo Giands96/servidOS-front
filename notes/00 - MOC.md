@@ -1,6 +1,6 @@
 ---
 title: ServidOS Front - MOC
-date: 2026-10-08
+date: 2026-10-15
 tags:
   - servidos
   - frontend
@@ -16,10 +16,10 @@ aliases:
 > Documentación del cliente Angular de ServidOS (`D:\servidos-frontend\front`). Cada nota es atómica, cita rutas del repositorio y separa lo **verificado en código/docs** de lo **anunciado sin verificar**. Su objetivo: que cualquiera entienda qué hace el proyecto y pueda extenderlo sin romperlo ni convertirlo en spaghetti. El backend tiene su propia bóveda (`ServidOS - MOC` en el repo del backend).
 
 > [!info] Estado del módulo Cocina
-> Cocina está **implementada** en la rama `feat/cocina` (hasta `2fad5cb`), pero sin prueba manual en navegador, con payload sin verificar contra Swagger y con la review nativa pendiente. Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
+> Cocina está **implementada y en `main`** (hasta `2fad5cb`), pero sin prueba manual en navegador, con payload sin verificar contra Swagger y con la review nativa pendiente. Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Pedidos
-> Pedidos (lista + nuevo pedido) está **implementado en cinco ramas locales**, sin push y pendiente de merge (punta `feat/pedidos-04-alta`, 747 tests). Sin prueba manual en navegador. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
+> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`, 770 tests). Sin prueba manual en navegador. La siguiente fase es [[Plataforma]], necesaria para crear un restaurante y probar las pantallas del tenant. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
 
 ## Navegación
 
