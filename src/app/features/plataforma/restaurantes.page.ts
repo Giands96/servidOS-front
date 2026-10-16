@@ -51,6 +51,7 @@ import {
   OrdenRestaurantes,
   Plan,
   Restaurante,
+  RestauranteCreado,
   RestauranteDashboard,
   SuscripcionPlataforma,
 } from './plataforma.types';
@@ -794,9 +795,9 @@ export class RestaurantesPage {
   }
 
   /** Closes the modal, confirms with a toast and reloads from the first page so the new restaurant is counted. */
-  protected onCreated(restaurante: Restaurante): void {
+  protected onCreated(restaurante: RestauranteCreado): void {
     this.creating.set(false);
-    this.toasts.show('OK', restauranteCreadoMessage(restaurante.nombre), 'success');
+    this.toasts.show('OK', restauranteCreadoMessage(restaurante), 'success');
     this.load(0);
   }
 

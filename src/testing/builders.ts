@@ -6,6 +6,7 @@ import { PedidoListado } from '../app/features/pedidos/pedidos.types';
 import {
   Plan,
   Restaurante,
+  RestauranteCreado,
   RestauranteDashboard,
   SuscripcionPlataforma,
 } from '../app/features/plataforma/plataforma.types';
@@ -156,6 +157,15 @@ export function aRestaurante(overrides: Partial<Restaurante> = {}): Restaurante 
     nombre: 'La Cevichería',
     direccion: 'Av. Brasil 123',
     estado: 'ACTIVO',
+    ...overrides,
+  };
+}
+
+/** `RestauranteCreadoResponse` of POST /restaurantes. */
+export function aRestauranteCreado(overrides: Partial<RestauranteCreado> = {}): RestauranteCreado {
+  return {
+    ...aRestaurante(),
+    administrador: { usuarioId: 7, email: 'rosa@cevicheria.test', nombre: 'Rosa' },
     ...overrides,
   };
 }

@@ -10,6 +10,7 @@ import {
   Plan,
   RenovarSuscripcionRequest,
   Restaurante,
+  RestauranteCreado,
   RestauranteDashboard,
   SuscripcionPlataforma,
 } from '../plataforma.types';
@@ -27,9 +28,12 @@ export class PlataformaApi {
     return this.http.get<Page<RestauranteDashboard>>(`${API_BASE}/restaurantes`, { params });
   }
 
-  /** Creates a restaurant (201). 400 on duplicate slug, unknown plan or invalid demo; 422 on validation. */
-  crear(request: CrearRestauranteRequest): Observable<Restaurante> {
-    return this.http.post<Restaurante>(`${API_BASE}/restaurantes`, request);
+  /**
+   * Creates a restaurant and its owner in one transaction (201). 400 on duplicate slug, unknown plan or invalid
+   * demo; 409 when the owner email is already registered; 422 on validation.
+   */
+  crear(request: CrearRestauranteRequest): Observable<RestauranteCreado> {
+    return this.http.post<RestauranteCreado>(`${API_BASE}/restaurantes`, request);
   }
 
   detalle(id: number): Observable<Restaurante> {

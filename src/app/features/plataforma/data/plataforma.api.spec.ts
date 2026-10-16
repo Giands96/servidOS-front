@@ -5,6 +5,7 @@ import {
   aPage,
   aPlan,
   aRestaurante,
+  aRestauranteCreado,
   aRestauranteDashboard,
   aSuscripcionPlataforma,
 } from '../../../../testing/builders';
@@ -48,7 +49,7 @@ describe('PlataformaApi', () => {
   });
 
   describe('crear', () => {
-    it('POSTs the request as is to /restaurantes and returns the new restaurant', () => {
+    it('POSTs the request as is (owner included) to /restaurantes and returns the created restaurant with its owner', () => {
       const request: CrearRestauranteRequest = {
         slug: 'la-cevicheria',
         nombre: 'La Cevichería',
@@ -56,8 +57,14 @@ describe('PlataformaApi', () => {
         planId: 1,
         demo: true,
         demoDias: 7,
+        administrador: {
+          nombre: 'Rosa',
+          apellido: 'Quispe',
+          email: 'rosa@cevicheria.test',
+          password: 'secreto123',
+        },
       };
-      const restaurante = aRestaurante();
+      const restaurante = aRestauranteCreado();
       let result: unknown;
       api.crear(request).subscribe((r) => (result = r));
       const req = expectApi(ctrl, 'POST', '/restaurantes');
@@ -68,9 +75,14 @@ describe('PlataformaApi', () => {
 
     it('propagates a backend error (e.g. 400 duplicate slug)', () => {
       let error: unknown;
-      api.crear({ slug: 'la-cevicheria', nombre: 'La Cevichería', planId: 1 }).subscribe({
-        error: (e) => (error = e),
-      });
+      api
+        .crear({
+          slug: 'la-cevicheria',
+          nombre: 'La Cevichería',
+          planId: 1,
+          administrador: { nombre: 'Rosa', apellido: 'Quispe', email: 'rosa@cevicheria.test', password: 'secreto123' },
+        })
+        .subscribe({ error: (e) => (error = e) });
       expectApi(ctrl, 'POST', '/restaurantes').flush(
         { message: 'El slug ya existe' },
         { status: 400, statusText: 'Bad Request' },
