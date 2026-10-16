@@ -14,9 +14,11 @@ import { readApiError } from '../../core/http/domain/api-error.rules';
 import { BadgeComponent, BadgeVariant } from '../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { shouldReloadAfterRejection } from '../pedidos/domain/pedidos.rules';
+import { CategoriaFormComponent } from './categoria-form.component';
 import { Categoria, Producto } from './catalogo.types';
 import { CatalogoApi } from './data/catalogo.api';
 import {
@@ -39,6 +41,8 @@ import {
   toggledEstado,
   totalPages,
 } from './domain/catalogo.rules';
+import { categoriaCreadaMessage, productoGuardadoMessage } from './domain/producto-form.rules';
+import { ProductoFormComponent } from './producto-form.component';
 
 const DEFAULT_ERROR = 'Revisa tu conexión e inténtalo de nuevo.';
 const TOGGLE_ERROR = 'No se pudo cambiar la disponibilidad';
@@ -48,7 +52,7 @@ interface Menu {
   productos: readonly Producto[];
 }
 
-/** What the product modal (T6.4) opens with: a blank form or the product being edited. */
+/** What the product modal opens with: a blank form or the product being edited. */
 export type ProductoFormState = { mode: 'crear' } | { mode: 'editar'; producto: Producto };
 
 interface RowView {
@@ -65,7 +69,15 @@ interface RowView {
 /** The restaurant menu: categories with counts, the products table, and the DISPONIBLE/AGOTADO toggle. Orchestration only: the logic lives in catalogo.rules. */
 @Component({
   selector: 'app-catalogo',
-  imports: [BadgeComponent, ButtonComponent, IconComponent, StatePanelComponent],
+  imports: [
+    BadgeComponent,
+    ButtonComponent,
+    CategoriaFormComponent,
+    IconComponent,
+    ModalComponent,
+    ProductoFormComponent,
+    StatePanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="min-h-screen bg-surface p-6">
@@ -294,11 +306,25 @@ interface RowView {
         }
       </div>
 
-      <!-- T6.4: product modal (create/edit), driven by productoForm() -->
-      @if (productoForm() !== null) {
+      @if (productoForm(); as state) {
+        <app-modal
+          [form]="true"
+          [heading]="state.mode === 'crear' ? 'Nuevo producto' : 'Editar producto'"
+          (closed)="closeProducto()"
+        >
+          <app-producto-form
+            [mode]="state.mode"
+            [producto]="state.mode === 'editar' ? state.producto : null"
+            [categorias]="categorias()"
+            (saved)="onProductoSaved($event, state.mode)"
+            (cancelled)="closeProducto()"
+          />
+        </app-modal>
       }
-      <!-- T6.4: category modal, driven by creatingCategoria() -->
       @if (creatingCategoria()) {
+        <app-modal [form]="true" heading="Nueva categoría" (closed)="closeCategoria()">
+          <app-categoria-form (created)="onCategoriaCreated($event)" (cancelled)="closeCategoria()" />
+        </app-modal>
       }
     </section>
   `,
@@ -321,9 +347,9 @@ export class CatalogoPage {
   /** Product ids whose estado change is in flight: their toggle is locked. */
   private readonly busyIds = signal<ReadonlySet<number>>(new Set());
 
-  /** Set by "Nuevo producto" / the pencil; the product modal (T6.4) is open while it is not null. */
+  /** Set by "Nuevo producto" / the pencil; the product modal is open while it is not null. */
   protected readonly productoForm = signal<ProductoFormState | null>(null);
-  /** Set by "Nueva categoría"; the category modal (T6.4) is open while it is true. */
+  /** Set by "Nueva categoría"; the category modal is open while it is true. */
   protected readonly creatingCategoria = signal(false);
 
   protected readonly writes = computed(() => catalogoWrites(this.session.user()));
@@ -331,6 +357,7 @@ export class CatalogoPage {
     const menu = this.menu();
     return menu === null ? null : summaryLabel(menu.productos, menu.categorias);
   });
+  protected readonly categorias = computed(() => this.menu()?.categorias ?? []);
   protected readonly isEmpty = computed(() => (this.menu()?.productos.length ?? 0) === 0);
   protected readonly entries = computed(() => {
     const menu = this.menu();
@@ -421,6 +448,26 @@ export class CatalogoPage {
 
   protected startCategoria(): void {
     this.creatingCategoria.set(true);
+  }
+
+  protected closeProducto(): void {
+    this.productoForm.set(null);
+  }
+
+  protected closeCategoria(): void {
+    this.creatingCategoria.set(false);
+  }
+
+  protected onProductoSaved(producto: Producto, mode: 'crear' | 'editar'): void {
+    this.upsertProducto(producto);
+    this.closeProducto();
+    this.toasts.show('OK', productoGuardadoMessage(producto, mode), 'success');
+  }
+
+  protected onCategoriaCreated(categoria: Categoria): void {
+    this.addCategoria(categoria);
+    this.closeCategoria();
+    this.toasts.show('OK', categoriaCreadaMessage(categoria), 'success');
   }
 
   protected toggleEstado(producto: Producto): void {
