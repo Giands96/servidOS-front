@@ -44,7 +44,7 @@ Prueba manual en navegador con backend, verificación del payload contra Swagger
 Prueba manual en navegador con backend; aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación hecha por la plataforma; tablero kanban; Cobrar (fase de Caja). Detalle en [[Pendientes y Deuda Técnica]].
 
 ## Pendiente de Plataforma
-Mergear la cadena de cinco ramas en orden (squash, reubicando cada rama sobre `main` tras cada merge); prueba en navegador de todas las pantallas; Escape para cerrar panel y modal; partir `restaurantes.page.ts` (847 líneas); crear el ADMINISTRADOR del tenant (sin endpoint). Detalle en [[Pendientes y Deuda Técnica]].
+Mergear la cadena de seis ramas en orden (squash, reubicando cada rama sobre `main` tras cada merge); prueba en navegador de todas las pantallas; Escape para cerrar panel y modal; partir `restaurantes.page.ts` (847 líneas). Detalle en [[Pendientes y Deuda Técnica]].
 
 ## Tests
 - **`main` (`c66c3ff`): 21 archivos, 770 tests en verde** (`npx ng test --watch=false`); `npx ng build` OK. Ver [[Testing]].
@@ -55,7 +55,7 @@ Mergear la cadena de cinco ramas en orden (squash, reubicando cada rama sobre `m
 - `homeFor` de ADMINISTRADOR y RECEPCION es `/pedidos` (la lista, sin `subscriptionGuard`; `3598eb0`). Decisión cerrada.
 - **Plan (decisión del usuario, 2026-10-15):** la siguiente fase era **Plataforma**, porque hay que poder crear un restaurante desde la plataforma antes de probar en navegador cualquier pantalla del tenant. Ya está implementada en ramas (ver arriba). El backend ya tiene credenciales de plataforma de desarrollo (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); se consultan allí, no se documentan aquí.
 - **Alcance de Plataforma (decisión del usuario, 2026-10-15): "Diseño + acciones"** (lista, alta y acciones Renovar, Cambiar plan y Suspender/Reactivar). Los defaults del orquestador están en [[Fase 5 - Plataforma]].
-- **Crear el ADMINISTRADOR del tenant no tiene endpoint**: en desarrollo se usa el script del backend `scripts/sql/crear_admin.sql` (cambiar antes su correo por defecto, que choca con el del usuario de arranque de la plataforma).
+- **ADMINISTRADOR del tenant**: resuelto en T5.7 (`c6085d9`): el alta del restaurante crea también la cuenta del dueño, en un asistente de dos pasos.
 
 ## Qué sigue
 1. **Mergear la cadena de Plataforma** en orden (squash) y probar en navegador sus pantallas: [[Plataforma]] · [[Fase 5 - Plataforma]].

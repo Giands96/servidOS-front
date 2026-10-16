@@ -51,7 +51,7 @@ Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en 
 - **Estado: implementada en ramas, pendiente de merge (2026-10-16).** Cinco ramas apiladas `feat/plataforma-01-datos` … `feat/plataforma-05-acciones` (punta `86de23a`; 24 archivos / 907 tests, build OK). Aún no están en `main`, no se publicó nada y no hay prueba en navegador.
 - **Por qué fue primero**: sin poder crear un restaurante desde la plataforma no se puede probar en navegador ninguna pantalla del tenant (Cocina, Pedidos). Las credenciales de plataforma de desarrollo existen en la configuración del backend (bootstrap de `application-dev.yaml`, migración V9 y `scripts/sql/crear_admin_plataforma.sql`); no se documentan en estas notas.
 - **Construido**: lista SUPERADMIN paginada con panel de detalle (`x9DxqV`), alta de restaurante (`z8ZbK`; `demo` exige `demoDias` 1–30) y acciones Renovar, Cambiar plan y Suspender/Reactivar.
-- **Huecos**: crear el ADMINISTRADOR del tenant (sin endpoint) y gestionar usuarios de plataforma (sin `GET /usuarios`).
+- **Huecos**: gestionar usuarios de plataforma (sin `GET /usuarios`). El ADMINISTRADOR del tenant ya se crea en el alta del restaurante (T5.7).
 - **Siguiente**: mergear la cadena y probar en navegador las pantallas de plataforma y del tenant.
 
 ## Riesgos generales

@@ -58,11 +58,12 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 
 ## Plataforma (Fase 5, implementada en ramas, pendiente de merge)
 Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver [[Plataforma]] y [[Fase 5 - Plataforma]].
-- [ ] Mergear la cadena en orden (squash): `feat/plataforma-01-datos` (`0003c47`), `-02-reglas` (`2596829`), `-03-lista` (`28efe2e`), `-04-alta` (`3923b7a`), `-05-acciones` (`86de23a`); reubicar cada rama sobre `main` tras cada merge. Cuatro piden `size:exception`. La rama `docs/obsidian-pedidos-merge` (notas del Vault) es independiente.
+- [ ] Mergear la cadena en orden (squash): `feat/plataforma-01-datos` (`0003c47`), `-02-reglas` (`2596829`), `-03-lista` (`28efe2e`), `-04-alta` (`3923b7a`), `-05-acciones` (`86de23a`), `-06-administrador` (`c6085d9`, requiere el backend con `administrador` desplegado); reubicar cada rama sobre `main` tras cada merge. Cinco piden `size:exception`. La rama `docs/obsidian-pedidos-merge` (notas del Vault) es independiente.
 - [ ] Prueba manual en navegador de todas las pantallas (lista, panel, alta, acciones): **no hecha**. Después, las pantallas del tenant (Cocina, Pedidos) con el restaurante creado.
 - [ ] Cerrar con Escape el panel de detalle y el modal.
 - [ ] Partir `restaurantes.page.ts` (847 líneas, casi todo plantilla) en componentes (tabla, panel, modales de acción) tras la prueba en navegador.
-- [ ] **Crear el ADMINISTRADOR del tenant no tiene endpoint** (`POST /restaurantes` no lo crea). En desarrollo se usa el script del backend `scripts/sql/crear_admin.sql`. Advertencia: su correo por defecto coincide con el del usuario de arranque de la plataforma y el login resuelve primero el tenant; hay que cambiarlo antes de ejecutarlo.
+- [x] **Crear el ADMINISTRADOR del tenant** — resuelto el 2026-10-16 (T5.7, `c6085d9`, rama `feat/plataforma-06-administrador`): el backend crea el dueño dentro del mismo `POST /restaurantes` y el front lo pide en un asistente de dos pasos. El script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos (si se usa para uno anterior, su correo por defecto sigue chocando con el del usuario de arranque de la plataforma). El PR #15 requiere el cambio de backend desplegado primero.
+- [ ] Prueba manual en navegador del asistente de dos pasos y del login real del dueño recién creado: **no hecha**.
 - [ ] Gestión de usuarios de plataforma: fuera de alcance, bloqueada (no existe `GET /usuarios`; `PATCH /usuarios/{id}/rol` necesita ids de rol).
 - [ ] Sin filtros ni búsqueda en la lista (el backend no los ofrece); solo se ordena por nombre (un `sort` desconocido responde 500).
 - [ ] Copy del pie del diseño "Solo CANCELADA bloquea escrituras": no copiado a propósito (desactualizado frente al contrato §5); confirmar con el usuario si se quiere un texto equivalente actualizado.

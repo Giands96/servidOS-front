@@ -58,7 +58,7 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 | `PATCH /restaurantes/actual/plan` (`{nuevoPlanId, confirmado:true, password}`) | ADMINISTRADOR, SUPERADMIN | plan |
 | `POST /restaurantes/actual/suscripcion/renovar` | ADMINISTRADOR, SUPERADMIN | impl (`renovar()`), ver cambio anunciado |
 | `POST /restaurantes/actual/suscripcion/cancelar` | ADMINISTRADOR, SUPERADMIN | plan |
-| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30; 201, 400 slug duplicado o plan inexistente, 422; no crea al ADMINISTRADOR del tenant) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (rama `feat/plataforma-01-datos`, pendiente de merge) |
+| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30, `administrador {nombre, apellido, email, password}`; 201 `RestauranteCreadoResponse` con `administrador {usuarioId, email, nombre}`, 400 slug duplicado o plan inexistente, 409 email ya registrado, 422; crea restaurante y dueño en una sola transacción) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (ramas `feat/plataforma-01-datos` y `-06-administrador`, pendientes de merge) |
 | `GET /restaurantes?page=&size=&sort=` (`size` 10 por defecto; `sort=nombre,asc` o `nombre,desc`; un campo desconocido da 500) | SUPERADMIN | impl `PlataformaApi.listar` (ídem) |
 | `GET /restaurantes/{id}`, `/{id}/suscripcion` | SUPERADMIN | impl `PlataformaApi.detalle` y `.suscripcion` (ídem) |
 | `POST /restaurantes/{id}/suscripcion/renovar` (`{planId?}`; un mes pagado; `planId` obligatorio sin suscripción previa; `INACTIVO` pasa a `ACTIVO`) | SUPERADMIN | impl `PlataformaApi.renovar` (ídem) |
@@ -66,7 +66,7 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 | `PATCH /restaurantes/{id}/plan` (`{nuevoPlanId}`; 400 si la suscripción no está activa) | SUPERADMIN | impl `PlataformaApi.cambiarPlan` (ídem) |
 | `GET /planes` (solo `ACTIVO`, por precio ascendente) | los usa el alta (SUPERADMIN y ADMIN); roles del endpoint sin verificar | impl `PlataformaApi.planes` (ídem) |
 
-Verificados contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Los roles de las filas de plataforma salen del contrato §3/§7 (no figuran en OpenAPI). Fase [[Fase 5 - Plataforma]], módulo [[Plataforma]]. No existe endpoint para crear el ADMINISTRADOR del tenant.
+Verificados contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Los roles de las filas de plataforma salen del contrato §3/§7 (no figuran en OpenAPI). Fase [[Fase 5 - Plataforma]], módulo [[Plataforma]]. Desde el 2026-10-16 `POST /restaurantes` crea también al ADMINISTRADOR del tenant (cambio de backend).
 
 ### Catálogo
 | Endpoint | Roles | Front |
