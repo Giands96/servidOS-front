@@ -13,6 +13,17 @@ export function aMe(overrides: Partial<MeResponse> = {}): MeResponse {
     nombre: 'Test User',
     restauranteId: 7,
     rol: 'ADMINISTRADOR',
+    restauranteEstado: 'ACTIVO',
+    suscripcion: {
+      planId: 1,
+      nombrePlan: 'Plan Test',
+      monto: 99,
+      moneda: 'PEN',
+      estado: 'ACTIVA',
+      fechaFin: '2099-12-31',
+      diasRestantes: 30,
+      vencida: false,
+    },
     ...overrides,
   };
 }
@@ -81,31 +92,6 @@ export function aPage<T>(content: T[], overrides: Partial<Page<T>> = {}): Page<T
     number: 0,
     first: true,
     last: true,
-    ...overrides,
-  };
-}
-
-/** `ProductoResponse` of GET /productos. */
-export function aProducto(overrides: Partial<Producto> = {}): Producto {
-  return {
-    productoId: 7,
-    categoriaId: 1,
-    nombre: 'Lomo saltado',
-    descripcion: null,
-    imagenUrl: null,
-    precio: 25,
-    tiempoPreparacion: 15,
-    estado: 'DISPONIBLE',
-    ...overrides,
-  };
-}
-
-/** `CategoriaResponse` of GET /categorias. */
-export function aCategoria(overrides: Partial<Categoria> = {}): Categoria {
-  return {
-    categoriaId: 1,
-    nombre: 'Platos de fondo',
-    estado: 'HABILITADO',
     ...overrides,
   };
 }

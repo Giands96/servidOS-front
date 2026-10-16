@@ -1,7 +1,7 @@
 import { CocinaEvent, ColaPedido } from '../cocina.types';
 
 // Order-generic helpers now live in pedidos; re-exported so cocina consumers keep their imports.
-export { formatClock, formatOrderNumber, tipoLabel } from '../../pedidos/domain/pedidos.rules';
+export { formatOrderNumber, tipoLabel } from '../../pedidos/domain/pedidos.rules';
 
 /** Timer limits in minutes (user decision 2026-10-08). Single source for the whole board. */
 export const URGENCY_THRESHOLDS = { atencionMin: 15, criticoMin: 25 } as const;
@@ -68,6 +68,12 @@ export function sortListos(
     }
     return b.pedidoId - a.pedidoId;
   });
+}
+
+/** HH:mm:ss in local time. */
+export function formatClock(date: Date): string {
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
 }
 
 export function queueSummary(count: number): string {
