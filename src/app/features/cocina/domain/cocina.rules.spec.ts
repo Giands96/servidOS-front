@@ -82,24 +82,10 @@ describe('sortByArrival', () => {
   });
 });
 
-describe('tipoLabel', () => {
-  it.each([
-    [{ tipoPedido: 'MESA', mesaId: 7 }, 'Mesa 7'],
-    [{ tipoPedido: 'MESA', mesaId: null }, 'Mesa'],
-    [{ tipoPedido: 'DELIVERY', mesaId: null }, 'Delivery'],
-    [{ tipoPedido: 'RECOJO', mesaId: null }, 'Recojo'],
-  ] as const)('%j -> %s', (partial, expected) => {
-    expect(tipoLabel(aColaPedido({ ...partial }))).toBe(expected);
-  });
-});
-
-describe('formatOrderNumber', () => {
-  it.each([
-    [476, '#0476'],
-    [5, '#0005'],
-    [12345, '#12345'],
-  ])('%d -> %s', (id, expected) => {
-    expect(formatOrderNumber(id)).toBe(expected);
+describe('re-exported order helpers (now owned by pedidos)', () => {
+  it('keep the cocina import path working', () => {
+    expect(tipoLabel(aColaPedido({ tipoPedido: 'MESA', mesaId: 7 }))).toBe('Mesa 7');
+    expect(formatOrderNumber(476)).toBe('#0476');
   });
 });
 

@@ -1,5 +1,8 @@
 import { CocinaEvent, ColaPedido } from '../cocina.types';
 
+// Order-generic helpers now live in pedidos; re-exported so cocina consumers keep their imports.
+export { formatOrderNumber, tipoLabel } from '../../pedidos/domain/pedidos.rules';
+
 /** Timer limits in minutes (user decision 2026-10-08). Single source for the whole board. */
 export const URGENCY_THRESHOLDS = { atencionMin: 15, criticoMin: 25 } as const;
 
@@ -65,21 +68,6 @@ export function sortListos(
     }
     return b.pedidoId - a.pedidoId;
   });
-}
-
-export function tipoLabel(order: Pick<ColaPedido, 'tipoPedido' | 'mesaId'>): string {
-  switch (order.tipoPedido) {
-    case 'MESA':
-      return order.mesaId === null ? 'Mesa' : `Mesa ${order.mesaId}`;
-    case 'DELIVERY':
-      return 'Delivery';
-    case 'RECOJO':
-      return 'Recojo';
-  }
-}
-
-export function formatOrderNumber(pedidoId: number): string {
-  return `#${String(pedidoId).padStart(4, '0')}`;
 }
 
 /** HH:mm:ss in local time. */
