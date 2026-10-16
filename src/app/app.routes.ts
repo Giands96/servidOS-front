@@ -12,19 +12,20 @@ const placeholder = () =>
 
 /**
  * Placeholder module route: the permission is declared once, in data, and read by the guard and the sidebar.
+ * A `null` icon declares a route without a sidebar entry (reached from another screen, e.g. /pedidos/nuevo).
  * Extra guards (e.g. subscriptionGuard for write modules) go in `guards`, never in a `canActivate` override
  * after the spread: that would silently drop the permission guard.
  */
 export const moduleRoute = (
   action: Action,
   label: string,
-  icon: NavIcon,
+  icon: NavIcon | null,
   guards: CanActivateFn[] = [],
   load: Route['loadComponent'] = placeholder,
 ): Pick<Route, 'canActivate' | 'loadComponent' | 'data'> => ({
   canActivate: [routeActionGuard, ...guards],
   loadComponent: load,
-  data: routeAccess({ action, nav: { label, icon }, title: label }),
+  data: routeAccess({ action, ...(icon === null ? {} : { nav: { label, icon } }), title: label }),
 });
 
 /*
@@ -43,7 +44,16 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./core/layout/shell.layout').then((m) => m.ShellLayout),
     children: [
-      { path: 'pedidos/nuevo', ...moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt') },
+      // No subscriptionGuard on the list: confirming, advancing and cancelling pass while the tenant is blocked (402
+      // only hits POST /pedidos). The guard goes on /pedidos/nuevo when that screen is built.
+      {
+        path: 'pedidos',
+        pathMatch: 'full',
+        ...moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt', [], () =>
+          import('./features/pedidos/pedidos.page').then((m) => m.PedidosPage),
+        ),
+      },
+      { path: 'pedidos/nuevo', ...moduleRoute('pedidos.gestionar', 'Nuevo pedido', null) },
       // No subscriptionGuard: marking LISTO is allowed while the subscription is blocked (402 does not apply).
       {
         path: 'cocina',
