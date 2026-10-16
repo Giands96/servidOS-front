@@ -1,6 +1,6 @@
 ---
 title: Cocina
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - modulos
@@ -17,7 +17,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 3 - Cocina]] · Ver [[Flujo del Sistema]] �
 > Tablero de cocina: cola de pedidos `EN_PREPARACION` por orden de llegada, "Marcar listo", panel "Listos para salir" y actualización en vivo por WebSocket STOMP.
 
 > [!warning] Estado: implementado, sin prueba manual
-> Commits hasta `2fad5cb`. No probado en navegador (backend caído); payload sin verificar contra Swagger; review nativa pendiente.
+> Commits hasta `2fad5cb`. No probado en navegador (backend caído); review nativa pendiente. El payload coincide con los DTO del backend (verificado contra su código el 2026-10-16), falta contrastarlo contra Swagger en ejecución.
 
 ## Archivos
 | Ruta | Contenido |
@@ -30,7 +30,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 3 - Cocina]] · Ver [[Flujo del Sistema]] �
 | `src/testing/builders.ts` | `aColaPedido`, `aColaItem` |
 
 ## API usada
-`GET /cocina/cola`, `GET /cocina/listos`, `POST /cocina/pedidos/{id}/listo` (204), STOMP `/ws` topic `/topic/restaurantes/{restauranteId}/cocina`. Forma sin verificar contra Swagger. Ver [[API]].
+`GET /cocina/cola`, `GET /cocina/listos`, `POST /cocina/pedidos/{id}/listo` (204), STOMP `/ws` topic `/topic/restaurantes/{restauranteId}/cocina`. Forma verificada contra los DTO del backend. Desde el 2026-10-16 cada pedido trae `listoAt` (hora en que pasó a LISTO; `null` en la cola). Ver [[API]].
 
 ## Reglas de dominio (`cocina.rules.ts`)
 `URGENCY_THRESHOLDS` (Atención 15, Crítico 25) y `urgencyOf`; `elapsedMinutes`, `minutesSince`; `sortByArrival` (antiguo primero, desempate por `pedidoId`); `sortListos` (más reciente primero según `listoAt` local, luego `pedidoId` desc); `tipoLabel`, `formatOrderNumber` (`#0476`), `formatClock`, `queueSummary`; `applyKitchenEvent(board, event)` inmutable que devuelve qué lista recargar.
@@ -42,8 +42,8 @@ Volver: [[00 - MOC]] · Fase: [[Fase 3 - Cocina]] · Ver [[Flujo del Sistema]] �
 - Carga HTTP de cola y listos al iniciar y en cada (re)conexión (con `switchMap`, la última gana); aplica eventos con las reglas; los timers se refrescan cada 30 s.
 - Encabezado con resumen y píldora: "En vivo · HH:mm:ss" / "Conectando…" / "Sin conexión · reintentando" (oscura con punto rojo, patrón `kUmH1`); botón "Pantalla completa" si el navegador lo soporta.
 - Tarjetas con chip de urgencia (borde y color según nivel), ítems con cantidad, observaciones y botón "Marcar listo" que pasa a "Marcando…"; si falla, toast con `message` y recarga de la cola.
-- Panel "Listos para salir" con "hace N min" solo para pedidos cuyo paso a LISTO vio el front (`listoAt` local); vacío sin texto propio; sin badge en el sidebar.
-- `createdAt` se interpreta como hora local.
+- Panel "Listos para salir" con "hace N min" solo para pedidos cuyo paso a LISTO vio el front (`listoAt` local); vacío sin texto propio; sin badge en el sidebar. **Pendiente:** usar el `listoAt` que ya manda el backend, así el tiempo sobrevive a una recarga.
+- `createdAt` se interpreta como hora local. Correcto: el backend corre en `America/Lima` y manda las fechas sin zona en esa hora.
 
 ## Permisos y ruta
 `cocina.ver` / `cocina.listo`: ADMINISTRADOR, RECEPCION, COCINERO. La ruta usa `moduleRoute('cocina.ver', 'Cocina', 'flame', [], load)` (conserva `routeActionGuard`) y **no** lleva `subscriptionGuard`. Dos tests de ruta lo fijan.
@@ -52,9 +52,9 @@ Volver: [[00 - MOC]] · Fase: [[Fase 3 - Cocina]] · Ver [[Flujo del Sistema]] �
 | Ventajas | Desventajas |
 |---|---|
 | Lógica pura aislada y testeada (65 tests de cocina) | Sin prueba manual contra un backend real |
-| Funciona aunque el socket no conecte (carga HTTP) | Payload y zona horaria de `createdAt` sin verificar |
+| Funciona aunque el socket no conecte (carga HTTP) | Payload verificado solo contra el código, no contra Swagger |
 | Cliente STOMP sustituible en tests | Dependencia nueva (`@stomp/*`) y `allowedCommonJsDependencies` |
-| Un solo `URGENCY_THRESHOLDS` | "hace N min" se pierde al recargar (sin timestamp de LISTO) |
+| Un solo `URGENCY_THRESHOLDS` | "hace N min" se pierde al recargar hasta que se use el `listoAt` del backend |
 
 ## Cómo extenderlo sin romperlo
 - Reglas nuevas en `cocina.rules.ts` con test; la página solo orquesta.

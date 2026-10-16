@@ -1,6 +1,6 @@
 ---
 title: Pagos
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - modulos
@@ -25,10 +25,16 @@ Solo la ruta en `src/app/app.routes.ts`. Sin carpeta de feature.
 `POST /pagos` (`pedidoId`, `metodoPago`, `montoEntregado?`, `referenciaExterna?`), `POST /pagos/{id}/reembolso` (`motivo` obligatorio; respuesta incluye `reembolsoMotivo` y `reembolsoUsuarioId`).
 
 ## Reglas previstas
-EFECTIVO calcula vuelto con `montoEntregado`; solo ese método lo usa. Anti-doble-pago. Anunciado sin verificar: reembolso cancela el pedido si no está `ENTREGADO`; un pedido reembolsado no se cobra de nuevo (ocultar "Cobrar"); ambos endpoints se permiten con 402.
+EFECTIVO calcula vuelto con `montoEntregado`; solo ese método lo usa. Anti-doble-pago. Verificado contra el código del backend:
+- Solo se reembolsa un pago `PAGADO`: mostrar "Reembolsar" solo si `estadoPago` es `PAGADO`.
+- El reembolso cancela el pedido si no está `ENTREGADO`.
+- Un pedido reembolsado no se cobra de nuevo: ocultar "Cobrar" si `estadoPago` no es `null`.
+- Un pedido pagado no se cancela; se reembolsa.
+- Ambos endpoints funcionan con el restaurante bloqueado (402).
+- Para la caja: `GET /pedidos?porCobrar=true` trae los pedidos no cancelados que nunca se cobraron.
 
 ## Permisos
-`pagos.registrar`: solo ADMINISTRADOR. `pagos.reembolsar`: ADMINISTRADOR y RECEPCION (la ruta `/caja` solo exige `pagos.registrar`, así RECEPCION no vería la pantalla aunque pueda reembolsar: decisión de UX pendiente de definir).
+Backend (2026-10-09): cobrar = ADMINISTRADOR, RECEPCION y CAJERO; reembolsar = ADMINISTRADOR y RECEPCION. En el front `pagos.registrar` sigue solo en ADMINISTRADOR: al alinearlo, RECEPCION y CAJERO verán `/caja`, y se cierra la deuda "RECEPCION reembolsa pero no ve caja".
 
 ## Ventajas y desventajas (previsto)
 | Ventajas | Desventajas |

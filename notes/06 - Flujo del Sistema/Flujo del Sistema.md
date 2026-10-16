@@ -1,6 +1,6 @@
 ---
 title: Flujo del Sistema
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - flujos
@@ -94,7 +94,7 @@ flowchart TD
 ```
 
 ## Ciclo de vida del pedido
-Fuente: `docs/Flujo - Recepcion Cocina.md` regla 5 (más anuncios del 2026-10-08, sin verificar, marcados).
+Fuente: `docs/Flujo - Recepcion Cocina.md` regla 5, más las reglas del backend del 2026-10-08 (verificadas contra su código el 2026-10-16). Cancelar no pide contraseña, pero solo se puede si el pedido no está pagado; un pedido pagado se reembolsa y el reembolso lo cancela si no estaba `ENTREGADO`.
 ```mermaid
 stateDiagram-v2
     [*] --> PENDIENTE: RECEPCION crea
@@ -106,7 +106,7 @@ stateDiagram-v2
     PENDIENTE --> CANCELADO
     EN_PREPARACION --> CANCELADO
     LISTO --> CANCELADO
-    EN_ENTREGA --> CANCELADO: anunciado, sin verificar (si no pagado)
+    EN_ENTREGA --> CANCELADO: si no está pagado
     ENTREGADO --> [*]
     CANCELADO --> [*]
 ```

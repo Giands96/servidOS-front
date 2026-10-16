@@ -1,6 +1,6 @@
 ---
 title: Shared
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - modulos
@@ -39,7 +39,7 @@ Ninguna. Las páginas leen `SessionStore` y `navigation.rules`.
 Ninguna de negocio. Las páginas derivan textos de `homeLabel` y `roleLabel`.
 
 > [!warning] Copy afectado por el anuncio del backend
-> `suspendido.page.ts` dice "Contacta al administrador de tu restaurante para renovar el plan". El backend anunció que el texto debe decir que la plataforma regulariza la suscripción (sin verificar). Ver [[API]].
+> `suspendido.page.ts` dice "Contacta al administrador de tu restaurante para renovar el plan". Los mensajes 402 del backend ya terminan en "contactá a la plataforma para regularizar tu suscripción" (verificado contra su código): el texto debe decir lo mismo. Ver [[API]].
 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |

@@ -1,6 +1,6 @@
 ---
 title: Fases 4-9 - Planificadas
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - fases
@@ -21,9 +21,9 @@ Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya implementado
 > El plan general numeraba: 3 Restaurante, 4 Catálogo, 5 Pedidos, 6 Cocina, 7 Pagos, 8 Usuarios, 9 Plataforma. El usuario eligió Cocina primero, por lo que Cocina pasó a ser la fase 3 (ver [[Fase 3 - Cocina]]). Las fases siguientes no tienen renumeración oficial; aquí se mantiene el orden del plan general excluyendo Cocina.
 
 ## Restaurante ([[Restaurante]])
-- **Objetivo**: ver restaurante y suscripción, cambiar plan (doble confirmación con contraseña), cancelar y paywall.
+- **Objetivo**: ver restaurante y suscripción, cancelar (con contraseña) y paywall. El cambio de plan ya no es del tenant: pasó a [[Plataforma]] (backend §14).
 - **Necesita diseño**: sí (`Efm03`, `m4qop`). **Decisión de negocio**: sí (paywall).
-- **Cambios anunciados** (sin verificar): sin `renovar()` del tenant, cancelar con contraseña, aviso "termina el {fechaFin}", `subscriptionGuard` por `fechaFin`.
+- **Cambios del backend** (verificados contra su código): sin `renovar()` ni cambio de plan del tenant, cancelar con contraseña, aviso "termina el {fechaFin}", `subscriptionGuard` por `fechaFin` (inclusiva, período de un mes calendario).
 - **Tests previstos**: reglas de suscripción y guard.
 
 ## Catálogo ([[Catálogo]])
@@ -45,8 +45,8 @@ Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya implementado
 - Crear con rol, cambiar rol, eliminar (409 por último ADMINISTRADOR). Diseño `VHQeZ`. **Bloqueo**: no existe `GET /usuarios`. Cambios anunciados: validaciones cross-tenant a 400.
 
 ## Plataforma ([[Plataforma]])
-- Dashboard SUPERADMIN paginado, crear restaurante (demo exige `demoDias` 1–30), detalle. Diseño `x9DxqV`, `z8ZbK`.
+- Dashboard de plataforma paginado (SUPERADMIN, ADMIN y MODERADOR lo ven), crear restaurante **con su dueño** (§18; demo exige `demoDias` 1–30), detalle, renovar, cambiar plan, suspender o reactivar y alta de usuarios de plataforma. Diseño `x9DxqV`, `z8ZbK`. Permisos por rol en [[Modelo de Negocio]].
 
 ## Riesgos generales
 - Cada módulo de escritura debe montar `subscriptionGuard` por el parámetro `guards` de `moduleRoute` (excepto operaciones permitidas aun con 402).
-- Forma de varios endpoints sin verificar contra Swagger. Ver [[API]] y [[Pendientes y Deuda Técnica]].
+- La forma de los endpoints ya se verificó contra el código del backend (2026-10-16), pero no contra Swagger en ejecución. Ver [[API]] y [[Pendientes y Deuda Técnica]].

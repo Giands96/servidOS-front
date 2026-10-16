@@ -1,6 +1,6 @@
 ---
 title: Pendientes y Deuda Técnica
-date: 2026-10-14
+date: 2026-10-16
 tags:
   - servidos
   - gobierno
@@ -17,8 +17,8 @@ Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9
 > [!abstract] Alcance
 > Todo lo abierto según `docs/progress/*`, `odd/tasks/*` y lo observado al leer el código. Cada ítem indica su origen.
 
-## Checklist de cambios anunciados por el backend (2026-10-08)
-Anunciados por backend, sin verificar contra Swagger.
+## Checklist de cambios del backend (2026-10-08 a 2026-10-16)
+Numeración de `CAMBIOS_FRONTEND.md` del backend. Verificados contra su código el 2026-10-16 (§1 a §17 en `main`; §18 en una rama); falta contrastar contra Swagger en ejecución. Los ítems marcan el trabajo del front.
 - [x] §1 `RestauranteApi.renovar()` eliminado; el botón del paywall ahora muestra el pago manual por Yape + WhatsApp ([[Restaurante]], `docs/progress/06-paywall-pago-manual.md`). Falta el copy de `suspendido.page.ts` ("la plataforma regulariza la suscripción"; hoy dice "renovar el plan").
 - [ ] Pago manual: el dueño debe completar `whatsappNumber` en `payment-contact.ts` y agregar `public/yape-qr.png`; decidir si se avisa en pantalla cuando el número no está configurado.
 - [ ] Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace).
@@ -32,13 +32,21 @@ Anunciados por backend, sin verificar contra Swagger.
 - [x] §9 `POST /pedidos` corregido (sin impacto).
 - [x] §10 `GET /cocina/listos` (cliente `cocina.api.ts` hecho).
 - [x] §11 WebSocket STOMP: cliente, proxy y página implementados (sin prueba manual).
+- [ ] §10b Usar el `listoAt` de `GET /cocina/listos` para "hace N min" (hoy se calcula con la hora local del aviso y se pierde al recargar).
+- [ ] §12 Caja con `GET /pedidos?porCobrar=true` e historial con `?fecha=`; "Cobrar" solo si `estadoPago` es `null` y "Reembolsar" solo si es `PAGADO`.
+- [ ] §13 `pagos.registrar` = ADMINISTRADOR, RECEPCION y CAJERO (backend 2026-10-09); `pedidos` también para CAJERO.
+- [ ] §14 Sin cambio de plan del tenant (`PATCH /restaurantes/actual/plan` ya no existe); el cambio va al panel de [[Plataforma]] (`PATCH /restaurantes/{id}/plan`).
+- [ ] §15 Fechas sin zona = hora de Lima: no agregar `Z` ni tratarlas como UTC.
+- [ ] §16 Panel de plataforma por rol (ADMIN = SUPERADMIN salvo crear ADMINs; MODERADOR ve y renueva) y alta de usuarios de plataforma (`POST /usuarios/plataforma`; a un ADMIN solo ofrecerle MODERADOR). MODERADOR necesita un home de plataforma.
+- [ ] §17 `fechaFin` inclusiva y período de un mes calendario: textos "vence el {fechaFin}" y días restantes `fechaFin - hoy + 1`.
+- [ ] §18 (rama del backend) Formulario "Crear restaurante" con la sección Administrador (nombre, apellido, email, contraseña con confirmación en el cliente); 409 bajo Email, 422 `administrador.*` bajo su campo; el aviso de éxito muestra `administrador.email` de la respuesta.
 
 ## Cocina (implementada, por cerrar)
 - [x] Página, nota `docs/progress/05`, checkboxes de `odd/tasks/cocina.md` y tests de conexión/reconexión (cocina-live) hechos.
 - [ ] Prueba manual en navegador con backend (checklist en `docs/progress/05`).
 - [ ] Review nativa de `00c94dd..2fad5cb` (riesgo medio, presupuesto alcanzado).
-- [ ] Confirmar zona horaria de `createdAt` (se lee como hora local).
-- [ ] Verificar forma de `/cocina/cola` y `/listos` contra Swagger.
+- [x] Zona horaria de `createdAt`: el backend corre en `America/Lima` y manda la hora local sin zona (§15), así que leerla como local es correcto.
+- [ ] Verificar forma de `/cocina/cola` y `/listos` contra Swagger (ya coincide con los DTO del backend).
 - [ ] Actualizar `docs/FRONTEND_CONTEXT.md` §9 (aún dice "no existen WebSockets de cocina") y el flujo de polling de `Flujo - Recepcion Cocina.md`, `DESIGN_BRIEF` §6.6 y `frontend-alineacion-seguridad.md`.
 
 ## Pedidos (Fase 4, implementada en ramas locales)
@@ -50,7 +58,7 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
 - [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior.
-- [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código `pagos.registrar` es solo de ADMINISTRADOR, el contrato §3 también lo da a RECEPCION y CAJERO.
+- [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código del front `pagos.registrar` es solo de ADMINISTRADOR, y el backend ya permite cobrar a RECEPCION y CAJERO (§13).
 - [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto.
 - [ ] `fail()` duplicada en `pedidos.page.ts` y `nuevo-pedido.page.ts`.
 - [ ] Advertencias menores: `cantidad` sin tope superior y `productoId` duplicado sin validar; el cargador de catálogo confía en la forma de la página; copy del paywall aún dice "cancelada"; `core/auth/data/suscripcion.api.ts` solo contiene un tipo; nombre y documentación de `subscriptionLapsedRoute`.

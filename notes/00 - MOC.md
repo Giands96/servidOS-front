@@ -1,6 +1,6 @@
 ---
 title: ServidOS Front - MOC
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - frontend
@@ -16,7 +16,16 @@ aliases:
 > Documentación del cliente Angular de ServidOS (`D:\servidos-frontend\front`). Cada nota es atómica, cita rutas del repositorio y separa lo **verificado en código/docs** de lo **anunciado sin verificar**. Su objetivo: que cualquiera entienda qué hace el proyecto y pueda extenderlo sin romperlo ni convertirlo en spaghetti. El backend tiene su propia bóveda (`ServidOS - MOC` en el repo del backend).
 
 > [!info] Estado del módulo Cocina
-> Cocina está **implementada** en la rama `feat/cocina` (hasta `2fad5cb`), pero sin prueba manual en navegador, con payload sin verificar contra Swagger y con la review nativa pendiente. Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
+> Cocina está **implementada** en la rama `feat/cocina` (hasta `2fad5cb`), pero sin prueba manual en navegador y con la review nativa pendiente. Su payload coincide con los DTO del backend (verificado contra su código, falta Swagger). Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
+
+> [!info] Cambios del backend (2026-10-08 a 2026-10-16)
+> Los cambios anunciados por el backend ya están en su `main` y se verificaron contra su código el 2026-10-16. Además, el backend:
+> - suma `GET /pedidos`, `listoAt` en cocina y el cobro para RECEPCION y CAJERO;
+> - pasa el cambio de plan a la plataforma y define los roles de plataforma (ADMIN = SUPERADMIN salvo crear ADMINs; MODERADOR ve y renueva);
+> - usa períodos de un mes con `fechaFin` inclusiva;
+> - en una rama, crea el dueño junto con el restaurante.
+>
+> Contrato en [[API]], permisos en [[Modelo de Negocio]] y trabajo pendiente del front en [[Pendientes y Deuda Técnica]].
 
 > [!info] Estado del módulo Pedidos
 > Pedidos (lista + nuevo pedido) está **implementado en cinco ramas locales**, sin push y pendiente de merge (punta `feat/pedidos-04-alta`, 747 tests). Sin prueba manual en navegador. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
@@ -30,7 +39,7 @@ aliases:
 
 ### 02 - Arquitectura
 - [[Arquitectura]] — capas, rutas como fuente única, ventajas y desventajas
-- [[Reglas anti-spaghetti]] — checklist de qué va dónde y qué no hacer
+- [[Buenas practicas|Reglas anti-spaghetti]] — checklist de qué va dónde y qué no hacer
 - [[Decisiones (ADR)]] — decisiones tomadas con contexto y trade-offs
 
 ### 03 - Infraestructura
@@ -85,7 +94,7 @@ graph TD
 ```
 
 > [!tip] Orden de lectura sugerido para alguien nuevo
-> [[Contexto del Proyecto]] → [[Modelo de Negocio]] → [[Arquitectura]] → [[Reglas anti-spaghetti]] → [[Seguridad]] → el módulo que vaya a tocar en [[Core]] / [[Cocina]].
+> [[Contexto del Proyecto]] → [[Modelo de Negocio]] → [[Arquitectura]] → [[Buenas practicas|Reglas anti-spaghetti]] → [[Seguridad]] → el módulo que vaya a tocar en [[Core]] / [[Cocina]].
 
 ## Fuentes del repositorio
 `AGENTS.md`, `README.md`, `docs/FRONTEND_CONTEXT.md`, `docs/Flujo - Recepcion Cocina.md`, `docs/DESIGN_BRIEF.md`, `docs/frontend-alineacion-seguridad.md`, `docs/progress/*.md`, `odd/tasks/*.md`, y el código bajo `src/`.
