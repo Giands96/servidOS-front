@@ -34,7 +34,7 @@ EFECTIVO calcula vuelto con `montoEntregado`; solo ese método lo usa. Anti-dobl
 | Ventajas | Desventajas |
 |---|---|
 | Acciones separadas cobrar/reembolsar | Matriz asimétrica entre menú y permisos |
-| Auditoría de reembolso en la respuesta | Sin listado de pedidos "por cobrar" (`GET /pedidos` no existe) |
+| Auditoría de reembolso en la respuesta | El listado de pedidos "por cobrar" aún no está en el front (`GET /pedidos?porCobrar=` existe; llega con la fase de Caja) |
 
 ## Cómo extenderlo
 `features/pagos/{data,domain}` con reglas de vuelto/monto probadas; no confiar en montos del cliente; confirmar diseño (`P25cfL`, `tDcwg`) con el usuario.

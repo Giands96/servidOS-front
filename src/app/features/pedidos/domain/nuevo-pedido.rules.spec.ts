@@ -1,4 +1,4 @@
-import { aProducto } from '../../../../testing/builders';
+import { aCategoria, aProducto } from '../../../../testing/builders';
 import { tipoLabel } from './pedidos.rules';
 import {
   BorradorPedido,
@@ -7,14 +7,22 @@ import {
   addProducto,
   canAdd,
   cantidadDe,
+  categoryTabs,
   decrement,
+  emptyDraft,
   increment,
+  isDraftEmpty,
   isValidDraft,
   parseMesaId,
+  pedidoCreadoMessage,
+  productosDeCategoria,
+  resumenItems,
   setLineaObservacion,
+  subtotalLinea,
   toRequest,
   totalReferencial,
   validateDraft,
+  visibleErrors,
 } from './nuevo-pedido.rules';
 
 /** Freezes recursively: any in-place mutation throws (ES modules run in strict mode). */
@@ -407,5 +415,147 @@ describe('toRequest', () => {
     expect(result.items).not.toBe(input.lineas);
     expect(input.observacion).toBe(' a ');
     expect(input.lineas[0].observacion).toBe(' b ');
+  });
+});
+
+describe('emptyDraft', () => {
+  it('starts as a MESA order with no mesa, no observation and no lines (the default of the design)', () => {
+    expect(emptyDraft()).toEqual({ tipoPedido: 'MESA', mesaId: '', observacion: '', lineas: [] });
+  });
+
+  it('returns a fresh object every time', () => {
+    expect(emptyDraft()).not.toBe(emptyDraft());
+    expect(emptyDraft().lineas).not.toBe(emptyDraft().lineas);
+  });
+});
+
+describe('isDraftEmpty', () => {
+  it('is true for a new draft, whatever the tipo', () => {
+    expect(isDraftEmpty(emptyDraft())).toBe(true);
+    expect(isDraftEmpty({ ...emptyDraft(), tipoPedido: 'DELIVERY' })).toBe(true);
+  });
+
+  it('is false as soon as there is a line', () => {
+    expect(isDraftEmpty({ ...emptyDraft(), lineas: [linea()] })).toBe(false);
+  });
+
+  it('is false when the mesa or the order observation has text', () => {
+    expect(isDraftEmpty({ ...emptyDraft(), mesaId: '4' })).toBe(false);
+    expect(isDraftEmpty({ ...emptyDraft(), observacion: 'Sin ají' })).toBe(false);
+  });
+
+  it('treats whitespace-only text as empty', () => {
+    expect(isDraftEmpty({ ...emptyDraft(), mesaId: '  ', observacion: ' \n ' })).toBe(true);
+  });
+});
+
+describe('categoryTabs', () => {
+  it('starts with "Todos" (null id) and keeps the API order of the enabled categories', () => {
+    const tabs = categoryTabs([
+      aCategoria({ categoriaId: 5, nombre: 'Fondos' }),
+      aCategoria({ categoriaId: 2, nombre: 'Ceviches' }),
+    ]);
+    expect(tabs).toEqual([
+      { categoriaId: null, label: 'Todos' },
+      { categoriaId: 5, label: 'Fondos' },
+      { categoriaId: 2, label: 'Ceviches' },
+    ]);
+  });
+
+  it('leaves out DESHABILITADO categories', () => {
+    const tabs = categoryTabs([
+      aCategoria({ categoriaId: 1, nombre: 'Postres', estado: 'DESHABILITADO' }),
+      aCategoria({ categoriaId: 2, nombre: 'Bebidas' }),
+    ]);
+    expect(tabs.map((t) => t.label)).toEqual(['Todos', 'Bebidas']);
+  });
+
+  it('still offers "Todos" when there are no categories', () => {
+    expect(categoryTabs([])).toEqual([{ categoriaId: null, label: 'Todos' }]);
+  });
+
+  it('does not mutate its input', () => {
+    const categorias = deepFreeze([aCategoria()]);
+    expect(() => categoryTabs(categorias)).not.toThrow();
+  });
+});
+
+describe('productosDeCategoria', () => {
+  const productos = [
+    aProducto({ productoId: 1, categoriaId: 10 }),
+    aProducto({ productoId: 2, categoriaId: 20 }),
+    aProducto({ productoId: 3, categoriaId: null }),
+    aProducto({ productoId: 4, categoriaId: 10, estado: 'AGOTADO' }),
+  ];
+
+  it('returns every product, in order, for "Todos" (null), including those without category', () => {
+    expect(productosDeCategoria(productos, null).map((p) => p.productoId)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('returns only the products of that category, keeping the order and the AGOTADO ones', () => {
+    expect(productosDeCategoria(productos, 10).map((p) => p.productoId)).toEqual([1, 4]);
+  });
+
+  it('returns nothing for a category without products', () => {
+    expect(productosDeCategoria(productos, 99)).toEqual([]);
+  });
+
+  it('returns a new array and does not mutate its input', () => {
+    const frozen = deepFreeze([...productos]);
+    const all = productosDeCategoria(frozen, null);
+    expect(all).not.toBe(frozen);
+    expect(all).toEqual(productos);
+  });
+});
+
+describe('subtotalLinea', () => {
+  it('is precio x cantidad', () => {
+    expect(subtotalLinea(linea({ precio: 32, cantidad: 2 }))).toBe(64);
+  });
+
+  it('sums integer cents like totalReferencial (no float drift)', () => {
+    expect(subtotalLinea(linea({ precio: 0.1, cantidad: 3 }))).toBe(0.3);
+    expect(subtotalLinea(linea({ precio: 19.99, cantidad: 3 }))).toBe(59.97);
+  });
+});
+
+describe('resumenItems', () => {
+  it('counts the distinct products and the units, as the design shows them', () => {
+    const lineas = [linea({ productoId: 1, cantidad: 2 }), linea({ productoId: 2, cantidad: 1 })];
+    expect(resumenItems(lineas)).toBe('2 productos · 3 u.');
+  });
+
+  it('uses the singular for one product', () => {
+    expect(resumenItems([linea({ cantidad: 1 })])).toBe('1 producto · 1 u.');
+    expect(resumenItems([linea({ cantidad: 4 })])).toBe('1 producto · 4 u.');
+  });
+
+  it('is empty for an empty cart', () => {
+    expect(resumenItems([])).toBe('');
+  });
+});
+
+describe('visibleErrors', () => {
+  const invalid = draft({ lineas: [], mesaId: '' });
+
+  it('shows nothing before the first submit attempt, even for an invalid draft', () => {
+    expect(visibleErrors(invalid, false)).toEqual({});
+  });
+
+  it('shows every validateDraft error after a submit attempt', () => {
+    expect(visibleErrors(invalid, true)).toEqual(validateDraft(invalid));
+    expect(Object.keys(visibleErrors(invalid, true)).sort()).toEqual(['items', 'mesaId']);
+  });
+
+  it('follows the draft once the attempt was made (an error disappears when it is fixed)', () => {
+    expect(visibleErrors(draft(), true)).toEqual({});
+    expect(Object.keys(visibleErrors(draft({ mesaId: 'x' }), true))).toEqual(['mesaId']);
+  });
+});
+
+describe('pedidoCreadoMessage', () => {
+  it('names the order with its zero-padded number', () => {
+    expect(pedidoCreadoMessage(7)).toBe('Pedido #0007 creado');
+    expect(pedidoCreadoMessage(12345)).toBe('Pedido #12345 creado');
   });
 });

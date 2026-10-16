@@ -28,6 +28,7 @@ import {
   estadoLabel,
   estadoPagoLabel,
   estadoVariant,
+  failedLoadView,
   formatCreatedAt,
   formatMoney,
   formatOrderNumber,
@@ -36,24 +37,24 @@ import {
   observacionText,
   pagerView,
   primaryAction,
+  shouldReloadAfterRejection,
+  tipoIcon,
   tipoLabel,
   transitionMessage,
 } from './domain/pedidos.rules';
-import { EstadoPedido, Pedido, PedidoListado, PedidosQuery, TipoPedido } from './pedidos.types';
+import { EstadoPedido, Pedido, PedidoListado, PedidosQuery } from './pedidos.types';
 
 const PAGE_SIZE = 20;
 
-const TIPO_ICON: Record<TipoPedido, IconName> = {
-  MESA: 'utensils',
-  DELIVERY: 'bike',
-  RECOJO: 'bag',
-};
-
-type Outcome = { ok: true; page: Page<PedidoListado> } | { ok: false; error: unknown };
+type Outcome =
+  | { ok: true; page: Page<PedidoListado> }
+  | { ok: false; error: unknown; sameView: boolean };
 
 interface LoadRequest {
   estado: EstadoPedido | null;
   page: number;
+  /** True for a reload of the view already on screen (same tab and page), false when the view itself changes. */
+  sameView: boolean;
 }
 
 interface RowView {
@@ -282,7 +283,7 @@ export class PedidosPage {
 
   private readonly pageIndex = signal(0);
   private readonly now = signal(new Date());
-  private readonly pending = signal<ReadonlySet<number>>(new Set());
+  private readonly inFlight = signal<ReadonlySet<number>>(new Set());
   /** Rows whose transition was applied and that wait for the list reload to show their new estado. */
   private readonly awaitingReload = signal<ReadonlySet<number>>(new Set());
   private readonly cancelTarget = signal<PedidoListado | null>(null);
@@ -306,14 +307,14 @@ export class PedidosPage {
 
   protected readonly rows = computed<RowView[]>(() => {
     const now = this.now();
-    const pending = this.pending();
+    const inFlight = this.inFlight();
     const awaitingReload = this.awaitingReload();
     return (this.data()?.content ?? []).map((pedido) => ({
       pedido,
       number: formatOrderNumber(pedido.pedidoId),
       time: formatCreatedAt(pedido.createdAt, now),
       tipo: tipoLabel(pedido),
-      icon: TIPO_ICON[pedido.tipoPedido] ?? null,
+      icon: tipoIcon(pedido.tipoPedido),
       observacion: observacionText(pedido.observacion),
       total: formatMoney(pedido.total),
       estado: estadoLabel(pedido.estado),
@@ -321,7 +322,7 @@ export class PedidosPage {
       pago: estadoPagoLabel(pedido.estadoPago),
       action: primaryAction(pedido),
       cancelable: canCancel(pedido),
-      busy: isRowBusy(pedido.pedidoId, pending, awaitingReload),
+      busy: isRowBusy(pedido.pedidoId, inFlight, awaitingReload),
     }));
   });
 
@@ -333,7 +334,9 @@ export class PedidosPage {
           (request): Observable<Outcome> =>
             this.api.listar(this.toQuery(request)).pipe(
               map((page): Outcome => ({ ok: true, page })),
-              catchError((error: unknown) => of<Outcome>({ ok: false, error })),
+              catchError((error: unknown) =>
+                of<Outcome>({ ok: false, error, sameView: request.sameView }),
+              ),
             ),
         ),
         takeUntilDestroyed(),
@@ -408,7 +411,7 @@ export class PedidosPage {
     }
     this.failed.set(false);
     this.loading.set(true);
-    this.requests$.next({ estado, page });
+    this.requests$.next({ estado, page, sameView: !clear });
   }
 
   private toQuery({ estado, page }: LoadRequest): PedidosQuery {
@@ -419,8 +422,14 @@ export class PedidosPage {
     if (!outcome.ok) {
       this.releaseReloaded();
       this.loading.set(false);
-      this.failed.set(true);
-      this.data.set(null);
+      const kept = this.data();
+      if (failedLoadView({ hadData: kept !== null, sameView: outcome.sameView }) === 'keep-rows') {
+        // A failed reload of the same view leaves the loaded rows visible; the toast reports the error.
+        this.pageIndex.set(kept?.number ?? 0);
+      } else {
+        this.failed.set(true);
+        this.data.set(null);
+      }
       this.fail(outcome.error);
       return;
     }
@@ -442,24 +451,38 @@ export class PedidosPage {
    * reload it triggers answers too: releasing it earlier would leave the old estado clickable for the whole reload.
    */
   private run(pedidoId: number, request: Observable<Pedido>): void {
-    this.setPending(pedidoId, true);
+    this.setInFlight(pedidoId, true);
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (pedido) => {
         // Order matters: hand the lock over to awaitingReload before releasing the in-flight one.
-        this.awaitingReload.update((set) => new Set(set).add(pedidoId));
-        this.setPending(pedidoId, false);
-        this.toasts.show('OK', transitionMessage(pedido.pedidoId, pedido.estado), 'success');
+        this.holdUntilReload(pedidoId);
+        this.setInFlight(pedidoId, false);
+        // Reload before the toast: nothing that builds the message may skip the reload that releases the lock.
         this.refresh();
+        this.toasts.show('OK', transitionMessage(pedido.pedidoId, pedido.estado), 'success');
       },
       error: (error: unknown) => {
-        this.setPending(pedidoId, false);
+        // A 4xx most likely means the row is stale: show the message and reload so the list converges.
+        const reload = error instanceof HttpErrorResponse && shouldReloadAfterRejection(error.status);
+        if (reload) {
+          this.holdUntilReload(pedidoId);
+        }
+        this.setInFlight(pedidoId, false);
+        if (reload) {
+          this.refresh();
+        }
         this.fail(error);
       },
     });
   }
 
   private isBusy(pedidoId: number): boolean {
-    return isRowBusy(pedidoId, this.pending(), this.awaitingReload());
+    return isRowBusy(pedidoId, this.inFlight(), this.awaitingReload());
+  }
+
+  /** Keeps the row locked until the next list answer (see `releaseReloaded`). */
+  private holdUntilReload(pedidoId: number): void {
+    this.awaitingReload.update((set) => new Set(set).add(pedidoId));
   }
 
   /** The latest list request answered (switchMap keeps only the newest), so every applied row is now up to date. */
@@ -469,8 +492,8 @@ export class PedidosPage {
     }
   }
 
-  private setPending(pedidoId: number, on: boolean): void {
-    this.pending.update((set) => {
+  private setInFlight(pedidoId: number, on: boolean): void {
+    this.inFlight.update((set) => {
       const next = new Set(set);
       if (on) {
         next.add(pedidoId);

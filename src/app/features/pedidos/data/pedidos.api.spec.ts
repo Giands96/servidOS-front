@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { aPage, aPedidoListado } from '../../../../testing/builders';
 import { expectApi } from '../../../../testing/mock-api';
-import { Pedido } from '../pedidos.types';
+import { CrearPedidoRequest, Pedido } from '../pedidos.types';
 import { PedidosApi } from './pedidos.api';
 
 const aPedido = (overrides: Partial<Pedido> = {}): Pedido => ({
@@ -67,6 +67,40 @@ describe('PedidosApi', () => {
     it('keeps page 0 (a falsy but valid value)', () => {
       api.listar({ page: 0 }).subscribe();
       expect(expectApi(ctrl, 'GET', '/pedidos').request.params.get('page')).toBe('0');
+    });
+  });
+
+  describe('crear', () => {
+    it('POSTs the request as is to /pedidos and returns the new order', () => {
+      const request: CrearPedidoRequest = {
+        tipoPedido: 'MESA',
+        mesaId: 7,
+        observacion: 'Sin ají',
+        items: [
+          { productoId: 3, cantidad: 2 },
+          { productoId: 5, cantidad: 1, observacion: 'Bien cocido' },
+        ],
+      };
+      const pedido = aPedido({ estado: 'PENDIENTE', total: 70 });
+      let result: unknown;
+      api.crear(request).subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'POST', '/pedidos');
+      expect(req.request.body).toEqual(request);
+      req.flush(pedido, { status: 201, statusText: 'Created' });
+      expect(result).toEqual(pedido);
+    });
+
+    it('propagates a backend error (e.g. 400 "Producto no disponible")', () => {
+      let error: unknown;
+      api.crear({ tipoPedido: 'RECOJO', items: [{ productoId: 3, cantidad: 1 }] }).subscribe({
+        error: (e) => (error = e),
+      });
+      expectApi(ctrl, 'POST', '/pedidos').flush(
+        { message: 'Producto no disponible: 3' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+      expect((error as HttpErrorResponse).status).toBe(400);
+      expect((error as HttpErrorResponse).error.message).toBe('Producto no disponible: 3');
     });
   });
 

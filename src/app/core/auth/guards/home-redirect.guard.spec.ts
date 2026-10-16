@@ -24,6 +24,6 @@ describe('homeRedirectGuard', () => {
 
   it('redirects a signed-in user to their home', () => {
     TestBed.inject(SessionStore).setUser(aMe({ rol: 'ADMINISTRADOR' }));
-    expect(run().toString()).toBe('/pedidos/nuevo');
+    expect(run().toString()).toBe('/pedidos');
   });
 });

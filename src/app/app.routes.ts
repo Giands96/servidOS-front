@@ -6,6 +6,7 @@ import { NavIcon, routeAccess } from './core/auth/domain/navigation.rules';
 import { Action } from './core/auth/domain/permissions.rules';
 import { roleGuard } from './core/auth/guards/role.guard';
 import { routeActionGuard } from './core/auth/guards/route-action.guard';
+import { subscriptionGuard } from './core/auth/guards/subscription.guard';
 
 const placeholder = () =>
   import('./shared/pages/module-placeholder.page').then((m) => m.ModulePlaceholderPage);
@@ -45,7 +46,7 @@ export const routes: Routes = [
     loadComponent: () => import('./core/layout/shell.layout').then((m) => m.ShellLayout),
     children: [
       // No subscriptionGuard on the list: confirming, advancing and cancelling pass while the tenant is blocked (402
-      // only hits POST /pedidos). The guard goes on /pedidos/nuevo when that screen is built.
+      // only hits POST /pedidos). The guard sits on /pedidos/nuevo, the one screen that creates orders.
       {
         path: 'pedidos',
         pathMatch: 'full',
@@ -53,7 +54,12 @@ export const routes: Routes = [
           import('./features/pedidos/pedidos.page').then((m) => m.PedidosPage),
         ),
       },
-      { path: 'pedidos/nuevo', ...moduleRoute('pedidos.gestionar', 'Nuevo pedido', null) },
+      {
+        path: 'pedidos/nuevo',
+        ...moduleRoute('pedidos.gestionar', 'Nuevo pedido', null, [subscriptionGuard], () =>
+          import('./features/pedidos/nuevo-pedido.page').then((m) => m.NuevoPedidoPage),
+        ),
+      },
       // No subscriptionGuard: marking LISTO is allowed while the subscription is blocked (402 does not apply).
       {
         path: 'cocina',

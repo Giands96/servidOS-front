@@ -3,7 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../../../core/http/api.config';
 import { Page } from '../../../core/http/api.types';
-import { EstadoPedido, Pedido, PedidoListado, PedidosQuery } from '../pedidos.types';
+import {
+  CrearPedidoRequest,
+  EstadoPedido,
+  Pedido,
+  PedidoListado,
+  PedidosQuery,
+} from '../pedidos.types';
 
 @Injectable({ providedIn: 'root' })
 export class PedidosApi {
@@ -28,6 +34,11 @@ export class PedidosApi {
       params = params.set('size', query.size);
     }
     return this.http.get<Page<PedidoListado>>(`${API_BASE}/pedidos`, { params });
+  }
+
+  /** Creates an order (201, born PENDIENTE). 402 when the subscription is blocked; 400 messages come in Spanish. */
+  crear(request: CrearPedidoRequest): Observable<Pedido> {
+    return this.http.post<Pedido>(`${API_BASE}/pedidos`, request);
   }
 
   /** PENDIENTE → EN_PREPARACION. */

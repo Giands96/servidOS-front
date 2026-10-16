@@ -64,7 +64,7 @@ Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `
 |---|---|
 | SUPERADMIN | `/plataforma/restaurantes` |
 | ADMIN (plataforma) | `/plataforma/restaurantes/nuevo` |
-| ADMINISTRADOR, RECEPCION | `/pedidos/nuevo` |
+| ADMINISTRADOR, RECEPCION | `/pedidos` (lista; decisión del usuario 2026-10-14) |
 | COCINERO | `/cocina` |
 | MODERADOR, MESERO, CAJERO, REPARTIDOR | `/sin-modulos` |
 
@@ -93,4 +93,4 @@ Un producto `AGOTADO` no se puede pedir: el backend responde 400 (`Producto no d
 > Reembolso cancela el pedido si no está `ENTREGADO` y un pedido reembolsado no se vuelve a cobrar (400); en DELIVERY, `EN_ENTREGA → CANCELADO` se permite si no está pagado y `ENTREGADO` sin pago es válido. Ver [[API]].
 
 ## Qué NO existe (según `FRONTEND_CONTEXT` §9)
-`MeResponse.suscripcionVigente`, filtros en el dashboard de plataforma, `PUT` de edición de pedido, entidad `mesa`, facturación/SUNAT. Y los listados `GET /pedidos` y `GET /usuarios` (backlog backend, `docs/progress/01`). Nota: §9 aún dice que no hay WebSockets de cocina, pero §7 del mismo documento ya los describe (ver [[Pendientes y Deuda Técnica]]).
+`MeResponse.suscripcionVigente`, filtros en el dashboard de plataforma, `PUT` de edición de pedido, entidad `mesa`, facturación/SUNAT. Y el listado `GET /usuarios` (backlog backend, `docs/progress/01`). `GET /pedidos` sí existe (verificado el 2026-10-11) y lo usa la lista de [[Pedidos]]; sigue sin existir `GET /pedidos/{id}`. Nota: §9 aún dice que no hay WebSockets de cocina, pero §7 del mismo documento ya los describe (ver [[Pendientes y Deuda Técnica]]).

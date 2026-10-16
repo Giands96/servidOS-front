@@ -1,6 +1,6 @@
 ---
 title: API
-date: 2026-10-08
+date: 2026-10-14
 tags:
   - servidos
   - api
@@ -65,18 +65,22 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 ### Catálogo
 | Endpoint | Roles | Front |
 |---|---|---|
-| `GET /productos?categoriaId=&page=`, `GET /productos/{id}`, `GET /categorias` | autenticados | plan |
+| `GET /productos?categoriaId=&page=`, `GET /categorias` | autenticados | impl `catalogo.api.ts` (solo lectura, rama `feat/pedidos-03-alta-datos`, pendiente de merge) |
+| `GET /productos/{id}` | autenticados | plan |
 | `POST /productos`, `PUT /productos/{id}`, `POST /categorias` | ADMINISTRADOR | plan |
 | `PATCH /productos/{id}/estado` (`DISPONIBLE`/`AGOTADO`) | ADMINISTRADOR, COCINERO | plan (fuera de alcance de cocina por ahora) |
 
 ### Pedidos
+Verificado contra `/v3/api-docs` y `FRONTEND_CONTEXT` el 2026-10-11. Clientes en `features/pedidos/data/pedidos.api.ts` (ramas de la Fase 4, pendientes de merge; ver [[Pedidos]]).
+
 | Endpoint | Roles | Front |
 |---|---|---|
-| `POST /pedidos` (`tipoPedido`, `mesaId?`, `observacion?`, `repartidorNombre?`, `items[]`) | ADMINISTRADOR, RECEPCION | plan |
-| `POST /pedidos/{id}/confirmar` (`PENDIENTE` a `EN_PREPARACION`) | ADMINISTRADOR, RECEPCION | plan |
-| `PATCH /pedidos/{id}/estado` | ADMINISTRADOR, RECEPCION | plan |
+| `GET /pedidos?estado=&fecha=&porCobrar=&page=&size=` (paginado, `size` 1–100, más nuevo primero; fila sin items; `estadoPago` `PAGADO`, `REEMBOLSADO` o `null`) | ADMINISTRADOR, RECEPCION (el contrato §3 también lo da a CAJERO) | impl `PedidosApi.listar` |
+| `POST /pedidos` (`tipoPedido`, `mesaId?`, `observacion?`, `repartidorNombre?`, `items[]`) | ADMINISTRADOR, RECEPCION | impl `PedidosApi.crear` (sin `repartidorNombre`) |
+| `POST /pedidos/{id}/confirmar` (`PENDIENTE` a `EN_PREPARACION`) | ADMINISTRADOR, RECEPCION | impl `PedidosApi.confirmar` |
+| `PATCH /pedidos/{id}/estado` | ADMINISTRADOR, RECEPCION | impl `PedidosApi.cambiarEstado` |
 
-El backend calcula precios y total (anti-tamper): no enviar montos.
+No existe `GET /pedidos/{id}`. El backend calcula precios y total (anti-tamper): no enviar montos. `createdAt` de pedidos llega sin `Z` (hora local, §10). Solo `POST /pedidos` devuelve 402; `confirmar` y `PATCH estado` pasan con el tenant bloqueado.
 
 ### Pagos
 | Endpoint | Roles | Front |
@@ -126,4 +130,4 @@ Anunciado por backend, sin verificar contra Swagger. Implementación en front: e
 El usuario aprobó `@stomp/rx-stomp` (commit `00c94dd`) y decidió los umbrales de cocina 15 min Atención / 25 min Crítico.
 
 ## Backlog de endpoints inexistentes
-`GET /pedidos`, `GET /usuarios` (`docs/progress/01`). El listado `LISTO` para cocina quedó resuelto por `GET /cocina/listos` según el anuncio.
+`GET /usuarios` (`docs/progress/01`). `GET /pedidos` ya existe (verificado el 2026-10-11) y el listado `LISTO` para cocina quedó resuelto por `GET /cocina/listos` según el anuncio.

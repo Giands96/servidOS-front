@@ -64,8 +64,8 @@ export function navFor(user: Actor | null, entries: readonly NavItem[]): NavItem
 
 /**
  * Label of the nav item that is the user's home (for "Ir a ..." buttons); null without a home module.
- * A home without its own entry (e.g. /pedidos/nuevo, reached from the /pedidos list) takes the label of the
- * closest listed parent path; only whole path segments match.
+ * A home without its own entry (a nested route under a listed module) takes the label of the closest listed
+ * parent path; only whole path segments match.
  */
 export function homeLabel(user: Actor | null, entries: readonly NavItem[]): string | null {
   const home = homeFor(user);

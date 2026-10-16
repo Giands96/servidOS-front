@@ -28,6 +28,24 @@ export interface Pedido {
   total: number;
 }
 
+export interface CrearPedidoItem {
+  productoId: number;
+  /** Integer >= 1 (the backend answers 422 otherwise). */
+  cantidad: number;
+  observacion?: string;
+}
+
+/**
+ * Body of POST /pedidos. There is deliberately no amount, price or total: the backend computes them.
+ * `mesaId` is only sent for MESA (any `mesaId` that arrives is validated against the tables).
+ */
+export interface CrearPedidoRequest {
+  tipoPedido: TipoPedido;
+  mesaId?: number;
+  observacion?: string;
+  items: CrearPedidoItem[];
+}
+
 /** Query of GET /pedidos. Unset fields are not sent. */
 export interface PedidosQuery {
   estado?: EstadoPedido;

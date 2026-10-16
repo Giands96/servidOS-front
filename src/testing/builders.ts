@@ -7,24 +7,25 @@ import { PedidoListado } from '../app/features/pedidos/pedidos.types';
 export type { MeResponse, Rol } from '../app/core/auth/auth.types';
 
 export function aMe(overrides: Partial<MeResponse> = {}): MeResponse {
+  const defaultSuscripcion: NonNullable<MeResponse['suscripcion']> = {
+    planId: 1,
+    nombrePlan: 'Plan Test',
+    monto: 99,
+    moneda: 'PEN',
+    estado: 'ACTIVA',
+    fechaFin: '2099-12-31',
+    diasRestantes: 30,
+    vencida: false,
+  };
   return {
-    usuarioId: 1,
-    email: 'user@example.test',
-    nombre: 'Test User',
-    restauranteId: 7,
-    rol: 'ADMINISTRADOR',
-    restauranteEstado: 'ACTIVO',
-    suscripcion: {
-      planId: 1,
-      nombrePlan: 'Plan Test',
-      monto: 99,
-      moneda: 'PEN',
-      estado: 'ACTIVA',
-      fechaFin: '2099-12-31',
-      diasRestantes: 30,
-      vencida: false,
-    },
-    ...overrides,
+    usuarioId: overrides.usuarioId ?? 1,
+    email: overrides.email ?? 'user@example.test',
+    nombre: overrides.nombre ?? 'Test User',
+    restauranteId: overrides.restauranteId !== undefined ? overrides.restauranteId : 7,
+    rol: overrides.rol ?? 'ADMINISTRADOR',
+    restauranteEstado:
+      overrides.restauranteEstado !== undefined ? overrides.restauranteEstado : 'ACTIVO',
+    suscripcion: overrides.suscripcion !== undefined ? overrides.suscripcion : defaultSuscripcion,
   };
 }
 
@@ -92,6 +93,31 @@ export function aPage<T>(content: T[], overrides: Partial<Page<T>> = {}): Page<T
     number: 0,
     first: true,
     last: true,
+    ...overrides,
+  };
+}
+
+/** `ProductoResponse` of GET /productos. */
+export function aProducto(overrides: Partial<Producto> = {}): Producto {
+  return {
+    productoId: 7,
+    categoriaId: 1,
+    nombre: 'Lomo saltado',
+    descripcion: null,
+    imagenUrl: null,
+    precio: 25,
+    tiempoPreparacion: 15,
+    estado: 'DISPONIBLE',
+    ...overrides,
+  };
+}
+
+/** `CategoriaResponse` of GET /categorias. */
+export function aCategoria(overrides: Partial<Categoria> = {}): Categoria {
+  return {
+    categoriaId: 1,
+    nombre: 'Platos de fondo',
+    estado: 'HABILITADO',
     ...overrides,
   };
 }

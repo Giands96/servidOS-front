@@ -97,8 +97,9 @@ export function homeFor(user: Actor | null): string {
   if (can(user, 'plataforma.restaurantes.crear')) {
     return '/plataforma/restaurantes/nuevo';
   }
+  // The orders list, not /pedidos/nuevo: the list has no subscriptionGuard, so a blocked tenant can always land here.
   if (can(user, 'pedidos.gestionar')) {
-    return '/pedidos/nuevo';
+    return '/pedidos';
   }
   if (can(user, 'cocina.ver')) {
     return '/cocina';
