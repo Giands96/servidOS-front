@@ -3,6 +3,7 @@ import {
   ProductoDraft,
   categoriaCreadaMessage,
   categoriaFieldErrors,
+  categoriaOptions,
   draftFromProducto,
   emptyProductoDraft,
   productoFieldErrors,
@@ -235,5 +236,36 @@ describe('success messages', () => {
     expect(productoGuardadoMessage(producto, 'editar')).toBe('Producto "Lomo saltado" actualizado');
     const c: Categoria = { categoriaId: 1, nombre: 'Entradas', estado: 'HABILITADO' };
     expect(categoriaCreadaMessage(c)).toBe('Categoría "Entradas" creada');
+  });
+});
+
+describe('categoriaOptions', () => {
+  const entradas: Categoria = { categoriaId: 1, nombre: 'Entradas', estado: 'HABILITADO' };
+  const postres: Categoria = { categoriaId: 2, nombre: 'Postres', estado: 'DESHABILITADO' };
+  const fondos: Categoria = { categoriaId: 3, nombre: 'Fondos', estado: 'HABILITADO' };
+  const all = [entradas, postres, fondos];
+
+  it('offers only HABILITADO categories, in order', () => {
+    expect(categoriaOptions(all, null)).toEqual([
+      { categoriaId: 1, label: 'Entradas' },
+      { categoriaId: 3, label: 'Fondos' },
+    ]);
+  });
+
+  it('keeps the current DESHABILITADO category, marked, in its place', () => {
+    expect(categoriaOptions(all, 2)).toEqual([
+      { categoriaId: 1, label: 'Entradas' },
+      { categoriaId: 2, label: 'Postres (deshabilitada)' },
+      { categoriaId: 3, label: 'Fondos' },
+    ]);
+  });
+
+  it('does not mark a current HABILITADO category and ignores an unknown id', () => {
+    expect(categoriaOptions(all, 1)).toEqual(categoriaOptions(all, null));
+    expect(categoriaOptions(all, 99)).toEqual(categoriaOptions(all, null));
+  });
+
+  it('is empty without categories', () => {
+    expect(categoriaOptions([], null)).toEqual([]);
   });
 });
