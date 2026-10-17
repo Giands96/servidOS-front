@@ -4,11 +4,14 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, Subject, catchError, map, of, switchMap } from 'rxjs';
 import { can } from '../../core/auth/domain/permissions.rules';
 import { SessionStore } from '../../core/auth/session.store';
@@ -46,6 +49,8 @@ import {
   tipoLabel,
   transitionMessage,
 } from './domain/pedidos.rules';
+import { Vista, parseVista } from './domain/tablero.rules';
+import { TableroComponent } from './tablero.component';
 import { EstadoPedido, Pedido, PedidoListado, PedidosQuery } from './pedidos.types';
 
 const PAGE_SIZE = 20;
@@ -89,6 +94,7 @@ interface RowView {
     IconComponent,
     ModalComponent,
     StatePanelComponent,
+    TableroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -100,17 +106,41 @@ interface RowView {
             appButton
             type="button"
             variant="secondary"
-            [disabled]="loading()"
-            (click)="refresh()"
+            [disabled]="refreshing()"
+            (click)="reloadActive()"
           >
-            <app-icon name="refresh" [size]="18" [class.animate-spin]="loading()" />Actualizar
+            <app-icon name="refresh" [size]="18" [class.animate-spin]="refreshing()" />Actualizar
           </button>
+          <div
+            class="inline-flex rounded-control border border-line bg-neutral-soft p-0.5"
+            role="group"
+            aria-label="Vista de pedidos"
+          >
+            @for (option of vistas; track option.vista) {
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-[0.4rem] px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                [class]="
+                  option.vista === vista()
+                    ? 'bg-card text-ink shadow-sm'
+                    : 'text-muted hover:text-ink'
+                "
+                [attr.aria-pressed]="option.vista === vista()"
+                (click)="selectVista(option.vista)"
+              >
+                <app-icon [name]="option.icon" [size]="16" />{{ option.label }}
+              </button>
+            }
+          </div>
           <a appButton variant="primary" routerLink="/pedidos/nuevo">
             <app-icon name="plus" [size]="18" />Nuevo pedido
           </a>
         </div>
       </header>
 
+      @if (vista() === 'tablero') {
+        <app-tablero class="mt-6 block" />
+      } @else {
       <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-line" aria-label="Filtrar por estado">
         @for (tab of tabs; track tab.label) {
           <button
@@ -277,6 +307,7 @@ interface RowView {
           }
         }
       </div>
+      }
 
       @if (cancelView(); as copy) {
         <app-modal [heading]="copy.heading" tone="danger">
@@ -298,7 +329,11 @@ export class PedidosPage {
   private readonly toasts = inject(ToastService);
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly requests$ = new Subject<LoadRequest>();
+  private readonly tablero = viewChild(TableroComponent);
+  private listRequested = false;
 
   private readonly pageIndex = signal(0);
   private readonly now = signal(new Date());
@@ -307,6 +342,15 @@ export class PedidosPage {
   private readonly awaitingReload = signal<ReadonlySet<number>>(new Set());
   private readonly cancelTarget = signal<PedidoListado | null>(null);
 
+  protected readonly vistas: readonly { vista: Vista; label: string; icon: IconName }[] = [
+    { vista: 'tablero', label: 'Tablero', icon: 'columns' },
+    { vista: 'lista', label: 'Lista', icon: 'list' },
+  ];
+  /** The view lives in the URL (`?vista=lista`), so it survives a reload and the back button. */
+  protected readonly vista = toSignal(
+    this.route.queryParamMap.pipe(map((params) => parseVista(params.get('vista')))),
+    { initialValue: parseVista(this.route.snapshot.queryParamMap.get('vista')) },
+  );
   protected readonly tabs = ESTADO_TABS;
   protected readonly skeletons = [1, 2, 3, 4, 5] as const;
   protected readonly estado = signal<EstadoPedido | null>(null);
@@ -319,6 +363,10 @@ export class PedidosPage {
     const page = this.data();
     return page === null ? null : pagerView(page);
   });
+  /** "Actualizar" spins while the active view is loading. */
+  protected readonly refreshing = computed(() =>
+    this.vista() === 'tablero' ? (this.tablero()?.loading() ?? false) : this.loading(),
+  );
   protected readonly cancelView = computed(() => {
     const target = this.cancelTarget();
     return target === null ? null : cancelCopy(target);
@@ -364,7 +412,41 @@ export class PedidosPage {
       )
       .subscribe((outcome) => this.settle(outcome));
 
-    this.load(null, 0, true);
+    // The list loads the first time it is shown (the board, the default view, does not need its request) and
+    // refreshes, keeping its tab and page, every time the user comes back to it.
+    effect(() => {
+      if (this.vista() !== 'lista') {
+        return;
+      }
+      untracked(() => {
+        if (this.listRequested) {
+          this.refresh();
+        } else {
+          this.listRequested = true;
+          this.load(null, 0, true);
+        }
+      });
+    });
+  }
+
+  protected selectVista(vista: Vista): void {
+    if (vista !== this.vista()) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { vista: vista === 'lista' ? 'lista' : null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  /** Reloads whichever view is on screen. */
+  protected reloadActive(): void {
+    if (this.vista() === 'tablero') {
+      this.tablero()?.reload();
+    } else {
+      this.refresh();
+    }
   }
 
   protected selectEstado(estado: EstadoPedido | null): void {
