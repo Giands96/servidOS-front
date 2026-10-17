@@ -64,7 +64,7 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] Specs de las páginas no escritos por decisión (AGENTS §6); las reviews advirtieron la orquestación sin tests en ambas páginas. Reabrir la decisión con el usuario si se quiere cubrirlos.
 - [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
-- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): publicado en `feat/tablero-01-base` y `feat/tablero-02-tablero`; PRs pendientes de merge.
+- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): corte 1 (reglas y `@angular/cdk`) en `main` (PR #24); falta el PR de la interfaz (`feat/tablero-02-tablero`). Ver la sección "Tablero de Pedidos" más abajo.
 - [ ] Tiempo real en el tablero de Pedidos y en Caja (hoy solo Cocina usa STOMP): requiere topic del backend. Por ahora ambos usan el botón "Actualizar" y recargan tras cada acción; falta verificar contra el contrato o Swagger si el backend publica más topics que el de cocina. Ver [[Arquitectura]] (Tiempo real y RxJS).
 - [x] Cobrar y roles: `pagos.registrar` ya es de ADMINISTRADOR, RECEPCION y CAJERO (contrato §3) y CAJERO aterriza en `/caja`; en `main` con Caja (PR #19, ver la sección de Caja). CAJERO no ve la lista de pedidos: cobra desde `/caja`.
 - [ ] Reembolso: bloqueado por el backend (ver la sección de Caja).
@@ -73,6 +73,20 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] Advertencias menores: `cantidad` sin tope superior y `productoId` duplicado sin validar; el cargador de catálogo confía en la forma de la página; copy del paywall aún dice "cancelada"; `core/auth/data/suscripcion.api.ts` solo contiene un tipo; nombre y documentación de `subscriptionLapsedRoute`.
 - [ ] Comentario de ocurrencia del defecto #4441 de Gentle AI sin publicar (sin acceso autenticado a GitHub); texto en `docs/gentle-ai-ocurrencia-4441.md`.
 
+## Tablero de Pedidos (Fase 4b; corte 1 en `main`, corte 2 con su PR pendiente)
+Origen: `docs/progress/10-tablero-pedidos.md` y `odd/tasks/pedidos-tablero.md`. Ver [[Pedidos]] y [[Fase 4 - Pedidos]].
+- [x] Corte 1 mergeado en `main`: PR #24 (`1d3e3c8`, `feat/tablero-01-base`; 670 líneas; reglas `tablero.rules.ts` con su spec y `@angular/cdk`). Review aprobada: `review-45064623d1db4e80`.
+- [ ] Corte 2 (`feat/tablero-02-tablero`; 1125 líneas; tablero, arrastre y menú): abrir su PR y mergearlo (squash); pide `size:exception`. Review aprobada: `review-47ff13cfb690c463`.
+- [ ] **Prueba táctil** del arrastre: no hecha. El escritor lo verificó en navegador contra una API simulada desechable (arrastre, 400, cancelar con confirmación, menú con teclado, alternancia de vista), sin touch.
+- [ ] Prueba en navegador contra el **backend real**, con ADMINISTRADOR y RECEPCION: no hecha.
+- [ ] Más de 100 pedidos en una columna: la petición pide `size=100` y no hay indicador de truncamiento.
+- [ ] Aviso de error duplicado (~10 líneas) entre el componente del tablero y la página; unificar en un helper.
+- [ ] Sin spec del componente ni de la página por decisión (AGENTS §6); las reglas sí tienen tests (`tablero.rules.spec.ts`, pedidos 382 en la punta).
+- [ ] Sin movimientos hacia atrás: el diseño `zFAgh` los muestra y el contrato no los tiene (entrada deshabilitada con el motivo). Confirmar con el usuario o con el backend.
+- [ ] Fuera de alcance por falta de soporte del backend: ítems en la tarjeta (la fila no los trae y no hay `GET /pedidos/{id}`), tiempo en la etapa y sus umbrales Atención/Crítico (sin marcas de tiempo por etapa), presencia ("quién lo movió") y "En vivo" (sin canal de tiempo real para pedidos).
+- [ ] Chip "Cobrar S/ …" en las tarjetas (T8.4b) y Anular con reembolso: ver la sección de Caja (el chip espera el merge del corte 2; el reembolso, el `pagoId` del backend).
+- [x] Dependencia `@angular/cdk` aprobada por el usuario (2026-10-16); ADR-20 en [[Decisiones (ADR)]]. En `main` con el corte 1 (PR #24).
+
 ## Plataforma (Fase 5; 01 a 06 en `main`)
 Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver [[Plataforma]] y [[Fase 5 - Plataforma]].
 - [x] Plataforma 01 a 05 mergeada en `main` (PR #13 de GitHub, `5e8b272`, 2026-10-16): datos, reglas, lista con panel, alta y acciones.
@@ -80,7 +94,7 @@ Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver
 - [ ] Prueba manual en navegador de todas las pantallas (lista, panel, alta, acciones): **no hecha**. Después, las pantallas del tenant (Cocina, Pedidos, Catálogo) con el restaurante creado.
 - [ ] Cerrar con Escape el panel de detalle y el modal.
 - [ ] Partir `restaurantes.page.ts` (847 líneas, casi todo plantilla) en componentes (tabla, panel, modales de acción) tras la prueba en navegador.
-- [x] **Crear el ADMINISTRADOR del tenant** — resuelto el 2026-10-16 (T5.7, rama `feat/plataforma-06-administrador`): el backend crea el dueño dentro del mismo `POST /restaurantes` y el front lo pide en un asistente de dos pasos. El script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos (si se usa para uno anterior, su correo por defecto sigue chocando con el del usuario de arranque de la plataforma).
+- [x] **Crear el ADMINISTRADOR del tenant** — resuelto el 2026-10-16 (T5.7, en `main` con el PR #14): el backend crea el dueño dentro del mismo `POST /restaurantes` y el front lo pide en un asistente de dos pasos. El script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos (si se usa para uno anterior, su correo por defecto sigue chocando con el del usuario de arranque de la plataforma).
 - [ ] Prueba manual en navegador del asistente de dos pasos y del login real del dueño recién creado: **no hecha**.
 - [ ] Gestión de usuarios de plataforma: fuera de alcance, bloqueada (no existe `GET /usuarios`; `PATCH /usuarios/{id}/rol` necesita ids de rol).
 - [ ] Sin filtros ni búsqueda en la lista (el backend no los ofrece); solo se ordena por nombre (un `sort` desconocido responde 500).
@@ -102,7 +116,7 @@ Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[C
 Origen: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`. Ver [[Pagos]] y [[Fase 7 - Caja]].
 - [x] Cadena mergeada por squash el 2026-10-17: PRs #19 (`16260dd`, `feat/caja-01-datos`; 701 líneas), #20 (`9a0eb4c`, `feat/caja-02-pagina`; 622), #21 (`c6f7a88`, `feat/caja-03-atajos`; 70) y #22 (`b7fb568`, avisos de review). Las dos primeras pedían `size:exception`. Reviews aprobadas: `review-aa065b1ede656df8` (riesgo alto: amplía `pagos.registrar`), `review-e2ff609e44106504` y `review-c12133e9629dfca7`; la review nativa aprobó además todo el rango (`review-6e314892b3ffcd3f`); T8.4a (70 líneas) quedó bajo presupuesto.
 - [ ] **Reembolso bloqueado por el backend (T8.6):** `POST /pagos/{id}/reembolso` necesita el `pagoId`, que ninguna lectura expone (`GET /pedidos` solo trae `estadoPago`; no existen `GET /pagos` ni `GET /pedidos/{id}`). **Solicitud al backend:** agregar a cada fila de `GET /pedidos` el resumen `pago { pagoId, metodoPago, monto, referenciaExterna }` (`null` si nunca se cobró); especificación en `docs/backend/pago-id-en-pedidos.md`. Con eso: modal `tDcwg` con motivo obligatorio, "Reembolsar" en Caja (ADMINISTRADOR y RECEPCION) y "Anular con reembolso" en el tablero (`Sd7pI`, `zFAgh`).
-- [ ] Chip "Cobrar S/ …" en las tarjetas del tablero (T8.4b): esperar el merge de `feat/tablero-01-base` y `feat/tablero-02-tablero` y reubicar; `pedidos.page.ts` y `icon.component.ts` los tocan ambas cadenas (posible conflicto de rebase).
+- [ ] Chip "Cobrar S/ …" en las tarjetas del tablero (T8.4b): esperar el merge de la interfaz del tablero (`feat/tablero-02-tablero`; el corte 1 ya está en `main`, PR #24) y reubicar; `pedidos.page.ts` e `icon.component.ts` los tocan ambas ramas (posible conflicto de rebase).
 - [ ] Prueba manual en navegador de `/caja` y del atajo de la lista con ADMINISTRADOR, RECEPCION y CAJERO (efectivo con vuelto, monto corto, Yape con referencia, `?pedido=`, pedido ya pagado → 400) y con el tenant bloqueado: **no hecha**.
 - [ ] Más de 100 pedidos por cobrar: la petición pide `size=100`, el encabezado cuenta `totalElements` y solo hay tarjetas para los primeros 100; sin paginación ni aviso.
 - [ ] Riesgo del interceptor 402: el contrato dice que `pagos` pasa con el tenant bloqueado; si alguna llamada de pagos devolviera 402, el interceptor redirigiría al paywall en lugar de mostrar el mensaje en Caja. Verificar contra el backend real.

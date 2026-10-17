@@ -28,6 +28,7 @@ Volver: [[00 - MOC]] · Siguiente: [[Modelo de Negocio]] · [[Arquitectura]]
 | TypeScript | `~6.0.2` | `strict`, `strictTemplates` |
 | RxJS | `~7.8.0` | HttpClient y STOMP |
 | `@stomp/rx-stomp` | `^2.4.0` | canal en vivo de cocina (aprobado, commit `00c94dd`) |
+| `@angular/cdk` | `^22.2.3` | drag & drop del tablero de pedidos (aprobado 2026-10-16, `8bae4e3`; rama sin mergear) |
 | Tailwind CSS + `@tailwindcss/postcss` | `^4.1.12` | tokens en `@theme` |
 | Vitest + jsdom | `^4.0.8` / `^28.0.0` | vía `ng test` |
 | Gestor | `npm@12.0.1` (`packageManager`) | |
