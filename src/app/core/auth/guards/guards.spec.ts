@@ -87,8 +87,13 @@ describe('route guards', () => {
       expect(urlOf(await run(roleGuard('catalogo.editar')))).toBe('/sin-permiso');
     });
 
-    it('sends RECEPCION on pagos.registrar (caja is ADMINISTRADOR only) to /sin-permiso', async () => {
-      signIn('RECEPCION');
+    it.each(['ADMINISTRADOR', 'RECEPCION', 'CAJERO'] as const)('allows %s on pagos.registrar', async (rol) => {
+      signIn(rol);
+      expect(await run(roleGuard('pagos.registrar'))).toBe(true);
+    });
+
+    it('sends MESERO on pagos.registrar to /sin-permiso', async () => {
+      signIn('MESERO');
       expect(urlOf(await run(roleGuard('pagos.registrar')))).toBe('/sin-permiso');
     });
 

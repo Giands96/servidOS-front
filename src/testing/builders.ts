@@ -6,6 +6,7 @@ import {
 } from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
+import { Pago } from '../app/features/pagos/pagos.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
 import {
   Plan,
@@ -90,6 +91,21 @@ export function aPedidoListado(overrides: Partial<PedidoListado> = {}): PedidoLi
     observacion: null,
     createdAt: '2026-10-08T12:30:00',
     estadoPago: null,
+    ...overrides,
+  };
+}
+
+/** `PagoResponse` of POST /pagos (a cash payment with change by default). */
+export function aPago(overrides: Partial<Pago> = {}): Pago {
+  return {
+    pagoId: 31,
+    pedidoId: 476,
+    monto: 50,
+    vuelto: 10,
+    metodoPago: 'EFECTIVO',
+    estado: 'PAGADO',
+    reembolsoMotivo: null,
+    reembolsoUsuarioId: null,
     ...overrides,
   };
 }
