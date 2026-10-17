@@ -1,6 +1,6 @@
 import { BadgeVariant } from '../../../shared/ui/badge/badge.component';
 import { limaToday } from '../../plataforma/domain/plataforma.rules';
-import { EstadoPedido, PedidoListado, TipoPedido } from '../pedidos.types';
+import { EstadoPedido, PedidoListado, PedidosQuery, TipoPedido } from '../pedidos.types';
 import {
   PedidoAction,
   TIPO_LABEL,
@@ -32,6 +32,28 @@ export const CLOSED_COLUMNS: readonly EstadoPedido[] = ['ENTREGADO', 'CANCELADO'
 const ALL_COLUMNS: readonly EstadoPedido[] = [...BOARD_COLUMNS, ...CLOSED_COLUMNS];
 
 const PAID_CANCEL_REASON = 'Un pedido pagado no se puede cancelar';
+
+// ----------------------------------------------------------------------------------------- view + data
+
+export type Vista = 'tablero' | 'lista';
+
+/** The `?vista=` query value: only "lista" selects the list; anything else is the board (the default view). */
+export function parseVista(raw: unknown): Vista {
+  return raw === 'lista' ? 'lista' : 'tablero';
+}
+
+/** The backend caps `size` at 100. */
+const COLUMN_SIZE = 100;
+
+/** Request of one board column: its first 100 orders. */
+export function columnQuery(column: BoardColumn): PedidosQuery {
+  return { estado: column, page: 0, size: COLUMN_SIZE };
+}
+
+/** Request of a closed column's count: only `totalElements` of today's orders is read, so one row is enough. */
+export function closedCountQuery(estado: EstadoPedido, now: Date): PedidosQuery {
+  return { estado, fecha: todayLima(now), page: 0, size: 1 };
+}
 
 // ---------------------------------------------------------------------------------------------- filters
 
@@ -123,6 +145,42 @@ export function dropTargets(
     allowed: canDrop(pedido, estado),
     reason: estado === pedido.estado ? null : refusalReason(pedido, estado),
   }));
+}
+
+export type DropStateKind = 'idle' | 'origin' | 'allowed' | 'locked';
+
+export interface ColumnDropState {
+  kind: DropStateKind;
+  /** Why a locked column refuses the dragged order; null otherwise. */
+  reason: string | null;
+}
+
+/** How a column looks while `dragged` is being dragged (`null`: nothing is). */
+export function columnDropState(
+  dragged: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'> | null,
+  estado: EstadoPedido,
+): ColumnDropState {
+  if (dragged === null) {
+    return { kind: 'idle', reason: null };
+  }
+  if (dragged.estado === estado) {
+    return { kind: 'origin', reason: null };
+  }
+  const target = dropTargets(dragged).find((t) => t.estado === estado);
+  return target?.allowed === true
+    ? { kind: 'allowed', reason: null }
+    : { kind: 'locked', reason: target?.reason ?? null };
+}
+
+/** Caption of a collapsed column: today's scope while idle, the drop invitation or the refusal while dragging. */
+export function closedColumnHint(estado: EstadoPedido, state: ColumnDropState): string {
+  if (state.kind === 'allowed') {
+    return estado === 'CANCELADO' ? 'Soltar para cancelar' : 'Soltar para marcar entregado';
+  }
+  if (state.kind === 'locked') {
+    return state.reason ?? 'No disponible';
+  }
+  return 'Hoy';
 }
 
 // ------------------------------------------------------------------------------------- "⋯ Mover a…"
@@ -273,4 +331,54 @@ export function columnHeader(estado: EstadoPedido, count: number): ColumnHeader 
 /** `yyyy-MM-dd` of today in Lima: the `fecha` filter of the Entregado / Cancelado counts. */
 export function todayLima(now: Date): string {
   return limaToday(now);
+}
+
+// ------------------------------------------------------------------------------------- menu popover
+
+export interface Rect {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+export interface Size {
+  width: number;
+  height: number;
+}
+
+/**
+ * Fixed position of the "⋯" popover: under its button, right-aligned to it, flipped above when there is no room
+ * below (and room above), always kept `margin` px inside the viewport.
+ */
+export function menuPlacement(
+  anchor: Rect,
+  menu: Size,
+  viewport: Size,
+  margin = 8,
+  gap = 4,
+): { top: number; left: number } {
+  const maxLeft = Math.max(margin, viewport.width - menu.width - margin);
+  const left = Math.min(Math.max(anchor.right - menu.width, margin), maxLeft);
+  const below = anchor.bottom + gap;
+  const above = anchor.top - gap - menu.height;
+  const fitsBelow = below + menu.height <= viewport.height - margin;
+  const top = fitsBelow || above < margin ? below : above;
+  return { top: Math.max(margin, Math.min(top, viewport.height - margin - menu.height)), left };
+}
+
+/**
+ * Arrow-key navigation of the menu: the next enabled entry in `step` direction, wrapping around. From `-1`
+ * (nothing focused) it lands on the first (down) or last (up) enabled entry. `-1` when none is enabled.
+ */
+export function nextEnabledIndex(items: readonly { allowed: boolean }[], current: number, step: 1 | -1): number {
+  const count = items.length;
+  const start = current >= 0 ? current : step > 0 ? -1 : count;
+  for (let offset = 1; offset <= count; offset++) {
+    const index = (((start + step * offset) % count) + count) % count;
+    if (items[index].allowed) {
+      return index;
+    }
+  }
+  return -1;
 }
