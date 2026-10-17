@@ -1,6 +1,6 @@
 ---
 title: Decisiones (ADR)
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - adr
@@ -94,6 +94,14 @@ Volver: [[00 - MOC]] · Ver [[Arquitectura]] · [[Seguridad]] · [[Fase 0 - Infr
 - **Decisión** (`2fad5cb`): `moduleRoute(action, label, icon, guards = [], load = placeholder)` recibe el componente real como 5.º parámetro; se conserva `[routeActionGuard, ...guards]`. Para `/cocina` se pasa `guards = []`: sin `subscriptionGuard`, porque marcar listo se permite con suscripción bloqueada (anunciado §5, sin verificar). Dos tests de ruta lo fijan.
 - **Alternativas**: declarar la ruta a mano con `canActivate` propio (riesgo de perder `routeActionGuard`, ver R2-001).
 - **Ventajas**: permiso y menú siguen declarados en un solo lugar. **Desventajas**: depende de la veracidad del anuncio del backend; la firma posicional de `moduleRoute` crece (5 parámetros).
+
+## ADR-20 Dependencia `@angular/cdk` para el drag & drop del tablero de pedidos
+- **Contexto**: el usuario pidió el drag & drop en `/pedidos` ("No está el drag & drop", 2026-10-16); el tablero kanban se había diferido en la v1 de Pedidos. AGENTS §6 exige aprobación para agregar dependencias.
+- **Decisión del usuario (2026-10-16)**: aprobar `@angular/cdk@^22.2.3` (instalada la 22.2.3), commit `8bae4e3` en `feat/tablero-01-base`, revisión nativa aprobada (`review-45064623d1db4e80`). Solo se usa para el arrastre en el tablero; `cdk-drag` entra únicamente en el chunk lazy de pedidos.
+- **Alternativa descartada**: drag & drop nativo de HTML5, que **no soporta touch**. Otra salida sin dependencia es el menú "Mover a…", que se construyó igualmente como camino de teclado.
+- **Ventajas**: soporte táctil y de teclado del arrastre sin código propio; mantenida por el equipo de Angular y alineada con la versión del framework (`^22`).
+- **Desventajas**: dependencia nueva (trae `parse5` y `entities`, que el lockfile deja de marcar como `dev`); el comportamiento táctil sigue sin probarse en un dispositivo.
+- **Estado**: en la rama `feat/tablero-01-base`, sin mergear. Ver [[Fase 4 - Pedidos]].
 
 > [!note] Decisión de proceso
 > Flujo ODD v3 con revisiones nativas (RDD) por commit/slice. Ver [[Infraestructura]].

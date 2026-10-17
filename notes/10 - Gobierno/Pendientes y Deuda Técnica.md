@@ -49,30 +49,44 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] Specs de las páginas no escritos por decisión (AGENTS §6); las reviews advirtieron la orquestación sin tests en ambas páginas. Reabrir la decisión con el usuario si se quiere cubrirlos.
 - [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
-- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior.
+- [x] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): implementado en dos ramas locales (Fase 4b); ver la sección "Tablero de Pedidos" más abajo.
 - [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código `pagos.registrar` es solo de ADMINISTRADOR, el contrato §3 también lo da a RECEPCION y CAJERO.
-- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Depende de crear un restaurante desde [[Plataforma]] (01 a 05 en `main`; falta mergear la rama 06, que crea también al ADMINISTRADOR; ver la sección de Plataforma).
+- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Depende de crear un restaurante desde [[Plataforma]] (01 a 06 en `main`; la 06 crea también al ADMINISTRADOR).
 - [ ] `fail()` duplicada en `pedidos.page.ts` y `nuevo-pedido.page.ts`.
 - [ ] Advertencias menores: `cantidad` sin tope superior y `productoId` duplicado sin validar; el cargador de catálogo confía en la forma de la página; copy del paywall aún dice "cancelada"; `core/auth/data/suscripcion.api.ts` solo contiene un tipo; nombre y documentación de `subscriptionLapsedRoute`.
 - [ ] Comentario de ocurrencia del defecto #4441 de Gentle AI sin publicar (sin acceso autenticado a GitHub); texto en `docs/gentle-ai-ocurrencia-4441.md`.
 
-## Plataforma (Fase 5; 01 a 05 en `main`, 06 pendiente de PR)
+## Tablero de Pedidos (Fase 4b, implementado en dos ramas locales, sin publicar)
+Origen: `docs/progress/10-tablero-pedidos.md` y `odd/tasks/pedidos-tablero.md`. Ver [[Pedidos]] y [[Fase 4 - Pedidos]].
+- [ ] Publicar y mergear la cadena en orden (squash): `feat/tablero-01-base` (`8bae4e3`; 670 líneas; incluye `@angular/cdk`) y `feat/tablero-02-tablero` (`335ef1e`; 1125 líneas); reubicar la segunda sobre `main` tras el primer merge. Las dos piden `size:exception`. Reviews aprobadas: `review-45064623d1db4e80`, `review-47ff13cfb690c463`. PRs 19 y 20 en `docs/prs`.
+- [ ] **Prueba táctil** del arrastre: no hecha. El escritor lo verificó en navegador contra una API simulada desechable (arrastre, 400, cancelar con confirmación, menú con teclado, alternancia de vista), sin touch.
+- [ ] Prueba en navegador contra el **backend real**, con ADMINISTRADOR y RECEPCION: no hecha.
+- [ ] Más de 100 pedidos en una columna: la petición pide `size=100` y no hay indicador de truncamiento.
+- [ ] Aviso de error duplicado (~10 líneas) entre el componente del tablero y la página; unificar en un helper.
+- [ ] Sin spec del componente ni de la página por decisión (AGENTS §6); las reglas sí tienen tests (`tablero.rules.spec.ts`, pedidos 382 en la punta).
+- [ ] Sin movimientos hacia atrás: el diseño `zFAgh` los muestra y el contrato no los tiene (entrada deshabilitada con el motivo). Confirmar con el usuario o con el backend.
+- [ ] Fuera de alcance por falta de soporte del backend: ítems en la tarjeta (la fila no los trae y no hay `GET /pedidos/{id}`), tiempo en la etapa y sus umbrales Atención/Crítico (sin marcas de tiempo por etapa), presencia ("quién lo movió") y "En vivo" (sin canal de tiempo real para pedidos).
+- [ ] Cobrar y Anular con reembolso: fase de Caja.
+- [x] Dependencia `@angular/cdk` aprobada por el usuario (2026-10-16); ADR-20 en [[Decisiones (ADR)]]. Queda mergearla con #19.
+
+## Plataforma (Fase 5; 01 a 06 en `main`)
 Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver [[Plataforma]] y [[Fase 5 - Plataforma]].
 - [x] Plataforma 01 a 05 mergeada en `main` (PR #13 de GitHub, `5e8b272`, 2026-10-16): datos, reglas, lista con panel, alta y acciones.
-- [ ] **Abrir y mergear el PR de `feat/plataforma-06-administrador`** (`b034b57`, cuenta del dueño; publicada en `origin` el 2026-10-16). Pide `size:exception` y necesita el backend con `administrador` desplegado. **Hasta que se mergee, crear un restaurante desde `main` falla** contra el backend actual (422 "administrador: no debe ser nulo"), lo que bloquea la prueba en navegador de todo el tenant. La rama `docs/obsidian-pedidos-merge` (notas del Vault, publicada el mismo día) es independiente y también espera su PR.
+- [x] **Plataforma 06 mergeada en `main`** (PR #14 de GitHub, `f7112e6`, 2026-10-16): el alta envía la cuenta del dueño, que el backend exige. Las notas del Vault (`docs/obsidian-pedidos-merge`) entraron como #15 (`3e2f905`). Con esto se puede crear un restaurante y probar en navegador el tenant.
 - [ ] Prueba manual en navegador de todas las pantallas (lista, panel, alta, acciones): **no hecha**. Después, las pantallas del tenant (Cocina, Pedidos, Catálogo) con el restaurante creado.
 - [ ] Cerrar con Escape el panel de detalle y el modal.
 - [ ] Partir `restaurantes.page.ts` (847 líneas, casi todo plantilla) en componentes (tabla, panel, modales de acción) tras la prueba en navegador.
-- [x] **Crear el ADMINISTRADOR del tenant** — resuelto el 2026-10-16 (T5.7, rama `feat/plataforma-06-administrador`): el backend crea el dueño dentro del mismo `POST /restaurantes` y el front lo pide en un asistente de dos pasos. El script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos (si se usa para uno anterior, su correo por defecto sigue chocando con el del usuario de arranque de la plataforma).
+- [x] **Crear el ADMINISTRADOR del tenant** — resuelto el 2026-10-16 (T5.7, en `main` con el PR #14): el backend crea el dueño dentro del mismo `POST /restaurantes` y el front lo pide en un asistente de dos pasos. El script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos (si se usa para uno anterior, su correo por defecto sigue chocando con el del usuario de arranque de la plataforma).
 - [ ] Prueba manual en navegador del asistente de dos pasos y del login real del dueño recién creado: **no hecha**.
 - [ ] Gestión de usuarios de plataforma: fuera de alcance, bloqueada (no existe `GET /usuarios`; `PATCH /usuarios/{id}/rol` necesita ids de rol).
 - [ ] Sin filtros ni búsqueda en la lista (el backend no los ofrece); solo se ordena por nombre (un `sort` desconocido responde 500).
 - [ ] Copy del pie del diseño "Solo CANCELADA bloquea escrituras": no copiado a propósito (desactualizado frente al contrato §5); confirmar con el usuario si se quiere un texto equivalente actualizado.
 - [ ] Comentarios de ocurrencia de los defectos #4208 y #4655 de Gentle AI sin publicar (sin acceso autenticado a GitHub); borradores en `docs/gentle-ai-ocurrencia-4208.md` y `docs/gentle-ai-ocurrencia-4655.md`.
 
-## Catálogo (Fase 6, implementada en tres ramas locales, sin publicar)
+## Catálogo (Fase 6; 01 y 02 en `main`, 03 pendiente en GitHub)
 Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[Catálogo]] y [[Fase 6 - Catálogo]].
-- [ ] Publicar y mergear la cadena en orden (squash): `feat/catalogo-01-datos` (`acdd6de`, `e5a1a70`; 994 líneas), `feat/catalogo-02-pagina` (`01bec53`; 534) y `feat/catalogo-03-formularios` (`98c7d10`; 550); reubicar cada rama sobre `main` tras cada merge. Las tres piden `size:exception`. Reviews aprobadas: `review-0e9c0c7fd77af064`, `review-96271976eeb1bffb`, `review-aeb4555b876a3d61`.
+- [x] Catálogo 01 (`feat/catalogo-01-datos`; 994 líneas) y 02 (`feat/catalogo-02-pagina`; 534) mergeadas en `main`: PR #16 (`27b231e`) y PR #17 (`fdd9c50`).
+- [ ] **Catálogo 03** (`feat/catalogo-03-formularios`, `98c7d10`; 550 líneas, `size:exception`): pendiente en GitHub; **reubicarla sobre `main`** antes de su review y mergearla. Reviews aprobadas de la cadena: `review-0e9c0c7fd77af064`, `review-96271976eeb1bffb`, `review-aeb4555b876a3d61`.
 - [ ] Prueba manual en navegador de la pantalla y de los modales con ADMINISTRADOR (crear categoría, crear producto con URL de imagen, editar conservando el estado, alternar), COCINERO (solo alternar), RECEPCION (solo lectura) y un tenant bloqueado (aviso de solo lectura): **no hecha**.
 - [ ] Cerrar el modal con la X durante un guardado en curso desmonta la petición: el producto puede existir en el servidor y la lista lo muestra tras recargar (el nombre único evita duplicados). Decidir si se bloquea el cierre mientras guarda.
 - [ ] La columna ESTADO (interruptor Disponible/Agotado) se agregó y no está en el diseño `hoW4s`: confirmar con el usuario.
