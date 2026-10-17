@@ -1,6 +1,6 @@
 ---
 title: Pedidos
-date: 2026-10-14
+date: 2026-10-15
 tags:
   - servidos
   - modulos
@@ -17,8 +17,8 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 > [!abstract] Responsabilidad
 > Listar pedidos, crear (MESA, DELIVERY, RECOJO), confirmarlos ("Enviar a cocina"), cambiar de estado y cancelar. La lista (`/pedidos`) es el home de ADMINISTRADOR y RECEPCION.
 
-> [!warning] Estado: implementado en ramas locales, pendiente de merge, sin prueba manual
-> Lista (`/pedidos`) y nuevo pedido (`/pedidos/nuevo`) en la cadena `feat/pedidos-01-datos` → `02-lista` → `03-alta-datos` → `04-alta`, más `fix/subscription-guard-vigencia`. Sin push. Sin spec de las páginas (AGENTS §6). El tablero kanban queda para después.
+> [!warning] Estado: en `main` desde el 2026-10-15, sin prueba manual
+> Lista (`/pedidos`) y nuevo pedido (`/pedidos/nuevo`) mergeados por squash en los PRs #8 a #12 (`main` en `c66c3ff`). Sin spec de las páginas (AGENTS §6) y sin prueba en navegador. El tablero kanban queda para después.
 
 ## Archivos
 | Ruta | Contenido |
@@ -50,7 +50,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 `pedidos.gestionar`: ADMINISTRADOR, RECEPCION. `/pedidos` se declara con `moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt', [], load)` y es la única entrada de menú; `/pedidos/nuevo` usa ícono `null` (sin entrada de menú) y `[subscriptionGuard]`.
 
 > [!important] Dónde va el `subscriptionGuard`
-> Solo `POST /pedidos` devuelve 402. Confirmar y `PATCH estado` pasan con el tenant bloqueado, así que la **lista no lleva `subscriptionGuard`** y solo `/pedidos/nuevo` lo lleva. No se ocultan acciones sobre pedidos existentes. El guard bloquea por `/auth/me`: `INACTIVO`, sin suscripción o `vencida`; `CANCELADA` por sí sola no bloquea (PR `fix/subscription-guard-vigencia`, necesario para que `/pedidos/nuevo` siga el contrato).
+> Solo `POST /pedidos` devuelve 402. Confirmar y `PATCH estado` pasan con el tenant bloqueado, así que la **lista no lleva `subscriptionGuard`** y solo `/pedidos/nuevo` lo lleva. No se ocultan acciones sobre pedidos existentes. El guard bloquea por `/auth/me`: `INACTIVO`, sin suscripción o `vencida`; `CANCELADA` por sí sola no bloquea (PR #8, necesario para que `/pedidos/nuevo` siga el contrato).
 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |

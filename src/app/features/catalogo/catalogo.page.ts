@@ -469,7 +469,6 @@ export class CatalogoPage {
     this.closeCategoria();
     this.toasts.show('OK', categoriaCreadaMessage(categoria), 'success');
   }
-
   protected toggleEstado(producto: Producto): void {
     const id = producto.productoId;
     if (this.busyIds().has(id)) {

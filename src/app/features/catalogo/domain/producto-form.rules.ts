@@ -208,7 +208,6 @@ export function categoriaOptions(categorias: readonly Categoria[], currentId: nu
     return c.categoriaId === currentId ? [{ categoriaId: c.categoriaId, label: `${c.nombre} (deshabilitada)` }] : [];
   });
 }
-
 export function productoGuardadoMessage(p: Pick<Producto, 'nombre'>, mode: 'crear' | 'editar'): string {
   return `Producto "${p.nombre}" ${mode === 'crear' ? 'creado' : 'actualizado'}`;
 }
