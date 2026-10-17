@@ -1,6 +1,6 @@
 ---
 title: Modelo de Negocio
-date: 2026-10-08
+date: 2026-10-17
 tags:
   - servidos
   - negocio
@@ -36,28 +36,28 @@ Vocabulario cerrado (`src/app/core/auth/auth.types.ts`):
 | Ámbito | Roles | Observación |
 |---|---|---|
 | Plataforma | `SUPERADMIN`, `ADMIN`, `MODERADOR` | jerarquía `SUPERADMIN > ADMIN > MODERADOR`: nadie otorga un rol igual o superior (`canGrantPlatformRol`) |
-| Restaurante | `ADMINISTRADOR`, `RECEPCION`, `COCINERO`, `MESERO`, `CAJERO`, `REPARTIDOR` | `MESERO/CAJERO/REPARTIDOR` existen sin permisos activos (YAGNI según el Flujo) |
+| Restaurante | `ADMINISTRADOR`, `RECEPCION`, `COCINERO`, `MESERO`, `CAJERO`, `REPARTIDOR` | `MESERO/REPARTIDOR` existen sin permisos activos (YAGNI según el Flujo); `CAJERO` cobra desde la fase de Caja (ver abajo) |
 
 ### Matriz de acciones (UI)
 Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `X` = permitido.
 
-| Acción | SUPERADMIN | ADMIN | ADMINISTRADOR | RECEPCION | COCINERO | MESERO / CAJERO / REPARTIDOR | MODERADOR |
-|---|---|---|---|---|---|---|---|
-| `plataforma.restaurantes.ver` | X | | | | | | |
-| `plataforma.restaurantes.crear` | X | X | | | | | |
-| `restaurante.ver` | | | X | X | X | X | |
-| `restaurante.suscripcion.gestionar` | | | X | | | | |
-| `catalogo.ver` | | | X | X | X | X | |
-| `catalogo.editar` | | | X | | | | |
-| `catalogo.disponibilidad` | | | X | | X | | |
-| `pedidos.gestionar` | | | X | X | | | |
-| `pagos.registrar` | | | X | | | | |
-| `pagos.reembolsar` | | | X | X | | | |
-| `usuarios.gestionar` | | | X | | | | |
-| `cocina.ver` / `cocina.listo` | | | X | X | X | | |
+| Acción | SUPERADMIN | ADMIN | ADMINISTRADOR | RECEPCION | COCINERO | CAJERO | MESERO / REPARTIDOR | MODERADOR |
+|---|---|---|---|---|---|---|---|---|
+| `plataforma.restaurantes.ver` | X | | | | | | | |
+| `plataforma.restaurantes.crear` | X | X | | | | | | |
+| `restaurante.ver` | | | X | X | X | X | X | |
+| `restaurante.suscripcion.gestionar` | | | X | | | | | |
+| `catalogo.ver` | | | X | X | X | X | X | |
+| `catalogo.editar` | | | X | | | | | |
+| `catalogo.disponibilidad` | | | X | | X | | | |
+| `pedidos.gestionar` | | | X | X | | | | |
+| `pagos.registrar` | | | X | X | | X | | |
+| `pagos.reembolsar` | | | X | X | | | | |
+| `usuarios.gestionar` | | | X | | | | | |
+| `cocina.ver` / `cocina.listo` | | | X | X | X | | | |
 
-> [!tip] Por qué RECEPCION puede reembolsar pero no cobrar
-> Es exactamente la matriz del contrato (`Flujo - Recepcion Cocina.md`). La review lo marcó como inusual pero intencional (`docs/progress/03`).
+> [!note] `pagos.registrar` ampliado en la fase de Caja (2026-10-17, rama `feat/caja-01-datos`, sin mergear)
+> Antes era solo ADMINISTRADOR (así lo decía `Flujo - Recepcion Cocina.md`). Pasa a **ADMINISTRADOR, RECEPCION y CAJERO** según `FRONTEND_CONTEXT` §3, que es el contrato vigente. `pagos.reembolsar` no cambia (ADMINISTRADOR y RECEPCION). Detalle en [[Fase 7 - Caja]] y [[Pagos]].
 
 ### Home por rol (`homeFor`)
 | Rol | Destino |
@@ -66,10 +66,11 @@ Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `
 | ADMIN (plataforma) | `/plataforma/restaurantes/nuevo` |
 | ADMINISTRADOR, RECEPCION | `/pedidos` (lista; decisión del usuario 2026-10-14) |
 | COCINERO | `/cocina` |
-| MODERADOR, MESERO, CAJERO, REPARTIDOR | `/sin-modulos` |
+| CAJERO | `/caja` (cambio de la fase de Caja, `feat/caja-01-datos`) |
+| MODERADOR, MESERO, REPARTIDOR | `/sin-modulos` |
 
 > [!note] Observación derivada del código
-> MESERO/CAJERO/REPARTIDOR tienen `catalogo.ver`, así que el menú les mostraría "Catálogo" aunque su home sea `/sin-modulos`. Es una consecuencia de las reglas actuales; no hay documentación que diga si es deseado. Ver [[Pendientes y Deuda Técnica]].
+> MESERO/CAJERO/REPARTIDOR tienen `catalogo.ver`, así que el menú les muestra "Catálogo" (a CAJERO, junto a "Caja"; a MESERO y REPARTIDOR, aunque su home sea `/sin-modulos`). Es una consecuencia de las reglas actuales; no hay documentación que diga si es deseado. Ver [[Pendientes y Deuda Técnica]].
 
 ## Flujo operativo Recepción a Cocina
 ```mermaid

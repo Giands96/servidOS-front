@@ -1,6 +1,6 @@
 ---
 title: API
-date: 2026-10-16
+date: 2026-10-17
 tags:
   - servidos
   - api
@@ -58,7 +58,7 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 | `PATCH /restaurantes/actual/plan` (`{nuevoPlanId, confirmado:true, password}`) | ADMINISTRADOR, SUPERADMIN | plan |
 | `POST /restaurantes/actual/suscripcion/renovar` | ADMINISTRADOR, SUPERADMIN | impl (`renovar()`), ver cambio anunciado |
 | `POST /restaurantes/actual/suscripcion/cancelar` | ADMINISTRADOR, SUPERADMIN | plan |
-| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30, `administrador {nombre, apellido, email, password}`; 201 `RestauranteCreadoResponse` con `administrador {usuarioId, email, nombre}`, 400 slug duplicado o plan inexistente, 409 email ya registrado, 422; crea restaurante y dueño en una sola transacción) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (en `main` sin `administrador`; el cuerpo con `administrador` está en `feat/plataforma-06-administrador`, pendiente de PR: hasta entonces la creación desde `main` da 422) |
+| `POST /restaurantes` (crear; `slug`, `nombre`, `direccion?`, `planId`, `demo?`, `demoDias` 1–30, `administrador {nombre, apellido, email, password}`; 201 `RestauranteCreadoResponse` con `administrador {usuarioId, email, nombre}`, 400 slug duplicado o plan inexistente, 409 email ya registrado, 422; crea restaurante y dueño en una sola transacción) | SUPERADMIN, ADMIN | impl `PlataformaApi.crear` (en `main` con `administrador`, PR #14) |
 | `GET /restaurantes?page=&size=&sort=` (`size` 10 por defecto; `sort=nombre,asc` o `nombre,desc`; un campo desconocido da 500) | SUPERADMIN | impl `PlataformaApi.listar` (en `main`) |
 | `GET /restaurantes/{id}`, `/{id}/suscripcion` | SUPERADMIN | impl `PlataformaApi.detalle` y `.suscripcion` (en `main`) |
 | `POST /restaurantes/{id}/suscripcion/renovar` (`{planId?}`; un mes pagado; `planId` obligatorio sin suscripción previa; `INACTIVO` pasa a `ACTIVO`) | SUPERADMIN | impl `PlataformaApi.renovar` (en `main`) |
@@ -86,7 +86,7 @@ Verificado contra `/v3/api-docs` y `FRONTEND_CONTEXT` el 2026-10-11. Clientes en
 
 | Endpoint | Roles | Front |
 |---|---|---|
-| `GET /pedidos?estado=&fecha=&porCobrar=&page=&size=` (paginado, `size` 1–100, más nuevo primero; fila sin items; `estadoPago` `PAGADO`, `REEMBOLSADO` o `null`) | ADMINISTRADOR, RECEPCION (el contrato §3 también lo da a CAJERO) | impl `PedidosApi.listar` |
+| `GET /pedidos?estado=&fecha=&porCobrar=&page=&size=` (paginado, `size` 1–100, más nuevo primero; fila sin items; `estadoPago` `PAGADO`, `REEMBOLSADO` o `null`) | ADMINISTRADOR, RECEPCION (el contrato §3 también lo da a CAJERO, que lo usa con `porCobrar=true` desde `/caja`) | impl `PedidosApi.listar` |
 | `POST /pedidos` (`tipoPedido`, `mesaId?`, `observacion?`, `repartidorNombre?`, `items[]`) | ADMINISTRADOR, RECEPCION | impl `PedidosApi.crear` (sin `repartidorNombre`) |
 | `POST /pedidos/{id}/confirmar` (`PENDIENTE` a `EN_PREPARACION`) | ADMINISTRADOR, RECEPCION | impl `PedidosApi.confirmar` |
 | `PATCH /pedidos/{id}/estado` | ADMINISTRADOR, RECEPCION | impl `PedidosApi.cambiarEstado` |
@@ -96,10 +96,17 @@ No existe `GET /pedidos/{id}`. El backend calcula precios y total (anti-tamper):
 ### Pagos
 | Endpoint | Roles | Front |
 |---|---|---|
-| `POST /pagos` (`pedidoId`, `metodoPago`, `montoEntregado?`, `referenciaExterna?`) | ADMINISTRADOR | plan |
-| `POST /pagos/{id}/reembolso` (`motivo` obligatorio) | ADMINISTRADOR, RECEPCION | plan |
+| `POST /pagos` (`pedidoId*`, `metodoPago*`, `montoEntregado` ≥ 0, `referenciaExterna` ≤ 100) → 201 `PagoResponse` (`pagoId`, `pedidoId`, `monto`, `vuelto`, `metodoPago`, `estado`, `reembolsoMotivo`, `reembolsoUsuarioId`) | ADMINISTRADOR, RECEPCION, CAJERO (contrato §3) | impl `PagosApi.registrar` (ramas `feat/caja-01-datos` a `-03-atajos`, locales, sin mergear) |
+| `POST /pagos/{id}/reembolso` (`motivo` obligatorio) | ADMINISTRADOR, RECEPCION | **bloqueado**: necesita el `pagoId`, que ninguna lectura expone (ver abajo) |
 
 Métodos: `EFECTIVO`, `TARJETA_CREDITO`, `TARJETA_DEBITO`, `YAPE`, `PLIN`, `OTROS`. Estados de pago: `PENDIENTE`, `PAGADO`, `REEMBOLSADO`, `CANCELADO`.
+
+Verificado contra el OpenAPI local el 2026-10-16. Fase [[Fase 7 - Caja]], módulo [[Pagos]].
+
+- **`POST /pagos` no recibe `monto`:** el backend lo toma del pedido (anti-tamper); `montoEntregado` solo aplica a `EFECTIVO` y la respuesta trae el `vuelto` autoritativo. Errores: 400 "Pedido inexistente, ya pagado o monto insuficiente" (según el contrato también pedido cancelado o reembolsado), 403, 422 `campo: mensaje`.
+- **Qué pedidos se cobran:** `GET /pedidos?porCobrar=true` devuelve los no cancelados y nunca cobrados, en cualquier estado (`size` ≤ 100). Cobrar no cambia el estado del pedido; un pedido pagado no se puede cancelar; `ENTREGADO` sin pago es válido.
+- **Con el tenant bloqueado:** `POST /pagos` pasa (contrato §5), por eso `/caja` no lleva `subscriptionGuard`.
+- **El reembolso necesita el `pagoId`:** `GET /pedidos` solo devuelve `estadoPago` y no existen `GET /pagos` ni `GET /pedidos/{id}`; el front solo conoce el `pagoId` en la respuesta 201 de `POST /pagos`. Solicitud al backend (campo `pago { pagoId, metodoPago, monto, referenciaExterna }` en cada fila de `GET /pedidos`): `docs/backend/pago-id-en-pedidos.md`.
 
 ### Usuarios
 | Endpoint | Roles | Front |
