@@ -10,6 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Observable, Subject, catchError, map, of, switchMap } from 'rxjs';
+import { can } from '../../core/auth/domain/permissions.rules';
+import { SessionStore } from '../../core/auth/session.store';
 import { Page } from '../../core/http/api.types';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { BadgeComponent, BadgeVariant } from '../../shared/ui/badge/badge.component';
@@ -24,6 +26,7 @@ import {
   PedidoAction,
   cancelCopy,
   canCancel,
+  cobrarLabel,
   emptyHeading,
   estadoLabel,
   estadoPagoLabel,
@@ -33,6 +36,7 @@ import {
   formatMoney,
   formatOrderNumber,
   fallbackPage,
+  isCobrable,
   isRowBusy,
   observacionText,
   pagerView,
@@ -68,6 +72,8 @@ interface RowView {
   estado: string;
   variant: BadgeVariant;
   pago: string;
+  /** Label of the "Cobrar" shortcut, or null when the row is not chargeable by this user. */
+  cobrar: string | null;
   action: PedidoAction | null;
   cancelable: boolean;
   busy: boolean;
@@ -195,7 +201,19 @@ interface RowView {
                     <td class="px-4 py-3">
                       <app-badge [variant]="row.variant">{{ row.estado }}</app-badge>
                     </td>
-                    <td class="px-4 py-3 text-muted">{{ row.pago }}</td>
+                    <td class="px-4 py-3 text-muted">
+                      @if (row.cobrar; as label) {
+                        <a
+                          routerLink="/caja"
+                          [queryParams]="{ pedido: row.pedido.pedidoId }"
+                          class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink px-3 py-1 text-xs font-semibold text-ink transition-colors hover:bg-neutral-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                        >
+                          <app-icon name="wallet" [size]="14" />{{ label }}
+                        </a>
+                      } @else {
+                        {{ row.pago }}
+                      }
+                    </td>
                     <td class="px-4 py-3">
                       <div class="flex items-center justify-end gap-2">
                         @if (row.action; as action) {
@@ -278,6 +296,7 @@ interface RowView {
 export class PedidosPage {
   private readonly api = inject(PedidosApi);
   private readonly toasts = inject(ToastService);
+  private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
   private readonly requests$ = new Subject<LoadRequest>();
 
@@ -309,6 +328,7 @@ export class PedidosPage {
     const now = this.now();
     const inFlight = this.inFlight();
     const awaitingReload = this.awaitingReload();
+    const mayCharge = can(this.session.user(), 'pagos.registrar');
     return (this.data()?.content ?? []).map((pedido) => ({
       pedido,
       number: formatOrderNumber(pedido.pedidoId),
@@ -320,6 +340,7 @@ export class PedidosPage {
       estado: estadoLabel(pedido.estado),
       variant: estadoVariant(pedido.estado),
       pago: estadoPagoLabel(pedido.estadoPago),
+      cobrar: mayCharge && isCobrable(pedido) ? cobrarLabel(pedido.total) : null,
       action: primaryAction(pedido),
       cancelable: canCancel(pedido),
       busy: isRowBusy(pedido.pedidoId, inFlight, awaitingReload),

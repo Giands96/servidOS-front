@@ -214,6 +214,19 @@ export function formatMoney(amount: number): string {
   return Number.isFinite(amount) ? `S/ ${amount.toFixed(2)}` : EM_DASH;
 }
 
+/**
+ * Whether the list offers the "Cobrar" shortcut: never charged and not cancelled, any other estado
+ * (same rule as the backend `porCobrar`; ENTREGADO without payment is valid).
+ */
+export function isCobrable(pedido: Pick<PedidoListado, 'estado' | 'estadoPago'>): boolean {
+  return pedido.estadoPago === null && pedido.estado !== 'CANCELADO';
+}
+
+/** Text of the "Cobrar" shortcut ("Cobrar S/ 72.00"). */
+export function cobrarLabel(total: number): string {
+  return `Cobrar ${formatMoney(total)}`;
+}
+
 /** The order observation, or an em dash when it is empty (the list rows carry no items). */
 export function observacionText(observacion: string | null): string {
   const text = observacion?.trim() ?? '';
