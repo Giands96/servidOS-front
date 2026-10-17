@@ -67,7 +67,13 @@ export const routes: Routes = [
           import('./features/cocina/cocina.page').then((m) => m.CocinaPage),
         ),
       },
-      { path: 'caja', ...moduleRoute('pagos.registrar', 'Caja', 'wallet') },
+      // No subscriptionGuard: charging passes while the tenant is blocked (contract §5).
+      {
+        path: 'caja',
+        ...moduleRoute('pagos.registrar', 'Caja', 'wallet', [], () =>
+          import('./features/pagos/caja.page').then((m) => m.CajaPage),
+        ),
+      },
       // No subscriptionGuard: reading the menu works while the tenant is blocked (402 only hits the writes).
       {
         path: 'catalogo',
