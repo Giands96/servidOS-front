@@ -51,8 +51,8 @@ describe('routes', () => {
 
   it('renders a module inside the shell for an allowed role', async () => {
     signIn({ rol: 'ADMINISTRADOR' });
-    const harness = await RouterTestingHarness.create('/caja');
-    expect(url()).toBe('/caja');
+    const harness = await RouterTestingHarness.create('/usuarios');
+    expect(url()).toBe('/usuarios');
     const text = harness.routeNativeElement?.textContent ?? '';
     expect(text).toContain('Módulo en construcción');
     expect(text).toContain('Restaurante y plan');
@@ -123,6 +123,17 @@ describe('routes', () => {
     expect(cocina.canActivate).toEqual([routeActionGuard]);
     const page = await (cocina.loadComponent as () => Promise<{ name: string }>)();
     expect(page.name).toMatch(/CocinaPage$/);
+  });
+
+  it('/caja loads the cashier page with no subscriptionGuard (payments pass while blocked) and keeps its sidebar entry', async () => {
+    const caja = shellChild('caja');
+    expect(caja.canActivate).toEqual([routeActionGuard]);
+    expect(caja.data).toMatchObject({
+      action: 'pagos.registrar',
+      nav: { label: 'Caja', icon: 'wallet' },
+    });
+    const page = await (caja.loadComponent as () => Promise<{ name: string }>)();
+    expect(page.name).toMatch(/CajaPage$/);
   });
 
   it('moduleRoute without an icon declares the permission and title but no sidebar entry', () => {
