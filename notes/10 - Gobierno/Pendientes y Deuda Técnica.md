@@ -18,7 +18,7 @@ Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9
 > Todo lo abierto según `docs/progress/*`, `odd/tasks/*` y lo observado al leer el código. Cada ítem indica su origen.
 
 ## Checklist de cambios del backend (2026-10-08 a 2026-10-16)
-Numeración de `CAMBIOS_FRONTEND.md` del backend. Verificados contra su código el 2026-10-16 (§1 a §17 en `main`; §18 en una rama en ese momento, que el front ya implementa); falta contrastar contra Swagger en ejecución. Los ítems marcan el trabajo del front; su estado se contrastó con `src/app/` el 2026-10-17.
+Numeración de `CAMBIOS_FRONTEND.md` del backend. Verificados contra su código el 2026-10-16 (§1 a §17 en `main`; §18 en una rama ese día). Después, el Swagger en ejecución confirmó el §18 (`POST /restaurantes` exige `administrador`) y el front lo implementó (PR #14); el resto sigue sin contrastarse contra Swagger en ejecución. Los ítems marcan el trabajo del front; su estado se contrastó con `src/app/` el 2026-10-17.
 - [x] §1 `RestauranteApi.renovar()` eliminado; el botón del paywall ahora muestra el pago manual por Yape + WhatsApp ([[Restaurante]], `docs/progress/06-paywall-pago-manual.md`). Falta el copy de `suspendido.page.ts` ("la plataforma regulariza la suscripción"; hoy dice "renovar el plan").
 - [ ] Pago manual: el dueño debe completar `whatsappNumber` en `payment-contact.ts` y agregar `public/yape-qr.png`; decidir si se avisa en pantalla cuando el número no está configurado.
 - [ ] (en `main`, sin prueba en navegador) Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace). Acciones Renovar, Cambiar plan y Suspender/Reactivar mergeadas con Plataforma 01 a 05 (PR #13 de GitHub, `5e8b272`).

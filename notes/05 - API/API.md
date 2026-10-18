@@ -55,7 +55,7 @@ Roles de plataforma: SUPERADMIN y ADMIN (socio) hacen lo mismo, salvo que solo S
 
 | Endpoint | Roles | Front |
 |---|---|---|
-| `GET /restaurantes/actual` | autenticado | impl (`RestauranteApi.actual`, campo `nombre` asumido) |
+| `GET /restaurantes/actual` | autenticado | impl (`RestauranteApi.actual`; el campo `nombre` se contrastó con el código del backend el 2026-10-16, no con Swagger en ejecución) |
 | `GET /restaurantes/actual/suscripcion` | autenticado (la vigente hoy; 400 si no hay) | impl (`SuscripcionApi`, `RestauranteApi.suscripcion`) |
 | `POST /restaurantes/actual/suscripcion/cancelar` (`{password}`) | ADMINISTRADOR | plan |
 | `GET /planes` (solo `ACTIVO`, por precio ascendente) | autenticado | impl `PlataformaApi.planes` (en `main`) |
@@ -132,7 +132,7 @@ Mensaje del topic: `{ pedidoId, estadoAnterior, estadoNuevo }`. Items de cola y 
 > `PreparacionPedidoResponse` y `CocinaDetalleResponse` del backend tienen exactamente esos campos (camelCase, `nombreProducto`). `listoAt` se agregó el 2026-10-16 (migración V13).
 
 ## Cambios del backend (2026-10-08 a 2026-10-16)
-Numeración de `CAMBIOS_FRONTEND.md` del backend. §1 a §17 estaban en su `main` al verificar (2026-10-16); §18 **(rama)** en ese momento. Columna "Estado" = implementación en el front, contrastada con `src/app/` el 2026-10-17.
+Numeración de `CAMBIOS_FRONTEND.md` del backend. §1 a §17 estaban en su `main` al verificar (2026-10-16). §18 estaba en una rama del backend ese día; luego se vio en el Swagger en ejecución (`POST /restaurantes` ya exige `administrador`) y el front lo implementó (PR #14). Columna "Estado" = implementación en el front, contrastada con `src/app/` el 2026-10-17.
 
 | § | Cambio | Impacto en el front | Estado |
 |---|---|---|---|
@@ -154,7 +154,7 @@ Numeración de `CAMBIOS_FRONTEND.md` del backend. §1 a §17 estaban en su `main
 | 15 | Backend en `America/Lima`: fechas sin zona ya son hora local | no agregar `Z` ni tratarlas como UTC | parcial: Pedidos (`formatCreatedAt`) y Plataforma (`America/Lima`) lo respetan; el comentario de `cocina.rules.ts` aún habla de UTC con `Z`, por revisar |
 | 16 | Roles de plataforma: SUPERADMIN = ADMIN salvo crear ADMINs; MODERADOR consulta y renueva; `POST /usuarios/plataforma` | panel de plataforma por rol; alta de usuarios (ADMIN solo ofrece MODERADOR) | pendiente: las acciones de Plataforma son solo de SUPERADMIN y no hay alta de usuarios de plataforma |
 | 17 | Período = un mes calendario; `fechaFin` inclusiva (11/10 a 10/11); demo de N días da N días | textos "vence el {fechaFin}"; días restantes = `fechaFin - hoy + 1` | parcial: Plataforma deriva "Vencida" con `fechaFin < hoy` en hora de Lima; falta el aviso de días restantes en el tenant |
-| 18 | **(rama)** `POST /restaurantes` exige `administrador`; crea el dueño ADMINISTRADOR en la misma transacción; 409 email repetido, 422 `administrador.*`; respuesta suma `administrador {usuarioId, email, nombre}` | formulario "Crear restaurante" con sección Administrador | implementado (formulario en dos pasos, PR #14) |
+| 18 | `POST /restaurantes` exige `administrador`; crea el dueño ADMINISTRADOR en la misma transacción; 409 email repetido, 422 `administrador.*`; respuesta suma `administrador {usuarioId, email, nombre}` | formulario "Crear restaurante" con sección Administrador | implementado (formulario en dos pasos, PR #14) |
 
 El usuario aprobó `@stomp/rx-stomp` (commit `00c94dd`) y decidió los umbrales de cocina 15 min Atención / 25 min Crítico.
 

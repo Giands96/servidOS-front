@@ -39,7 +39,7 @@ Placeholders para módulos pendientes; sin badges de conteo (no hay endpoints de
 Panel izquierdo del login con degradado (sin foto aprobada); un solo mensaje en 422 (se marcan ambos campos); `SuscripcionApi` y `RestauranteApi.suscripcion()` duplican un GET; el paywall muestra "Plan {id}" porque no hay endpoint con nombre del plan; el chip "402 · mensaje" del diseño no se muestra.
 
 ## Pendientes (de las reviews)
-- Foto del panel de login; confirmar el campo `nombre` de `GET /restaurantes/actual` (asumido).
+- Foto del panel de login. El campo `nombre` de `GET /restaurantes/actual` se contrastó con el código del backend (2026-10-16); falta verlo en el Swagger en ejecución.
 - Tests de página del login y del flujo renovar del paywall.
 - Icono y código "200" inventados en el toast de éxito; `roleLabel` copiado en 3 sitios (a la fecha de la review; hoy hay una sola definición en `navigation.rules.ts`, usada por shell y páginas); `formatDate` acepta 31/02.
 - `navEntriesFrom` no ve `loadChildren`; el shell lee rutas una vez.
