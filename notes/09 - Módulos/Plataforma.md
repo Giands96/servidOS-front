@@ -5,7 +5,7 @@ tags:
   - servidos
   - modulos
   - plataforma
-  - implementado-en-ramas
+  - en-main
 aliases:
   - Módulo Plataforma
   - Restaurantes (plataforma)
@@ -18,8 +18,8 @@ Volver: [[00 - MOC]] · Fase: [[Fase 5 - Plataforma]] · Ver [[Modelo de Negocio
 > [!abstract] Responsabilidad
 > Nivel plataforma: listar restaurantes con su suscripción, crear restaurantes **junto con la cuenta de su dueño** y operarlos (renovar, cambiar de plan, suspender o reactivar). El tenant paga al dueño por Yape, fuera de la app; el dueño confirma y habilita **desde aquí**.
 
-> [!warning] Estado: implementada en 6 ramas locales, pendiente de merge (2026-10-16)
-> Las pantallas existen en `feat/plataforma-01-datos` … `feat/plataforma-06-administrador` (punta `c6085d9`, 24 archivos / 939 tests, build OK), pero **todavía no están en `main`**. En `main` (`c66c3ff`) las rutas siguen siendo placeholders. Sin prueba manual en navegador y sin spec de las páginas (AGENTS §6). Detalle en [[Fase 5 - Plataforma]].
+> [!success] Estado: en `main` (2026-10-17)
+> Las pantallas están mergeadas: PR #13 (ramas 01 a 05, `5e8b272`) y PR #14 (06, cuenta del dueño y asistente, `f7112e6`); `main` está en `527e1e6`. Pendiente: probar en navegador (nunca se probó) y sin spec de las páginas (AGENTS §6). Detalle en [[Fase 5 - Plataforma]].
 
 ## Pantallas
 | Ruta | Rol | Qué hace |
@@ -43,7 +43,7 @@ La insignia de suscripción muestra Activa, Cancelada, **Vencida** (derivada: `f
 - **Suspender / Reactivar**: `INACTIVO` deja al tenant en solo lectura (escrituras con 402). **No toca la suscripción**: reactivar un tenant vencido lo deja bloqueado y el modal avisa que hay que Renovar.
 - Los mensajes 400 del backend se muestran tal cual y, ante un 4xx, la lista se recarga. Tras el éxito también se recarga.
 
-## Archivos (en las ramas)
+## Archivos
 | Ruta | Contenido |
 |---|---|
 | `features/plataforma/plataforma.types.ts` | restaurante del dashboard, suscripción, plan y requests |

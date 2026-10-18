@@ -56,7 +56,7 @@ Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `
 | `usuarios.gestionar` | | | X | | | | | |
 | `cocina.ver` / `cocina.listo` | | | X | X | X | | | |
 
-> [!note] `pagos.registrar` ampliado en la fase de Caja (2026-10-17, rama `feat/caja-01-datos`, sin mergear)
+> [!note] `pagos.registrar` ampliado en la fase de Caja (2026-10-17, rama `feat/caja-01-datos`, publicada, PR pendiente)
 > Antes era solo ADMINISTRADOR (así lo decía `Flujo - Recepcion Cocina.md`). Pasa a **ADMINISTRADOR, RECEPCION y CAJERO** según `FRONTEND_CONTEXT` §3, que es el contrato vigente. `pagos.reembolsar` no cambia (ADMINISTRADOR y RECEPCION). Detalle en [[Fase 7 - Caja]] y [[Pagos]].
 
 ### Home por rol (`homeFor`)

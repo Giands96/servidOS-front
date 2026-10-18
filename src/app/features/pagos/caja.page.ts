@@ -27,16 +27,19 @@ import {
   CobroErrors,
   CobroField,
   METODOS_PAGO,
-  cobroFieldErrors,
+  PAGO_ERROR,
   cobroHeading,
   emptyCobroDraft,
+  pagoRegistradoMessage,
+  pagoRejection,
   parseMonto,
   parsePedidoParam,
-  pagoRegistradoMessage,
   porCobrarCard,
   porCobrarHeading,
   quickAmounts,
+  reconcilePaid,
   referenciaHint,
+  rejectionKey,
   submitLabel,
   toRegistrarPagoRequest,
   ultimoPagoLabel,
@@ -46,7 +49,6 @@ import {
 import { MetodoPago } from './pagos.types';
 
 const DEFAULT_ERROR = 'Revisa tu conexión e inténtalo de nuevo.';
-const PAGO_ERROR = 'No se pudo registrar el pago';
 /** Largest page the backend accepts: the cashier works from one screenful. */
 const LIST_SIZE = 100;
 
@@ -307,6 +309,10 @@ export class CajaPage {
   private loadRequest: Subscription | null = null;
   /** `?pedido=` as it arrived; consumed by the first successful load. */
   private requestedId = parsePedidoParam(this.route.snapshot.queryParamMap.get('pedido'));
+  /** Orders charged in this page session; kept out of "Por cobrar" while the server still lists them. */
+  private paidIds = new Set<number>();
+  /** Last list as the server sent it, before the paid orders are hidden. */
+  private server: { content: readonly PedidoListado[]; total: number } = { content: [], total: 0 };
 
   protected readonly metodos = METODOS_PAGO;
   protected readonly referenciaHint = referenciaHint;
@@ -372,14 +378,14 @@ export class CajaPage {
     const draft = this.draft();
     const visible: CobroErrors = {};
     for (const [field, rejection] of Object.entries(this.rejected()) as [CobroField, Rejection][]) {
-      if (String(draft[field]) === rejection.sent) {
+      if (rejectionKey(draft, field) === rejection.sent) {
         visible[field] = rejection.message;
       }
     }
     const touched = this.attempted();
     const validation = this.validation();
     for (const field of Object.keys(validation) as CobroField[]) {
-      if (touched || String(draft[field] ?? '').trim() !== '') {
+      if (touched || rejectionKey(draft, field) !== '') {
         visible[field] = validation[field];
       }
     }
@@ -471,11 +477,10 @@ export class CajaPage {
           this.submitting.set(false);
           this.toasts.show('OK', pagoRegistradoMessage(pago, pedido), 'success');
           this.lastPago.set(ultimoPagoLabel(pago, pedido));
-          // The order leaves the list right away (and the next card is selected); the reload confirms it.
-          this.applyList(
-            (this.pedidos() ?? []).filter((p) => p.pedidoId !== pedido.pedidoId),
-            Math.max(this.totalElements() - 1, 0),
-          );
+          // The order leaves the list right away (and the next card is selected) and stays out of every later
+          // response, stale or not, until the server stops listing it; the reload confirms it.
+          this.paidIds.add(pedido.pedidoId);
+          this.applyServerList(this.server.content, this.server.total);
           this.fetch();
         },
         error: (error: unknown) => {
@@ -485,22 +490,23 @@ export class CajaPage {
       });
   }
 
-  /** Field rejections go under their fields; anything else is the backend `message` in a toast. A 4xx also reloads: the order may be gone. */
+  /**
+   * `pagoRejection` decides where the backend message goes: under a visible field and/or in a toast, so no rejection
+   * is silent. A 4xx also reloads: the order may be gone (the toast outlives that reload).
+   */
   private fail(error: unknown, draft: CobroDraft): void {
     if (!(error instanceof HttpErrorResponse)) {
       this.toasts.show('Error', PAGO_ERROR);
       return;
     }
-    const message = readApiError(error.error)?.message ?? null;
-    const fields = Object.entries(cobroFieldErrors(error.status, message)) as [CobroField, string][];
-    if (fields.length === 0) {
-      this.toasts.show(error.status, message ?? PAGO_ERROR);
-    } else {
-      const rejected: Partial<Record<CobroField, Rejection>> = {};
-      for (const [field, fieldMessage] of fields) {
-        rejected[field] = { sent: String(draft[field]), message: fieldMessage };
-      }
-      this.rejected.set(rejected);
+    const { fields, toast } = pagoRejection(error.status, readApiError(error.error)?.message ?? null, draft.metodo);
+    const rejected: Partial<Record<CobroField, Rejection>> = {};
+    for (const [field, message] of Object.entries(fields) as [CobroField, string][]) {
+      rejected[field] = { sent: rejectionKey(draft, field), message };
+    }
+    this.rejected.set(rejected);
+    if (toast !== null) {
+      this.toasts.show(error.status, toast);
     }
     if (shouldReloadAfterRejection(error.status)) {
       this.fetch();
@@ -518,7 +524,7 @@ export class CajaPage {
       .subscribe({
         next: (page) => {
           this.refreshing.set(false);
-          this.applyList(page.content, page.totalElements);
+          this.applyServerList(page.content, page.totalElements);
         },
         error: (error: unknown) => {
           this.refreshing.set(false);
@@ -533,6 +539,14 @@ export class CajaPage {
           }
         },
       });
+  }
+
+  /** Keeps the last server answer and shows it without the orders already charged in this session (`reconcilePaid`). */
+  private applyServerList(content: readonly PedidoListado[], total: number): void {
+    this.server = { content, total };
+    const view = reconcilePaid(content, total, this.paidIds);
+    this.paidIds = view.paid;
+    this.applyList(view.rows, view.total);
   }
 
   /**

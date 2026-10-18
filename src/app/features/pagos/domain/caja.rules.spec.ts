@@ -3,18 +3,20 @@ import { Pago } from '../pagos.types';
 import {
   CobroDraft,
   METODOS_PAGO,
-  cobroFieldErrors,
   cobroHeading,
   emptyCobroDraft,
   metodoLabel,
   pagoRegistradoMessage,
+  pagoRejection,
   parseMonto,
   parsePedidoParam,
   pideReferencia,
   porCobrarCard,
   porCobrarHeading,
   quickAmounts,
+  reconcilePaid,
   referenciaHint,
+  rejectionKey,
   submitLabel,
   toRegistrarPagoRequest,
   ultimoPagoLabel,
@@ -152,6 +154,16 @@ describe('quickAmounts', () => {
     ]);
     expect(quickAmounts(230.5).map((q: { monto: number }) => q.monto)).toEqual([230.5, 250, 300, 350]);
   });
+
+  // Boundary between the two regimes (bills below S/ 200, multiples of 50 from S/ 200): current behavior, pinned.
+  it.each([
+    [199, [199, 200]],
+    [200, [200, 250, 300, 350]],
+    [201, [201, 250, 300, 350]],
+    [250, [250, 300, 350, 400]],
+  ])('pins the amounts for a total of %d', (total, expected) => {
+    expect(quickAmounts(total).map((q) => q.monto)).toEqual(expected);
+  });
 });
 
 describe('emptyCobroDraft', () => {
@@ -221,31 +233,118 @@ describe('toRegistrarPagoRequest', () => {
   });
 });
 
-describe('cobroFieldErrors', () => {
-  it('puts a 400 about the amount under montoEntregado', () => {
-    const message = 'Pedido inexistente, ya pagado o monto insuficiente';
-    expect(cobroFieldErrors(400, message)).toEqual({ montoEntregado: message });
-    expect(cobroFieldErrors(400, 'El MONTO no alcanza')).toEqual({ montoEntregado: 'El MONTO no alcanza' });
+describe('pagoRejection', () => {
+  const ORDER_STATE = 'Pedido inexistente, ya pagado o monto insuficiente';
+
+  it('never pins a 400 to a field: it is about the order, so the toast carries the backend message as is', () => {
+    expect(pagoRejection(400, ORDER_STATE, 'EFECTIVO')).toEqual({ fields: {}, toast: ORDER_STATE });
+    expect(pagoRejection(400, ORDER_STATE, 'YAPE')).toEqual({ fields: {}, toast: ORDER_STATE });
+    expect(pagoRejection(400, 'El MONTO no alcanza', 'EFECTIVO')).toEqual({
+      fields: {},
+      toast: 'El MONTO no alcanza',
+    });
+    expect(pagoRejection(400, ORDER_STATE, null)).toEqual({ fields: {}, toast: ORDER_STATE });
   });
 
-  it('maps 422 field messages', () => {
-    expect(
-      cobroFieldErrors(
-        422,
-        'montoEntregado: debe ser mayor o igual a 0; referenciaExterna: tamaño máximo 100; metodoPago: obligatorio; otro: x',
-      ),
-    ).toEqual({
-      montoEntregado: 'debe ser mayor o igual a 0',
-      referencia: 'tamaño máximo 100',
-      metodo: 'obligatorio',
+  it('toasts any other status with the backend message', () => {
+    expect(pagoRejection(403, 'No tienes permiso', 'PLIN')).toEqual({ fields: {}, toast: 'No tienes permiso' });
+    expect(pagoRejection(409, 'monto', 'EFECTIVO')).toEqual({ fields: {}, toast: 'monto' });
+    expect(pagoRejection(500, 'Error interno', 'OTROS')).toEqual({ fields: {}, toast: 'Error interno' });
+  });
+
+  it('falls back to a generic toast when the backend sent no message', () => {
+    expect(pagoRejection(400, null, 'EFECTIVO')).toEqual({ fields: {}, toast: 'No se pudo registrar el pago' });
+    expect(pagoRejection(422, null, 'YAPE')).toEqual({ fields: {}, toast: 'No se pudo registrar el pago' });
+    expect(pagoRejection(403, '  ', 'YAPE')).toEqual({ fields: {}, toast: 'No se pudo registrar el pago' });
+  });
+
+  it('maps 422 messages to the visible fields and needs no toast when all of them landed on one', () => {
+    expect(pagoRejection(422, 'montoEntregado: debe ser mayor o igual a 0', 'EFECTIVO')).toEqual({
+      fields: { montoEntregado: 'debe ser mayor o igual a 0' },
+      toast: null,
+    });
+    expect(pagoRejection(422, 'referenciaExterna: tamaño máximo 100', 'YAPE')).toEqual({
+      fields: { referencia: 'tamaño máximo 100' },
+      toast: null,
+    });
+    expect(pagoRejection(422, 'metodoPago: obligatorio', null)).toEqual({
+      fields: { metodo: 'obligatorio' },
+      toast: null,
     });
   });
 
-  it('is empty for anything else', () => {
-    expect(cobroFieldErrors(400, 'Pedido cancelado')).toEqual({});
-    expect(cobroFieldErrors(403, 'monto')).toEqual({});
-    expect(cobroFieldErrors(400, null)).toEqual({});
-    expect(cobroFieldErrors(422, null)).toEqual({});
+  it('toasts the whole 422 message when a part has no visible field of the current draft', () => {
+    const hiddenReference = 'referenciaExterna: tamaño máximo 100';
+    expect(pagoRejection(422, hiddenReference, 'EFECTIVO')).toEqual({ fields: {}, toast: hiddenReference });
+    const hiddenAmount = 'montoEntregado: obligatorio';
+    expect(pagoRejection(422, hiddenAmount, 'YAPE')).toEqual({ fields: {}, toast: hiddenAmount });
+    expect(pagoRejection(422, hiddenAmount, null)).toEqual({ fields: {}, toast: hiddenAmount });
+  });
+
+  it('keeps the visible fields of a mixed 422 and still toasts the full message', () => {
+    const message = 'montoEntregado: debe ser mayor o igual a 0; referenciaExterna: tamaño máximo 100; otro: x';
+    expect(pagoRejection(422, message, 'EFECTIVO')).toEqual({
+      fields: { montoEntregado: 'debe ser mayor o igual a 0' },
+      toast: message,
+    });
+    expect(pagoRejection(422, message, 'TARJETA_CREDITO')).toEqual({
+      fields: { referencia: 'tamaño máximo 100' },
+      toast: message,
+    });
+  });
+});
+
+describe('rejectionKey', () => {
+  it('is the trimmed text of the field', () => {
+    expect(rejectionKey(draft({ montoEntregado: ' 100.00 ' }), 'montoEntregado')).toBe('100.00');
+    expect(rejectionKey(draft({ metodo: 'YAPE', referencia: '  OP-1' }), 'referencia')).toBe('OP-1');
+    expect(rejectionKey(draft({ metodo: 'YAPE' }), 'metodo')).toBe('YAPE');
+  });
+
+  it('is empty for a blank text or no method, never "null"', () => {
+    expect(rejectionKey(draft({ referencia: '   ' }), 'referencia')).toBe('');
+    expect(rejectionKey(draft({ metodo: null }), 'metodo')).toBe('');
+  });
+
+  it('ignores whitespace-only edits', () => {
+    expect(rejectionKey(draft({ montoEntregado: '10' }), 'montoEntregado')).toBe(
+      rejectionKey(draft({ montoEntregado: ' 10  ' }), 'montoEntregado'),
+    );
+  });
+});
+
+describe('reconcilePaid', () => {
+  const row = (pedidoId: number): PedidoListado => ({ ...pedido, pedidoId });
+
+  it('returns the server list untouched while nothing was paid here', () => {
+    const rows = [row(1), row(2)];
+    expect(reconcilePaid(rows, 2, new Set())).toEqual({ rows, total: 2, paid: new Set() });
+  });
+
+  it('hides a paid order the (stale) server still lists and lowers the count by one', () => {
+    const result = reconcilePaid([row(1), row(2), row(3)], 3, new Set([2]));
+    expect(result.rows.map((r) => r.pedidoId)).toEqual([1, 3]);
+    expect(result.total).toBe(2);
+    expect(result.paid).toEqual(new Set([2]));
+  });
+
+  it('keeps counting only the server-side total beyond the page', () => {
+    const result = reconcilePaid([row(1), row(2)], 150, new Set([1]));
+    expect(result.rows.map((r) => r.pedidoId)).toEqual([2]);
+    expect(result.total).toBe(149);
+  });
+
+  it('forgets a paid id once the server stops listing it, without touching the count', () => {
+    const result = reconcilePaid([row(1), row(3)], 2, new Set([2]));
+    expect(result.rows.map((r) => r.pedidoId)).toEqual([1, 3]);
+    expect(result.total).toBe(2);
+    expect(result.paid).toEqual(new Set());
+  });
+
+  it('never goes below zero and does not mutate its input set', () => {
+    const paid = new Set([1]);
+    expect(reconcilePaid([row(1)], 0, paid).total).toBe(0);
+    expect(paid).toEqual(new Set([1]));
   });
 });
 
