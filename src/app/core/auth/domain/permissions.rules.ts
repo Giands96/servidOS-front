@@ -46,7 +46,7 @@ const RESTAURANTE_ACTIONS: Partial<Record<Action, readonly RestauranteRol[]>> = 
   'catalogo.editar': ['ADMINISTRADOR'],
   'catalogo.disponibilidad': ['ADMINISTRADOR', 'COCINERO'],
   'pedidos.gestionar': ['ADMINISTRADOR', 'RECEPCION'],
-  'pagos.registrar': ['ADMINISTRADOR'],
+  'pagos.registrar': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO'],
   'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
   'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
@@ -107,6 +107,9 @@ export function homeFor(user: Actor | null): string {
   }
   if (can(user, 'cocina.ver')) {
     return '/cocina';
+  }
+  if (can(user, 'pagos.registrar')) {
+    return '/caja';
   }
   return '/sin-modulos';
 }
