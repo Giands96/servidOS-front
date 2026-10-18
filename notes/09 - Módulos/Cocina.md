@@ -36,7 +36,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 3 - Cocina]] · Ver [[Flujo del Sistema]] �
 `URGENCY_THRESHOLDS` (Atención 15, Crítico 25) y `urgencyOf`; `elapsedMinutes`, `minutesSince`; `sortByArrival` (antiguo primero, desempate por `pedidoId`); `sortListos` (más reciente primero según `listoAt` local, luego `pedidoId` desc); `tipoLabel`, `formatOrderNumber` (`#0476`), `formatClock`, `queueSummary`; `applyKitchenEvent(board, event)` inmutable que devuelve qué lista recargar.
 
 ## Conexión en vivo (`CocinaLive`)
-`start()`/`stop()`; `status` (`connecting`/`connected`/`disconnected`); `connected$` (resync); `events$` validados. Token en `connectHeaders` recalculado en `beforeConnect`; se recicla la conexión si cambia el token; se detiene sin token; no abre socket sin `restauranteId` (plataforma). Cliente sustituible vía `COCINA_STOMP`.
+`start()`/`stop()`; `status` (`connecting`/`connected`/`disconnected`); `connected$` (resync); `events$` validados. Token en `connectHeaders` recalculado en `beforeConnect`; se recicla la conexión si cambia el token; se detiene sin token; no abre socket sin `restauranteId` (plataforma). Cliente sustituible vía `COCINA_STOMP`. Es el único módulo con tiempo real (los demás recargan a mano); ver [[Arquitectura]] (Tiempo real y RxJS).
 
 ## Comportamiento de la página
 - Carga HTTP de cola y listos al iniciar y en cada (re)conexión (con `switchMap`, la última gana); aplica eventos con las reglas; los timers se refrescan cada 30 s.

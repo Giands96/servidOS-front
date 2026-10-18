@@ -69,7 +69,7 @@ Leyenda de "Front": **impl** = cliente existe en el repo; **plan** = aún no.
 Verificados contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Los roles de las filas de plataforma salen del contrato §3/§7 (no figuran en OpenAPI). Fase [[Fase 5 - Plataforma]], módulo [[Plataforma]]. Desde el 2026-10-16 `POST /restaurantes` crea también al ADMINISTRADOR del tenant (cambio de backend).
 
 ### Catálogo
-Verificado contra el OpenAPI local el 2026-10-16. Clientes en `features/catalogo/data/catalogo.api.ts`; las escrituras están en las ramas `feat/catalogo-01-datos` a `-03-formularios` (locales, sin publicar). Fase [[Fase 6 - Catálogo]], módulo [[Catálogo]].
+Verificado contra el OpenAPI local el 2026-10-16. Clientes en `features/catalogo/data/catalogo.api.ts`; las escrituras llegaron a `main` con las ramas `feat/catalogo-01-datos` a `-03-formularios` (PRs #16 a #18). Fase [[Fase 6 - Catálogo]], módulo [[Catálogo]].
 
 | Endpoint | Roles | Front |
 |---|---|---|
@@ -96,7 +96,7 @@ No existe `GET /pedidos/{id}`. El backend calcula precios y total (anti-tamper):
 ### Pagos
 | Endpoint | Roles | Front |
 |---|---|---|
-| `POST /pagos` (`pedidoId*`, `metodoPago*`, `montoEntregado` ≥ 0, `referenciaExterna` ≤ 100) → 201 `PagoResponse` (`pagoId`, `pedidoId`, `monto`, `vuelto`, `metodoPago`, `estado`, `reembolsoMotivo`, `reembolsoUsuarioId`) | ADMINISTRADOR, RECEPCION, CAJERO (contrato §3) | impl `PagosApi.registrar` (ramas `feat/caja-01-datos` a `-03-atajos`, locales, sin mergear) |
+| `POST /pagos` (`pedidoId*`, `metodoPago*`, `montoEntregado` ≥ 0, `referenciaExterna` ≤ 100) → 201 `PagoResponse` (`pagoId`, `pedidoId`, `monto`, `vuelto`, `metodoPago`, `estado`, `reembolsoMotivo`, `reembolsoUsuarioId`) | ADMINISTRADOR, RECEPCION, CAJERO (contrato §3) | impl `PagosApi.registrar` (ramas `feat/caja-01-datos` a `-03-atajos`, publicadas, PRs pendientes) |
 | `POST /pagos/{id}/reembolso` (`motivo` obligatorio) | ADMINISTRADOR, RECEPCION | **bloqueado**: necesita el `pagoId`, que ninguna lectura expone (ver abajo) |
 
 Métodos: `EFECTIVO`, `TARJETA_CREDITO`, `TARJETA_DEBITO`, `YAPE`, `PLIN`, `OTROS`. Estados de pago: `PENDIENTE`, `PAGADO`, `REEMBOLSADO`, `CANCELADO`.

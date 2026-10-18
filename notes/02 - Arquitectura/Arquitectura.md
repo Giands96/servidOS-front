@@ -53,6 +53,11 @@ graph TD
 ## Standalone + signals
 No hay NgModules. Estado en signals (`SessionStore.user`, `accessToken`, `ToastService.toasts`, estado local de páginas). Componentes con `ChangeDetectionStrategy.OnPush`. Datos remotos con `HttpClient` (`withFetch()`), RxJS solo donde es natural (peticiones, STOMP). Ver `src/app/app.config.ts`.
 
+## Tiempo real y RxJS
+- **RxJS 7.8** se usa en toda la app a través de `HttpClient`: cada `*.api.ts` y los interceptores devuelven Observables. Las páginas guardan su estado en signals y se suscriben con `takeUntilDestroyed()`.
+- **WebSocket**: solo existe en [[Cocina]]. `CocinaLive` (`features/cocina/data/cocina-live.ts`) habla STOMP sobre WebSocket con `@stomp/rx-stomp ^2.4.0`: URL `ws(s)://<host>/ws`, topic `/topic/restaurantes/{id}/cocina`, token en las cabeceras del CONNECT (nunca en la URL) y socket reciclado cuando cambia el token de sesión. Mientras la conexión está caída se pierden los mensajes, así que cada reconexión emite `connected$` y la página recarga todo.
+- **Sin tiempo real**: la lista y el tablero de Pedidos, Caja, Catálogo y Plataforma usan el botón "Actualizar" y recargan tras cada acción. Dar tiempo real al tablero de Pedidos requiere que el backend publique un topic para él; no se sabe si el contrato cubre más que Cocina (pendiente de verificar contra el contrato o Swagger). Ver [[Pendientes y Deuda Técnica]].
+
 ## Rutas lazy
 Cada página se carga con `loadComponent: () => import(...)`. En la Fase 2 el initial bundle fue 283.80 kB raw (`docs/progress/04`). No se usa `loadChildren`: `navEntriesFrom` solo recorre `children` síncronos (advertencia de la review, ver [[Reglas anti-spaghetti]]).
 

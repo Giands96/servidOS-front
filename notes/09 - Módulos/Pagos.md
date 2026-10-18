@@ -18,7 +18,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 7 - Caja]] · Ver [[Modelo de Negocio]] · 
 > [!abstract] Responsabilidad
 > Cobrar pedidos desde la pantalla `/caja` (acción `pagos.registrar`). El reembolso queda pendiente.
 
-> [!warning] Estado: cobro implementado en tres ramas locales, sin publicar (2026-10-17); reembolso bloqueado
+> [!warning] Estado: cobro publicado en tres ramas, PRs pendientes de merge (2026-10-17); reembolso bloqueado
 > `feat/caja-01-datos` (datos, permisos y reglas), `feat/caja-02-pagina` (página `/caja`) y `feat/caja-03-atajos` (botón "Cobrar" en la lista de pedidos), apiladas sobre `main` (`527e1e6`): 28 archivos / 1108 tests, build OK, sin prueba en navegador. **El reembolso no está implementado:** `POST /pagos/{id}/reembolso` necesita el `pagoId` y ninguna lectura lo expone (ver más abajo).
 
 ## Archivos

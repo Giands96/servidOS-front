@@ -28,7 +28,7 @@ aliases:
 > Catálogo (pantalla del menú, producto, categoría y disponibilidad) está **en `main`** (PRs #16 a #18, `527e1e6`); sin prueba en navegador. Ver [[Fase 6 - Catálogo]], [[Catálogo]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Pagos (Caja)
-> El cobro de pedidos (`/caja` y el atajo "Cobrar" de la lista) está **implementado en tres ramas locales, sin publicar** (2026-10-17, punta `feat/caja-03-atajos`, 1108 tests); sin prueba en navegador. `pagos.registrar` incluye ahora a RECEPCION y CAJERO. El **reembolso está bloqueado** hasta que el backend exponga el `pagoId`. Ver [[Fase 7 - Caja]], [[Pagos]] y [[Estado Actual]].
+> El cobro de pedidos (`/caja` y el atajo "Cobrar" de la lista) está **publicado en tres ramas apiladas sobre `main`, con los PRs 21 a 23 pendientes de merge** (2026-10-17, punta `feat/caja-03-atajos`, 1108 tests, review nativa aprobada); sin prueba en navegador. `pagos.registrar` incluye ahora a RECEPCION y CAJERO. El **reembolso está bloqueado** hasta que el backend exponga el `pagoId`. Ver [[Fase 7 - Caja]], [[Pagos]] y [[Estado Actual]].
 
 ## Navegación
 
