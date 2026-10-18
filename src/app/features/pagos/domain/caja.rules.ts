@@ -73,11 +73,18 @@ export interface QuickAmount {
   monto: number;
 }
 
-/** "Exacto" plus up to three round amounts above the total (the next multiples of 50 from S/ 200 up). */
+/**
+ * "Exacto" plus up to three round amounts above the total, in two regimes: below S/ 200 the bills above the total
+ * (so 199 offers only S/ 200); from S/ 200 on, where no bill is left above, the next multiples of 50 (200 offers 250,
+ * 300, 350). The threshold is the largest bill.
+ */
+const MULTIPLES_FROM = 200;
+
+/** "Exacto" plus up to three round amounts above the total (see {@link MULTIPLES_FROM} for the two regimes). */
 export function quickAmounts(total: number): QuickAmount[] {
   const above = BILLS.filter((b) => b > total);
   const rounds =
-    total >= BILLS[BILLS.length - 1]
+    total >= MULTIPLES_FROM
       ? Array.from({ length: MAX_ROUND_AMOUNTS }, (_, i) => (Math.floor(total / ROUND_STEP) + 1 + i) * ROUND_STEP)
       : above.slice(0, MAX_ROUND_AMOUNTS);
   return [{ label: 'Exacto', monto: total }, ...rounds.map((monto) => ({ label: `S/ ${monto}`, monto }))];
@@ -145,30 +152,81 @@ const SERVER_FIELDS: ReadonlyMap<string, CobroField> = new Map<string, CobroFiel
   ['metodoPago', 'metodo'],
 ]);
 
+/** Fallback toast text when a rejected payment carries no backend message. */
+export const PAGO_ERROR = 'No se pudo registrar el pago';
+
+/** The charge fields the panel renders for the chosen method: cash asks for the amount, the others for a reference. */
+function isFieldVisible(field: CobroField, metodo: MetodoPago | null): boolean {
+  switch (field) {
+    case 'metodo':
+      return true;
+    case 'montoEntregado':
+      return metodo === 'EFECTIVO';
+    case 'referencia':
+      return metodo !== null && metodo !== 'EFECTIVO';
+  }
+}
+
+/** How a rejected POST /pagos is shown: messages under visible fields, and a toast text (`null` = no toast needed). */
+export interface PagoRejection {
+  fields: CobroErrors;
+  toast: string | null;
+}
+
 /**
- * Errors to show under the charge fields for a rejected payment: a 400 that mentions the amount goes under
- * "Monto entregado"; a 422 carries "campo: mensaje; campo: mensaje", mapped per field. Anything else is `{}`
- * and the page shows a toast.
+ * Decides where a rejected payment is shown, so no rejection is ever silent. The backend message is shown as is.
+ * Only a 422 ("campo: mensaje; campo: mensaje") can name a field, and only a field that the current method renders
+ * gets an inline error. Everything else, a 400 included (its text is about the order: "inexistente, ya pagado o
+ * monto insuficiente"), goes to a toast, which survives the list reload that follows a 4xx. A 422 skips the toast
+ * only when every one of its parts landed under a visible field.
  */
-export function cobroFieldErrors(status: number, message: string | null): CobroErrors {
-  if (message === null) {
-    return {};
+export function pagoRejection(status: number, message: string | null, metodo: MetodoPago | null): PagoRejection {
+  const text = message?.trim() ?? '';
+  if (text === '') {
+    return { fields: {}, toast: PAGO_ERROR };
   }
-  if (status === 400) {
-    return /monto/i.test(message) ? { montoEntregado: message } : {};
+  if (status !== 422) {
+    return { fields: {}, toast: text };
   }
-  if (status === 422) {
-    const errors: CobroErrors = {};
-    for (const part of message.split('; ')) {
-      const colon = part.indexOf(':');
-      const field = colon < 0 ? undefined : SERVER_FIELDS.get(part.slice(0, colon).trim());
-      if (field !== undefined) {
-        errors[field] = part.slice(colon + 1).trim();
-      }
+  const fields: CobroErrors = {};
+  let unmapped = 0;
+  for (const part of text.split('; ')) {
+    const colon = part.indexOf(':');
+    const field = colon < 0 ? undefined : SERVER_FIELDS.get(part.slice(0, colon).trim());
+    if (field !== undefined && isFieldVisible(field, metodo)) {
+      fields[field] = part.slice(colon + 1).trim();
+    } else {
+      unmapped++;
     }
-    return errors;
   }
-  return {};
+  return { fields, toast: unmapped === 0 ? null : text };
+}
+
+/**
+ * Comparison key of a draft field for backend rejections: its trimmed text, `''` for a blank text or no method.
+ * A rejection is live while the current key equals the key that was sent, so whitespace-only edits change nothing.
+ */
+export function rejectionKey(draft: CobroDraft, field: CobroField): string {
+  return (draft[field] ?? '').trim();
+}
+
+export interface PorCobrarView {
+  rows: PedidoListado[];
+  total: number;
+  /** The paid ids the server still lists; the rest are confirmed gone and forgotten. */
+  paid: Set<number>;
+}
+
+/**
+ * Hides the orders charged in this page session from a "Por cobrar" server list and adjusts the count by the rows it
+ * hid. A stale response (a read that still lists a just-paid order) can therefore neither re-show it nor inflate
+ * the count. The server stays authoritative: a paid id the list no longer contains is dropped from `paid`, so an
+ * order that later becomes chargeable again (e.g. after a refund) is not hidden for the rest of the session.
+ */
+export function reconcilePaid(rows: readonly PedidoListado[], total: number, paid: ReadonlySet<number>): PorCobrarView {
+  const visible = rows.filter((p) => !paid.has(p.pedidoId));
+  const stillListed = new Set(rows.filter((p) => paid.has(p.pedidoId)).map((p) => p.pedidoId));
+  return { rows: visible, total: Math.max(total - (rows.length - visible.length), 0), paid: stillListed };
 }
 
 export interface PorCobrarCard {
