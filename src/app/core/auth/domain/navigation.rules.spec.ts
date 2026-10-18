@@ -54,10 +54,10 @@ describe('navEntriesFrom', () => {
 describe('navFor', () => {
   it.each([
     ['ADMINISTRADOR', ['/pedidos', '/cocina', '/caja', '/catalogo', '/usuarios', '/restaurante']],
-    ['RECEPCION', ['/pedidos', '/cocina', '/catalogo']],
+    ['RECEPCION', ['/pedidos', '/cocina', '/caja', '/catalogo']],
     ['COCINERO', ['/cocina', '/catalogo']],
     ['MESERO', ['/catalogo']],
-    ['CAJERO', ['/catalogo']],
+    ['CAJERO', ['/caja', '/catalogo']],
     ['REPARTIDOR', ['/catalogo']],
   ] as const)('tenant %s sees %j', (rol, expected) => {
     expect(routesOf(tenant(rol))).toEqual(expected);
@@ -86,7 +86,7 @@ describe('navFor', () => {
     ]);
   });
 
-  it.each(['ADMINISTRADOR', 'RECEPCION', 'COCINERO', 'MESERO'] as const)(
+  it.each(['ADMINISTRADOR', 'RECEPCION', 'COCINERO', 'MESERO', 'CAJERO'] as const)(
     'every item of %s passes can() for its own action',
     (rol) => {
       const user = tenant(rol);
@@ -99,6 +99,7 @@ describe('homeLabel', () => {
   it.each([
     [tenant('RECEPCION'), 'Pedidos'],
     [tenant('COCINERO'), 'Cocina'],
+    [tenant('CAJERO'), 'Caja'],
     [tenant('ADMINISTRADOR'), 'Pedidos'],
     [platform('SUPERADMIN'), 'Restaurantes'],
     [platform('ADMIN'), 'Crear restaurante'],

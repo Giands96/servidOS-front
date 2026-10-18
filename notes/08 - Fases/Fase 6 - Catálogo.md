@@ -14,8 +14,8 @@ aliases:
 
 Volver: [[00 - MOC]] · Anterior: [[Fase 5 - Plataforma]] · Siguiente: [[Fases 4-9 - Planificadas]] · Módulo: [[Catálogo]]
 
-> [!warning] Implementada en tres ramas locales, pendiente de publicar y mergear (2026-10-16)
-> Las cuatro tareas de código están en tres ramas apiladas sobre `main` (`5e8b272`): `feat/catalogo-01-datos`, `feat/catalogo-02-pagina` y `feat/catalogo-03-formularios`. **No están publicadas ni en `main`**, y **nada de esta fase se probó en navegador**. Fuente: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`.
+> [!success] Mergeada en `main` (2026-10-17)
+> Las cuatro tareas de código (`feat/catalogo-01-datos`, `feat/catalogo-02-pagina` y `feat/catalogo-03-formularios`) están en `main` por los PRs #16, #17 y #18 (`main` en `527e1e6`). Pendiente: probar en navegador; **nada de esta fase se probó en navegador**. Fuente: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`.
 
 > [!abstract] Objetivo
 > Reemplazar el placeholder `/catalogo` por la **pantalla del menú** (diseño `hoW4s`): lista de categorías con conteos, tabla de productos, crear y editar producto, crear categoría y el interruptor Disponible/Agotado. Sin esto un restaurante no puede cargar su menú y no se puede probar Nuevo pedido con datos reales.
@@ -54,4 +54,4 @@ Defaults del orquestador (a revisar con el usuario):
 - **Columna ESTADO agregada, no está en el diseño** `hoW4s`: aloja el interruptor.
 
 ## Pendientes
-Prueba en navegador de la pantalla y los modales con los tres roles; decidir qué hacer al cerrar el modal con la X durante un guardado (hoy la petición se desmonta y el producto puede existir sin verse hasta recargar); confirmar la columna ESTADO con el usuario; publicar y mergear la cadena en orden 16 → 17 → 18, reubicando cada rama sobre `main` tras cada squash. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].
+Prueba en navegador de la pantalla y los modales con los tres roles; decidir qué hacer al cerrar el modal con la X durante un guardado (hoy la petición se desmonta y el producto puede existir sin verse hasta recargar); confirmar la columna ESTADO con el usuario. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].

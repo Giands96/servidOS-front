@@ -14,8 +14,8 @@ aliases:
 
 Volver: [[00 - MOC]] · Anterior: [[Fase 4 - Pedidos]] · Siguiente: [[Fases 4-9 - Planificadas]] · Módulo: [[Plataforma]]
 
-> [!warning] Implementada en ramas locales, pendiente de merge (2026-10-16)
-> Las seis tareas de código están en seis ramas apiladas (`feat/plataforma-01-datos` … `feat/plataforma-06-administrador`), **todavía no están en `main`** ni publicadas. Falta mergear la cadena (squash, en orden) y probar en navegador: **nada de esta fase se probó en navegador**. Fuente: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`.
+> [!success] Mergeada en `main` (2026-10-17)
+> Las seis tareas de código (`feat/plataforma-01-datos` … `feat/plataforma-06-administrador`) están en `main`: PR #13 (01 a 05) y PR #14 (06). Pendiente: probar en navegador; **nada de esta fase se probó en navegador**. Fuente: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`.
 
 > [!abstract] Objetivo
 > Reemplazar los placeholders de `/plataforma/restaurantes` y `/plataforma/restaurantes/nuevo` por la **lista de restaurantes con panel de detalle** (diseño `x9DxqV`), el **formulario de alta** (diseño `z8ZbK`) y las **acciones del dueño** sobre el panel: Renovar suscripción, Cambiar plan y Suspender/Reactivar. Sin esto no se puede crear ni habilitar un restaurante y, por tanto, no se puede probar ninguna pantalla del tenant (Cocina, Pedidos).
@@ -58,4 +58,4 @@ Defaults del orquestador (a revisar con el usuario): modal de alta sobre la list
 - **Evidencia**: `c6085d9`; plataforma 149, suite 24 archivos / 939, build OK; review `review-9ffad59b9f186eed` aprobada. Sin prueba en navegador. **El PR #15 requiere el backend con `administrador` desplegado primero.**
 
 ## Pendientes
-Mergear la cadena en orden (squash; reubicar cada rama sobre `main` tras cada merge); prueba en navegador de todas las pantallas (plataforma y luego tenant); cerrar con Escape el panel y el modal; partir `restaurantes.page.ts` (847 líneas) en componentes; probar en navegador el asistente de T5.7 y el login real del dueño (el ADMINISTRADOR del tenant ya se crea en el alta; el script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos); gestión de usuarios de plataforma (bloqueada). Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].
+Prueba en navegador de todas las pantallas (plataforma y luego tenant); cerrar con Escape el panel y el modal; partir `restaurantes.page.ts` (847 líneas) en componentes; probar en navegador el asistente de T5.7 y el login real del dueño (el ADMINISTRADOR del tenant ya se crea en el alta; el script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos); gestión de usuarios de plataforma (bloqueada). Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].

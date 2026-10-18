@@ -56,6 +56,6 @@ export class TextFieldComponent {
   readonly mono = input(false);
   /** Helper text under the input; replaced by the error while there is one. */
   readonly hint = input<string | null>(null);
-  readonly inputmode = input<'numeric' | null>(null);
+  readonly inputmode = input<'numeric' | 'decimal' | null>(null);
   readonly value = model('');
 }

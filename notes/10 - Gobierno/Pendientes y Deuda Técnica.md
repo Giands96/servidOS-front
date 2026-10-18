@@ -1,6 +1,6 @@
 ---
 title: Pendientes y Deuda Técnica
-date: 2026-10-16
+date: 2026-10-17
 tags:
   - servidos
   - gobierno
@@ -12,7 +12,7 @@ aliases:
 
 # Pendientes y Deuda Técnica
 
-Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9 - Planificadas]] · [[Fase 5 - Plataforma]] · [[Fase 6 - Catálogo]]
+Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9 - Planificadas]] · [[Fase 5 - Plataforma]] · [[Fase 6 - Catálogo]] · [[Fase 7 - Caja]]
 
 > [!abstract] Alcance
 > Todo lo abierto según `docs/progress/*`, `odd/tasks/*` y lo observado al leer el código. Cada ítem indica su origen.
@@ -25,8 +25,8 @@ Anunciados por backend, sin verificar contra Swagger.
 - [ ] §2 Cancelar suscripción con `{password}` (400 si falta o es incorrecta); no renueva, opera hasta `fechaFin`.
 - [ ] (parcial) §3 `subscriptionGuard`: bloquear por `fechaFin < hoy`, no por `CANCELADA`. **Guard hecho y en `main`** (PR #8, `2b812b0`; ver [[Pedidos]]). Falta el aviso "Tu suscripción termina el {fechaFin}"; el 402 del backend sigue siendo la fuente de verdad.
 - [ ] §4 Sin suscripción vigente = solo lectura; manejar 400 en `GET /restaurantes/actual/suscripcion`; mensajes 402 terminan en "contactá a la plataforma para regularizar tu suscripción".
-- [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple y está en `main` (PR #10); falta pagos al construirlos.
-- [ ] §6 Reembolso cancela pedidos no entregados; ocultar "Cobrar" en pedidos reembolsados.
+- [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple y está en `main` (PR #10); **`/caja` (`POST /pagos`) cumple** (sin `subscriptionGuard`, ramas de Caja publicadas, PRs pendientes). Falta el reembolso al construirlo. Riesgo: si una llamada de pagos devolviera 402, el interceptor redirigiría a `/paywall` o `/suspendido`.
+- [ ] (parcial) §6 Reembolso cancela pedidos no entregados; ocultar "Cobrar" en pedidos reembolsados. Lo segundo está hecho en las ramas de Caja (`isCobrable` y `porCobrar` solo ofrecen pedidos nunca cobrados); falta el reembolso, bloqueado por el `pagoId` (ver Caja).
 - [ ] (parcial) §7 DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago. La tabla de transiciones de `pedidos.rules.ts` ya lo contempla (en `main`, PR #9); falta verificarlo contra un backend real.
 - [ ] §8 Validaciones cross-tenant a 400 (mostrar `message`).
 - [x] §9 `POST /pedidos` corregido (sin impacto).
@@ -49,17 +49,19 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] Specs de las páginas no escritos por decisión (AGENTS §6); las reviews advirtieron la orquestación sin tests en ambas páginas. Reabrir la decisión con el usuario si se quiere cubrirlos.
 - [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
-- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior.
-- [ ] Caja (Cobrar y Reembolsar) y acceso de CAJERO a la lista; en el código `pagos.registrar` es solo de ADMINISTRADOR, el contrato §3 también lo da a RECEPCION y CAJERO.
-- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Depende de crear un restaurante desde [[Plataforma]] (01 a 05 en `main`; falta mergear la rama 06, que crea también al ADMINISTRADOR; ver la sección de Plataforma).
+- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): publicado en `feat/tablero-01-base` y `feat/tablero-02-tablero`; PRs 19 y 20 pendientes de merge.
+- [ ] Tiempo real en el tablero de Pedidos y en Caja (hoy solo Cocina usa STOMP): requiere topic del backend. Por ahora ambos usan el botón "Actualizar" y recargan tras cada acción; falta verificar contra el contrato o Swagger si el backend publica más topics que el de cocina. Ver [[Arquitectura]] (Tiempo real y RxJS).
+- [x] Cobrar y roles: `pagos.registrar` ya es de ADMINISTRADOR, RECEPCION y CAJERO (contrato §3) y CAJERO aterriza en `/caja`; ramas de Caja publicadas, PRs pendientes (ver la sección de Caja). CAJERO no ve la lista de pedidos: cobra desde `/caja`.
+- [ ] Reembolso: bloqueado por el backend (ver la sección de Caja).
+- [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Depende de crear un restaurante desde [[Plataforma]] (01 a 06 en `main`, incluida la cuenta del dueño; ver la sección de Plataforma).
 - [ ] `fail()` duplicada en `pedidos.page.ts` y `nuevo-pedido.page.ts`.
 - [ ] Advertencias menores: `cantidad` sin tope superior y `productoId` duplicado sin validar; el cargador de catálogo confía en la forma de la página; copy del paywall aún dice "cancelada"; `core/auth/data/suscripcion.api.ts` solo contiene un tipo; nombre y documentación de `subscriptionLapsedRoute`.
 - [ ] Comentario de ocurrencia del defecto #4441 de Gentle AI sin publicar (sin acceso autenticado a GitHub); texto en `docs/gentle-ai-ocurrencia-4441.md`.
 
-## Plataforma (Fase 5; 01 a 05 en `main`, 06 pendiente de PR)
+## Plataforma (Fase 5; 01 a 06 en `main`)
 Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver [[Plataforma]] y [[Fase 5 - Plataforma]].
 - [x] Plataforma 01 a 05 mergeada en `main` (PR #13 de GitHub, `5e8b272`, 2026-10-16): datos, reglas, lista con panel, alta y acciones.
-- [ ] **Abrir y mergear el PR de `feat/plataforma-06-administrador`** (`b034b57`, cuenta del dueño; publicada en `origin` el 2026-10-16). Pide `size:exception` y necesita el backend con `administrador` desplegado. **Hasta que se mergee, crear un restaurante desde `main` falla** contra el backend actual (422 "administrador: no debe ser nulo"), lo que bloquea la prueba en navegador de todo el tenant. La rama `docs/obsidian-pedidos-merge` (notas del Vault, publicada el mismo día) es independiente y también espera su PR.
+- [x] Plataforma 06 (cuenta del dueño) mergeada en `main`: PR #14 (`f7112e6`); las notas del Vault, PR #15 (`3e2f905`). Con el backend que exige `administrador`, crear un restaurante ya funciona desde `main`.
 - [ ] Prueba manual en navegador de todas las pantallas (lista, panel, alta, acciones): **no hecha**. Después, las pantallas del tenant (Cocina, Pedidos, Catálogo) con el restaurante creado.
 - [ ] Cerrar con Escape el panel de detalle y el modal.
 - [ ] Partir `restaurantes.page.ts` (847 líneas, casi todo plantilla) en componentes (tabla, panel, modales de acción) tras la prueba en navegador.
@@ -70,9 +72,9 @@ Origen: `docs/progress/08-fase-5-plataforma.md` y `odd/tasks/plataforma.md`. Ver
 - [ ] Copy del pie del diseño "Solo CANCELADA bloquea escrituras": no copiado a propósito (desactualizado frente al contrato §5); confirmar con el usuario si se quiere un texto equivalente actualizado.
 - [ ] Comentarios de ocurrencia de los defectos #4208 y #4655 de Gentle AI sin publicar (sin acceso autenticado a GitHub); borradores en `docs/gentle-ai-ocurrencia-4208.md` y `docs/gentle-ai-ocurrencia-4655.md`.
 
-## Catálogo (Fase 6, implementada en tres ramas locales, sin publicar)
+## Catálogo (Fase 6, en `main`)
 Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[Catálogo]] y [[Fase 6 - Catálogo]].
-- [ ] Publicar y mergear la cadena en orden (squash): `feat/catalogo-01-datos` (`acdd6de`, `e5a1a70`; 994 líneas), `feat/catalogo-02-pagina` (`01bec53`; 534) y `feat/catalogo-03-formularios` (`98c7d10`; 550); reubicar cada rama sobre `main` tras cada merge. Las tres piden `size:exception`. Reviews aprobadas: `review-0e9c0c7fd77af064`, `review-96271976eeb1bffb`, `review-aeb4555b876a3d61`.
+- [x] Cadena mergeada por squash en orden: PRs #16 (`27b231e`), #17 (`fdd9c50`) y #18 (`527e1e6`). Reviews aprobadas: `review-0e9c0c7fd77af064`, `review-96271976eeb1bffb`, `review-aeb4555b876a3d61`.
 - [ ] Prueba manual en navegador de la pantalla y de los modales con ADMINISTRADOR (crear categoría, crear producto con URL de imagen, editar conservando el estado, alternar), COCINERO (solo alternar), RECEPCION (solo lectura) y un tenant bloqueado (aviso de solo lectura): **no hecha**.
 - [ ] Cerrar el modal con la X durante un guardado en curso desmonta la petición: el producto puede existir en el servidor y la lista lo muestra tras recargar (el nombre único evita duplicados). Decidir si se bloquea el cierre mientras guarda.
 - [ ] La columna ESTADO (interruptor Disponible/Agotado) se agregó y no está en el diseño `hoW4s`: confirmar con el usuario.
@@ -80,6 +82,17 @@ Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[C
 - [ ] Sin endpoint en el backend, fuera de alcance: eliminar producto o categoría, renombrar o habilitar/deshabilitar categoría, subir imágenes (la imagen es una URL de texto) y búsqueda.
 - [ ] Sin specs de la página ni de los modales por decisión (AGENTS §6); las reglas sí tienen tests (catalogo 97).
 - [ ] El menú se filtra y pagina en el cliente (decenas de ítems); si crece, pasarlo al servidor.
+
+## Caja (Fase 7, publicada en tres ramas, PRs 21 a 23 pendientes)
+Origen: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`. Ver [[Pagos]] y [[Fase 7 - Caja]].
+- [ ] Mergear la cadena en orden (squash; ramas publicadas el 2026-10-17): `feat/caja-01-datos` (`e0fa5ed`, `25642e5`; 701 líneas), `feat/caja-02-pagina` (`14f394f`; 622) y `feat/caja-03-atajos` (`3bdb24b`; 70); reubicar cada rama sobre `main` tras cada merge. Las dos primeras piden `size:exception`. Reviews aprobadas: `review-aa065b1ede656df8` (riesgo alto: amplía `pagos.registrar`), `review-e2ff609e44106504` y `review-c12133e9629dfca7`; la review nativa aprobó además todo el rango (`review-6e314892b3ffcd3f`); T8.4a (70 líneas) queda bajo presupuesto, pendiente en la slice.
+- [ ] **Reembolso bloqueado por el backend (T8.6):** `POST /pagos/{id}/reembolso` necesita el `pagoId`, que ninguna lectura expone (`GET /pedidos` solo trae `estadoPago`; no existen `GET /pagos` ni `GET /pedidos/{id}`). **Solicitud al backend:** agregar a cada fila de `GET /pedidos` el resumen `pago { pagoId, metodoPago, monto, referenciaExterna }` (`null` si nunca se cobró); especificación en `docs/backend/pago-id-en-pedidos.md`. Con eso: modal `tDcwg` con motivo obligatorio, "Reembolsar" en Caja (ADMINISTRADOR y RECEPCION) y "Anular con reembolso" en el tablero (`Sd7pI`, `zFAgh`).
+- [ ] Chip "Cobrar S/ …" en las tarjetas del tablero (T8.4b): esperar el merge de `feat/tablero-01-base` y `feat/tablero-02-tablero` y reubicar; `pedidos.page.ts` y `icon.component.ts` los tocan ambas cadenas (posible conflicto de rebase).
+- [ ] Prueba manual en navegador de `/caja` y del atajo de la lista con ADMINISTRADOR, RECEPCION y CAJERO (efectivo con vuelto, monto corto, Yape con referencia, `?pedido=`, pedido ya pagado → 400) y con el tenant bloqueado: **no hecha**.
+- [ ] Más de 100 pedidos por cobrar: la petición pide `size=100`, el encabezado cuenta `totalElements` y solo hay tarjetas para los primeros 100; sin paginación ni aviso.
+- [ ] Riesgo del interceptor 402: el contrato dice que `pagos` pasa con el tenant bloqueado; si alguna llamada de pagos devolviera 402, el interceptor redirigiría al paywall en lugar de mostrar el mensaje en Caja. Verificar contra el backend real.
+- [ ] Sin specs de la página por decisión (AGENTS §6); las reglas sí tienen tests (pagos 61).
+- [ ] Sin endpoint en el backend, fuera de alcance: cierre/arqueo, historial de pagos y pagos parciales.
 
 ## Deuda técnica y advisories de las reviews
 - Ruta/permiso duplicado entre `app.routes.ts` y `navigation.rules.ts`: **resuelto** por `02bca02` (menú derivado); queda el test de consistencia como guardia.
@@ -97,7 +110,7 @@ Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[C
 - Foto del panel de login; confirmar campo `nombre` de `GET /restaurantes/actual`.
 - Textos redactados sin diseño (404, sin-modulos, suspendido, 403): revisar con el usuario. Copy del login (soporte@servidos.pe, titulares): sin respaldo documental.
 - Geist Mono para números (opcional).
-- MESERO/CAJERO/REPARTIDOR ven "Catálogo" pero su home es `/sin-modulos`; `/caja` exige `pagos.registrar`, así RECEPCION no ve caja aunque pueda reembolsar.
+- MESERO y REPARTIDOR ven "Catálogo" pero su home es `/sin-modulos`. (Resuelto en las ramas de Caja: `pagos.registrar` incluye ahora a RECEPCION y CAJERO, así que RECEPCION ve Caja y el home de CAJERO es `/caja`.)
 - Backlog backend: `GET /usuarios`. (`GET /pedidos` ya existe y está en uso; ver [[Pedidos]].)
 
 ## Infraestructura
@@ -116,3 +129,4 @@ Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[C
 | `Flujo - Recepcion Cocina` regla 5 vs anuncio §7 | cancelación "hasta LISTO" vs `EN_ENTREGA` a `CANCELADO` |
 | Notas y `Fases 4-9` previas vs contrato verificado 2026-10-11 | decían que `GET /pedidos` no existe; existe (paginado). Corregido en [[Pedidos]], [[API]] y [[Modelo de Negocio]] |
 | `progress/02` vs código | "RECEPCION solo cocina" (previo a T1.7) vs matriz ampliada |
+| `Flujo - Recepcion Cocina` / `progress/03` vs `FRONTEND_CONTEXT` §3 | `pagos.registrar` solo ADMINISTRADOR vs ADMINISTRADOR, RECEPCION y CAJERO (vale el contrato; código actualizado en `feat/caja-01-datos`) |

@@ -6,9 +6,14 @@ import { EMPTY, Observable, defer, filter, map } from 'rxjs';
 import { SessionStore } from '../../../core/auth/session.store';
 import { CocinaEvent, EstadoPedido } from '../cocina.types';
 
+/** Estado de conexión que ve la UI. Mientras es 'connecting'/'disconnected' los eventos no llegan. */
 export type LiveStatus = 'connecting' | 'connected' | 'disconnected';
 
-/** The slice of RxStomp the board needs; tests provide a fake through COCINA_STOMP. */
+/**
+ * El "contrato mínimo" de RxStomp que necesita el tablero. No dependemos de la clase real, solo de
+ * estos cinco métodos/propiedades: por eso en los tests se inyecta un objeto falso que los implementa
+ * y nunca se abre un socket de verdad.
+ */
 export interface KitchenStompClient {
   configure(config: RxStompConfig): void;
   activate(): void;
@@ -18,13 +23,20 @@ export interface KitchenStompClient {
   watch(destination: string): Observable<IMessage>;
 }
 
+/**
+ * Token de inyección que entrega el cliente STOMP. En producción la factory crea un RxStomp real;
+ * en los tests se reemplaza por `{ provide: COCINA_STOMP, useValue: fake }`. Esta es la costura
+ * (seam) que hace testeable toda la conexión sin red. Las dependencias se piden SIEMPRE por acá.
+ */
 export const COCINA_STOMP = new InjectionToken<KitchenStompClient>('COCINA_STOMP', {
   providedIn: 'root',
   factory: () => new RxStomp(),
 });
 
+/** Cada cuánto reintenta reconectar stompjs si el socket se cae (en milisegundos). */
 export const RECONNECT_DELAY_MS = 3000;
 
+/** Lista blanca de estados válidos del pedido; cualquier otro valor se descarta al parsear. */
 const ESTADOS: readonly EstadoPedido[] = [
   'PENDIENTE',
   'EN_PREPARACION',
@@ -34,14 +46,24 @@ const ESTADOS: readonly EstadoPedido[] = [
   'CANCELADO',
 ];
 
-/** `/ws` on the same origin; the token never goes in the URL (it travels in the CONNECT headers). */
+/**
+ * URL del broker: un único `/ws` en el MISMO origen que la SPA (el proxy lo reenvía al backend).
+ * Fijate que `ws`/`wss` se decide según el protocolo de la página: si la app va por HTTPS, el socket
+ * también debe ir cifrado o el navegador lo bloquea. El token NO viaja acá: en la URL quedaría en
+ * logs e historial. Va en los headers del frame CONNECT (ver `beforeConnect`).
+ */
 export function brokerUrl(location: Pick<Location, 'protocol' | 'host'>): string {
   return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 }
 
+/** Guard de tipo: valida contra la lista blanca de estados (no se confía en strings arbitrarios). */
 const isEstado = (value: unknown): value is EstadoPedido => ESTADOS.includes(value as EstadoPedido);
 
-/** Parses a topic message body; null when it is not a well-formed kitchen event. */
+/**
+ * Parsea el body de un mensaje del topic. El socket entrega texto crudo y puede ser cualquier cosa
+ * (un ping, un cambio de contrato, basura). Nunca se confía en la forma: si no es JSON válido o no
+ * trae `pedidoId` + estados conocidos, devuelve null y el mensaje se descarta aguas arriba.
+ */
 export function parseCocinaEvent(body: string): CocinaEvent | null {
   let raw: unknown;
   try {
@@ -60,8 +82,16 @@ export function parseCocinaEvent(body: string): CocinaEvent | null {
 }
 
 /**
- * Live connection to the kitchen topic. The token is validated only at CONNECT, so the socket is
- * recycled whenever the session token changes, and dropped when it disappears.
+ * Conexión en vivo al topic de cocina. Ciclo de vida completo del socket:
+ *
+ * 1. `configure()` deja fijados la URL y la política de reconexión una sola vez.
+ * 2. `beforeConnect` corre ANTES de cada intento (incluidas las reconexiones) y es donde se mete el
+ *    token fresco. Como el backend valida el token solo en el CONNECT, una reconexión con el token
+ *    viejo fallaría: por eso el token se recalcula acá y no al construir el cliente.
+ * 3. El `effect()` del constructor observa `running` + token + restauranteId y llama a `sync()`:
+ *    cuando cambia el token se recicla la conexión; cuando desaparece (logout) o no hay restaurante,
+ *    se cierra.
+ * 4. `connected$` y `events$` los consumen las páginas; acá solo se administra la conexión.
  */
 @Injectable({ providedIn: 'root' })
 export class CocinaLive {
@@ -70,16 +100,35 @@ export class CocinaLive {
 
   private readonly running = signal(false);
   private readonly _status = signal<LiveStatus>('disconnected');
-  /** Token the current connection was activated with; null while inactive. */
+  /**
+   * Token con el que está activa la conexión actual; null cuando está inactiva.
+   * Es la referencia contra la que `sync()` decide si hay que reconectar o no.
+   */
   private activeToken: string | null = null;
+  /**
+   * Contador de intenciones de conexión: cada `sync()` lo incrementa. Al resolverse una
+   * desactivación asíncrona solo se reactiva si esta "generación" sigue siendo la última. Evita el
+   * bug clásico de una reconexión que llega tarde y pisa a la nueva.
+   */
   private generation = 0;
-  /** Deactivation still in progress; a new activation must wait for it. */
+  /**
+   * `deactivate()` de stompjs es asíncrono. Se guarda la promesa pendiente porque `activate()` no
+   * puede correr mientras una desactivación siga en curso (stompjs lanza error).
+   */
   private deactivation: Promise<void> | null = null;
 
   readonly status = this._status.asReadonly();
-  /** Emits on every (re)connection: messages are lost while disconnected, so consumers must resync. */
+  /**
+   * Emite en CADA (re)conexión. Es la clave del modelo: mientras el socket está caído, los mensajes
+   * publicados se pierden (el topic no guarda historial). Por eso el consumidor no puede confiar en
+   * los eventos para reconstruir el estado: al recibir esto debe RECARGAR por HTTP.
+   */
   readonly connected$: Observable<void> = this.client.connected$.pipe(map(() => undefined));
-  /** Events of the session restaurant's topic; malformed messages are dropped. Read-only channel. */
+  /**
+   * Eventos del topic del restaurante de la sesión. El `restauranteId` se resuelve de forma diferida
+   * (`defer`): hasta que no hay sesión no se suscribe a nada (EMPTY). Los mensajes mal formados se
+   * filtran. Es un canal SOLO LECTURA: acá nunca se envía nada.
+   */
   readonly events$: Observable<CocinaEvent> = defer(() => {
     const restauranteId = this.session.user()?.restauranteId;
     return restauranteId == null
@@ -94,7 +143,8 @@ export class CocinaLive {
     this.client.configure({
       brokerURL: brokerUrl(inject(DOCUMENT).location),
       reconnectDelay: RECONNECT_DELAY_MS,
-      // Runs before every connection attempt, so reconnects after a refresh carry the fresh token.
+      // Corre antes de CADA intento de conexión: así las reconexiones posteriores a un refresh de
+      // token llevan el token nuevo, sin recrear el cliente.
       beforeConnect: () => {
         const token = this.session.accessToken();
         this.client.configure({
@@ -105,6 +155,9 @@ export class CocinaLive {
     this.client.connectionState$
       .pipe(takeUntilDestroyed())
       .subscribe((state) => this.onState(state));
+    // Puente reactivo: cada vez que cambia `running`, el token o el restaurante, se re-evalúa si el
+    // socket debe estar abierto. `untracked` evita registrar las señales que lee `sync()` como
+    // dependencias del effect (no queremos re-dispararlo por efectos secundarios).
     effect(() => {
       const running = this.running();
       const token = this.session.accessToken();
@@ -113,16 +166,22 @@ export class CocinaLive {
     });
   }
 
+  /** La página pide "quiero estar conectado"; la decisión real la toma el effect según la sesión. */
   start(): void {
     this.running.set(true);
   }
 
+  /** Corta el pedido y cierra el socket ya mismo (no espera al effect). */
   stop(): void {
     this.running.set(false);
     this.sync(null);
   }
 
-  /** Brings the socket in line with the wanted token: null = disconnected. */
+  /**
+   * Alinea el socket con el token deseado (null = desconectado). Es idempotente: si el token pedido
+   * es el mismo que el activo, no hace nada. Cuando cambia, primero desactiva lo viejo y luego activa
+   * lo nuevo, respetando la desactivación en curso (ver `deactivation`).
+   */
   private sync(wanted: string | null): void {
     if (wanted === this.activeToken) {
       return;
@@ -137,7 +196,8 @@ export class CocinaLive {
     if (wanted === null) {
       return;
     }
-    // stompjs throws if activate() runs while a deactivation is still in progress.
+    // stompjs lanza error si `activate()` corre mientras una desactivación sigue en curso: se espera
+    // a que termine y, solo si seguimos siendo la última intención (misma generación), se activa.
     if (this.deactivation) {
       void this.deactivation.then(() => {
         if (generation === this.generation) {
@@ -149,6 +209,7 @@ export class CocinaLive {
     }
   }
 
+  /** Guarda la desactivación en curso y la limpia al terminar, sin pisar una más nueva. */
   private trackDeactivation(pending: Promise<void>): void {
     const settled: Promise<void> = pending
       .catch(() => undefined)
@@ -160,6 +221,11 @@ export class CocinaLive {
     this.deactivation = settled;
   }
 
+  /**
+   * Traduce los estados internos de stompjs al `status` de la UI. Solo importan mientras HAY una
+   * conexión deseada (`activeToken !== null`): si se está cerrando a propósito, el CLOSED no debe
+   * pintarse como "desconectado" rojo.
+   */
   private onState(state: RxStompState): void {
     const active = this.activeToken !== null;
     if (state === RxStompState.OPEN && active) {

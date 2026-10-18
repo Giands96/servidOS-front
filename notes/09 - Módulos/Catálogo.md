@@ -5,7 +5,7 @@ tags:
   - servidos
   - modulos
   - catalogo
-  - implementado-en-ramas
+  - en-main
 aliases:
   - Módulo Catálogo
 ---
@@ -15,7 +15,7 @@ aliases:
 Volver: [[00 - MOC]] · Ver [[Modelo de Negocio]] · [[API]] · [[Fase 6 - Catálogo]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Responsabilidad
-> Productos y categorías, y disponibilidad de platos. Estado: **implementado en tres ramas locales, pendiente de publicar y mergear** (2026-10-16). En `main` solo está la **API de lectura** (commit `9b43b5d`, PR #11) que usa el nuevo pedido de [[Pedidos]]; la pantalla `/catalogo`, los modales y las escrituras viven en `feat/catalogo-01-datos`, `feat/catalogo-02-pagina` y `feat/catalogo-03-formularios`. Sin prueba en navegador. Detalle en [[Fase 6 - Catálogo]].
+> Productos y categorías, y disponibilidad de platos. Estado: **en `main`** (PRs #11, #16, #17 y #18; `527e1e6`, 2026-10-17). La API de lectura (commit `9b43b5d`, PR #11) la usa el nuevo pedido de [[Pedidos]]; la pantalla `/catalogo`, los modales y las escrituras llegaron con las ramas `feat/catalogo-01-datos` a `-03-formularios`. Pendiente: probar en navegador (nunca se probó). Detalle en [[Fase 6 - Catálogo]].
 
 ## Pantalla `/catalogo` (diseño `hoW4s`)
 - Columna "CATEGORÍAS" con conteos (Todas y cada categoría); las `DESHABILITADO` se listan atenuadas; los productos sin categoría salen como "Sin categoría".
@@ -48,7 +48,7 @@ Los demás roles (p. ej. RECEPCION) solo leen y no ven controles de escritura. E
 `todosLosProductos` y `todasLasCategorias` recorren las páginas de 50 en 50 con un tope de 20 páginas; si se supera el tope o falla una página devuelven error en lugar de un menú parcial. Confía en la forma de la página (`content`, `last`): advertencia abierta de la review.
 
 ## API
-Lectura (en `main`): `GET /productos`, `GET /categorias`. En las ramas: `GET /productos/{id}`, `POST /productos`, `PUT /productos/{id}`, `PATCH /productos/{id}/estado` y `POST /categorias`. Contrato y roles en [[API]].
+Lectura: `GET /productos`, `GET /categorias`. Escritura: `GET /productos/{id}`, `POST /productos`, `PUT /productos/{id}`, `PATCH /productos/{id}/estado` y `POST /categorias`. Contrato y roles en [[API]].
 
 ## Reglas y decisiones
 - `DISPONIBLE`/`AGOTADO` (sin sinónimos); `AGOTADO` bloquea pedidos en el backend; producto con estado nulo se trata como disponible solo para mostrar (legado).

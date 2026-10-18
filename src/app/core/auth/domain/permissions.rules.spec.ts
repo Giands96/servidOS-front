@@ -51,7 +51,7 @@ const ALLOWED: Record<Action, Rol[]> = {
   'catalogo.editar': ['ADMINISTRADOR'],
   'catalogo.disponibilidad': ['ADMINISTRADOR', 'COCINERO'],
   'pedidos.gestionar': ['ADMINISTRADOR', 'RECEPCION'],
-  'pagos.registrar': ['ADMINISTRADOR'],
+  'pagos.registrar': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO'],
   'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
   'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
@@ -125,10 +125,16 @@ describe('homeFor', () => {
     ['RECEPCION', '/pedidos'],
     ['COCINERO', '/cocina'],
     ['MESERO', '/sin-modulos'],
-    ['CAJERO', '/sin-modulos'],
+    ['CAJERO', '/caja'],
     ['REPARTIDOR', '/sin-modulos'],
   ] as const)('%s -> %s', (rol, expected) => {
     expect(homeFor(userFor(rol))).toBe(expected);
+  });
+
+  it('keeps the orders and kitchen homes ahead of /caja for roles that can also charge', () => {
+    expect(can(userFor('RECEPCION'), 'pagos.registrar')).toBe(true);
+    expect(homeFor(userFor('RECEPCION'))).toBe('/pedidos');
+    expect(homeFor(userFor('ADMINISTRADOR'))).toBe('/pedidos');
   });
 
   it('falls back to /login for a null user', () => {

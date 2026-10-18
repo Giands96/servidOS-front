@@ -191,6 +191,23 @@ export function categoriaFieldErrors(status: number, message: string | null): Ca
     : {};
 }
 
+export interface CategoriaOption {
+  categoriaId: number;
+  label: string;
+}
+
+/**
+ * Options of the product form's category select (after the fixed "Sin categoría"): the HABILITADO categories,
+ * plus the product's current one when it is DESHABILITADO (marked), so an edit never silently drops it.
+ */
+export function categoriaOptions(categorias: readonly Categoria[], currentId: number | null): CategoriaOption[] {
+  return categorias.flatMap((c): CategoriaOption[] => {
+    if (c.estado === 'HABILITADO') {
+      return [{ categoriaId: c.categoriaId, label: c.nombre }];
+    }
+    return c.categoriaId === currentId ? [{ categoriaId: c.categoriaId, label: `${c.nombre} (deshabilitada)` }] : [];
+  });
+}
 export function productoGuardadoMessage(p: Pick<Producto, 'nombre'>, mode: 'crear' | 'editar'): string {
   return `Producto "${p.nombre}" ${mode === 'crear' ? 'creado' : 'actualizado'}`;
 }
