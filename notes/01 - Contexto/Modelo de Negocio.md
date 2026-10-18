@@ -27,8 +27,14 @@ Volver: [[00 - MOC]] · Relacionado: [[Seguridad]] · [[API]] · [[Glosario]]
 - Contrato vigente en `FRONTEND_CONTEXT` §5: un tenant `CANCELADA` lee pero no escribe (402). Las fechas eran informativas.
 - Hoy el front: el `errorInterceptor` redirige a `/paywall` (ADMINISTRADOR) o `/suspendido` (otros) ante un 402. Ver [[Seguridad]] y [[Restaurante]].
 
-> [!warning] Cambio anunciado por backend (2026-10-08), sin verificar contra Swagger
-> El modelo de suscripción cambia: `CANCELADA` sigue operando hasta `fechaFin`; el 402 aplica solo si el restaurante está `INACTIVO`, no tiene suscripción vigente o `fechaFin < hoy`; el tenant ya no se auto-renueva (la plataforma regulariza). Detalle y checklist en [[API]] y [[Pendientes y Deuda Técnica]].
+> [!success] Modelo vigente en el backend (verificado contra su código, 2026-10-16)
+> - `CANCELADA` significa "no renovar": sigue operando hasta `fechaFin`.
+> - El 402 aplica solo si el restaurante está `INACTIVO`, no tiene suscripción vigente o `fechaFin < hoy`.
+> - El tenant no renueva ni cambia de plan: lo hace la plataforma cuando recibe el pago.
+> - Un período dura **un mes calendario** y `fechaFin` es **inclusiva** (11/10 a 10/11; la renovación arranca el 11/11). Un demo de N días da N días.
+> - Todo corre en hora de Lima.
+>
+> El front ya aplica este modelo: el tenant no renueva (paywall manual), `isTenantWriteBlocked` no bloquea una `CANCELADA` vigente y Plataforma deriva "vencida" con `fechaFin` inclusiva en hora de Lima (`isVencida`). Ver [[API]] y [[Plataforma]].
 
 ## Roles
 Vocabulario cerrado (`src/app/core/auth/auth.types.ts`):
@@ -45,6 +51,8 @@ Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `
 |---|---|---|---|---|---|---|---|---|
 | `plataforma.restaurantes.ver` | X | | | | | | | |
 | `plataforma.restaurantes.crear` | X | X | | | | | | |
+| `plataforma.suscripcion.gestionar` | X | | | | | | | |
+| `plataforma.restaurantes.estado` | X | | | | | | | |
 | `restaurante.ver` | | | X | X | X | X | X | |
 | `restaurante.suscripcion.gestionar` | | | X | | | | | |
 | `catalogo.ver` | | | X | X | X | X | X | |
@@ -56,8 +64,27 @@ Tomada de `permissions.rules.ts` (`PLATFORM_ACTIONS` y `RESTAURANTE_ACTIONS`). `
 | `usuarios.gestionar` | | | X | | | | | |
 | `cocina.ver` / `cocina.listo` | | | X | X | X | | | |
 
-> [!note] `pagos.registrar` ampliado en la fase de Caja (2026-10-17, rama `feat/caja-01-datos`, publicada, PR pendiente)
-> Antes era solo ADMINISTRADOR (así lo decía `Flujo - Recepcion Cocina.md`). Pasa a **ADMINISTRADOR, RECEPCION y CAJERO** según `FRONTEND_CONTEXT` §3, que es el contrato vigente. `pagos.reembolsar` no cambia (ADMINISTRADOR y RECEPCION). Detalle en [[Fase 7 - Caja]] y [[Pagos]].
+> [!note] `pagos.registrar` ampliado en la fase de Caja (mergeado el 2026-10-17, PR #19)
+> Antes era solo ADMINISTRADOR (así lo decía `Flujo - Recepcion Cocina.md`). Pasa a **ADMINISTRADOR, RECEPCION y CAJERO** según `FRONTEND_CONTEXT` §3, que es el contrato vigente y coincide con el backend. `pagos.reembolsar` no cambia (ADMINISTRADOR y RECEPCION). Detalle en [[Fase 7 - Caja]] y [[Pagos]].
+
+### Permisos del backend que difieren de la matriz
+Verificado contra los `@PreAuthorize` del backend (`c32dcba`, 2026-10-16) y comparado con `permissions.rules.ts` tras la fase de Caja (2026-10-17). El front solo oculta; estas diferencias esconden acciones que el backend sí permite:
+
+| Acción | Backend | Front (matriz de arriba) |
+|---|---|---|
+| Listar pedidos (`GET /pedidos`) | ADMINISTRADOR, RECEPCION, CAJERO | `pedidos.gestionar` sin CAJERO (el CAJERO aterriza en `/caja`) |
+| Ver restaurantes de plataforma | SUPERADMIN, ADMIN, MODERADOR | `plataforma.restaurantes.ver` solo SUPERADMIN |
+| Renovar suscripción | SUPERADMIN, ADMIN, MODERADOR | `plataforma.suscripcion.gestionar` solo SUPERADMIN |
+| Cambiar plan, suspender o reactivar | SUPERADMIN, ADMIN | `plataforma.suscripcion.gestionar` y `plataforma.restaurantes.estado`, solo SUPERADMIN |
+| Crear usuarios de plataforma (`POST /usuarios/plataforma`) | SUPERADMIN (ADMIN o MODERADOR), ADMIN (solo MODERADOR) | sin acción |
+
+> [!success] Ya alineado
+> Cobrar (`POST /pagos`: ADMINISTRADOR, RECEPCION, CAJERO) dejó de ser una diferencia con la fase de Caja. Crear restaurante (`plataforma.restaurantes.crear`: SUPERADMIN y ADMIN) también coincide.
+
+Jerarquía de plataforma en el backend (`RolNombrePlataforma.puedeGestionar`): cada rol solo otorga, y solo cambia el rol de quien tiene, un rol **menor** al suyo. SUPERADMIN y ADMIN (socio) tienen las mismas funciones; la única diferencia es que solo SUPERADMIN crea ADMINs. Nadie crea un SUPERADMIN ni le cambia el rol a uno. Coincide con `canGrantPlatformRol` del front.
+
+> [!tip] Por qué RECEPCION podía reembolsar pero no cobrar
+> Era la matriz original del contrato (`Flujo - Recepcion Cocina.md`). La review lo marcó como inusual pero intencional (`docs/progress/03`). **Superado en el backend** (2026-10-09) y alineado en el front con la fase de Caja: RECEPCION y CAJERO también cobran.
 
 ### Home por rol (`homeFor`)
 | Rol | Destino |
@@ -90,8 +117,12 @@ Un producto `AGOTADO` no se puede pedir: el backend responde 400 (`Producto no d
 - Transiciones (doc de Flujo, regla 5): `PENDIENTE → EN_PREPARACION → LISTO → ENTREGADO` (MESA/RECOJO) o `LISTO → EN_ENTREGA → ENTREGADO` (DELIVERY); `CANCELADO` hasta `LISTO`; un pedido pagado no se cancela (400).
 - Diagrama completo con actores: [[Flujo del Sistema]].
 
-> [!warning] Cambios anunciados (2026-10-08), sin verificar
-> Reembolso cancela el pedido si no está `ENTREGADO` y un pedido reembolsado no se vuelve a cobrar (400); en DELIVERY, `EN_ENTREGA → CANCELADO` se permite si no está pagado y `ENTREGADO` sin pago es válido. Ver [[API]].
+> [!success] Reglas vigentes en el backend (verificado contra su código)
+> - **Cancelar un pedido** (ADMINISTRADOR o RECEPCION) no pide contraseña ni aprobación, pero solo se puede si no está pagado.
+> - **Reembolso:** solo de un pago `PAGADO`. Cancela el pedido si no está `ENTREGADO`, y es definitivo: un pedido reembolsado no se vuelve a cobrar (400).
+> - **DELIVERY:** `EN_ENTREGA → CANCELADO` se permite si no está pagado, y `ENTREGADO` sin pago es válido (cobro posterior).
+>
+> Ver [[API]].
 
 ## Qué NO existe (según `FRONTEND_CONTEXT` §9)
 `MeResponse.suscripcionVigente`, filtros en el dashboard de plataforma, `PUT` de edición de pedido, entidad `mesa`, facturación/SUNAT. Y el listado `GET /usuarios` (backlog backend, `docs/progress/01`). `GET /pedidos` sí existe (verificado el 2026-10-11) y lo usa la lista de [[Pedidos]]; sigue sin existir `GET /pedidos/{id}`. Nota: §9 aún dice que no hay WebSockets de cocina, pero §7 del mismo documento ya los describe (ver [[Pendientes y Deuda Técnica]]).

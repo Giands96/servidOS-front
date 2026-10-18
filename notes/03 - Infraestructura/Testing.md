@@ -1,6 +1,6 @@
 ---
 title: Testing
-date: 2026-10-08
+date: 2026-10-17
 tags:
   - servidos
   - testing
@@ -11,7 +11,7 @@ aliases:
 
 # Testing
 
-Volver: [[00 - MOC]] · Relacionado: [[Infraestructura]] · [[Reglas anti-spaghetti]]
+Volver: [[00 - MOC]] · Relacionado: [[Infraestructura]] · [[Buenas practicas|Reglas anti-spaghetti]]
 
 ## Herramientas
 - Runner: **Vitest 4** con **jsdom**, ejecutado por `ng test` (`@angular/build:unit-test`).

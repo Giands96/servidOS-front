@@ -18,6 +18,15 @@ aliases:
 > [!info] Estado del módulo Cocina
 > Cocina está **implementada y en `main`** (hasta `2fad5cb`), pero sin prueba manual en navegador, con payload sin verificar contra Swagger y con la review nativa pendiente. Ver [[Fase 3 - Cocina]] y [[Estado Actual]].
 
+> [!info] Cambios del backend (2026-10-08 a 2026-10-16)
+> Los cambios anunciados por el backend ya están en su `main` y se verificaron contra su código (`c32dcba`) el 2026-10-16; la verificación se incorporó a esta bóveda el 2026-10-17. Además, el backend:
+> - suma `GET /pedidos`, `listoAt` en cocina y el cobro para RECEPCION y CAJERO;
+> - pasa el cambio de plan a la plataforma y define los roles de plataforma (ADMIN = SUPERADMIN salvo crear ADMINs; MODERADOR ve y renueva);
+> - usa períodos de un mes con `fechaFin` inclusiva;
+> - en una rama, crea el dueño junto con el restaurante.
+>
+> Contrato en [[API]], permisos en [[Modelo de Negocio]] y trabajo pendiente del front en [[Pendientes y Deuda Técnica]]. Qué parte ya implementa el front se indica en cada módulo ([[Plataforma]], [[Pagos]], [[Cocina]], [[Pedidos]]).
+
 > [!info] Estado del módulo Pedidos
 > Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`, 770 tests). Sin prueba manual en navegador. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
 
@@ -28,7 +37,7 @@ aliases:
 > Catálogo (pantalla del menú, producto, categoría y disponibilidad) está **en `main`** (PRs #16 a #18, `527e1e6`); sin prueba en navegador. Ver [[Fase 6 - Catálogo]], [[Catálogo]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Pagos (Caja)
-> El cobro de pedidos (`/caja` y el atajo "Cobrar" de la lista) está **publicado en tres ramas apiladas sobre `main`, con los PRs 21 a 23 pendientes de merge** (2026-10-17, punta `feat/caja-03-atajos`, 1108 tests, review nativa aprobada); sin prueba en navegador. `pagos.registrar` incluye ahora a RECEPCION y CAJERO. El **reembolso está bloqueado** hasta que el backend exponga el `pagoId`. Ver [[Fase 7 - Caja]], [[Pagos]] y [[Estado Actual]].
+> El cobro de pedidos (`/caja` y el atajo "Cobrar" de la lista) está **en `main`** (PRs #19 a #22, `b7fb568`, 2026-10-17); sin prueba en navegador. `pagos.registrar` incluye ahora a RECEPCION y CAJERO. El **reembolso está bloqueado** hasta que el backend exponga el `pagoId`. Ver [[Fase 7 - Caja]], [[Pagos]] y [[Estado Actual]].
 
 ## Navegación
 
@@ -39,7 +48,7 @@ aliases:
 
 ### 02 - Arquitectura
 - [[Arquitectura]] — capas, rutas como fuente única, ventajas y desventajas
-- [[Reglas anti-spaghetti]] — checklist de qué va dónde y qué no hacer
+- [[Buenas practicas|Reglas anti-spaghetti]] — checklist de qué va dónde y qué no hacer
 - [[Decisiones (ADR)]] — decisiones tomadas con contexto y trade-offs
 
 ### 03 - Infraestructura
@@ -103,7 +112,7 @@ graph TD
 ```
 
 > [!tip] Orden de lectura sugerido para alguien nuevo
-> [[Contexto del Proyecto]] → [[Modelo de Negocio]] → [[Arquitectura]] → [[Reglas anti-spaghetti]] → [[Seguridad]] → el módulo que vaya a tocar en [[Core]] / [[Cocina]].
+> [[Contexto del Proyecto]] → [[Modelo de Negocio]] → [[Arquitectura]] → [[Buenas practicas|Reglas anti-spaghetti]] → [[Seguridad]] → el módulo que vaya a tocar en [[Core]] / [[Cocina]].
 
 ## Fuentes del repositorio
 `AGENTS.md`, `README.md`, `docs/FRONTEND_CONTEXT.md`, `docs/Flujo - Recepcion Cocina.md`, `docs/DESIGN_BRIEF.md`, `docs/frontend-alineacion-seguridad.md`, `docs/progress/*.md`, `odd/tasks/*.md`, y el código bajo `src/`.

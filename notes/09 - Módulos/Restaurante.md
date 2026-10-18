@@ -1,6 +1,6 @@
 ---
 title: Restaurante
-date: 2026-10-08
+date: 2026-10-17
 tags:
   - servidos
   - modulos
@@ -37,8 +37,14 @@ Formato de fechas ("14 sep 2026"), etiquetas/variantes de estado, enlace de What
 ## Permisos
 `restaurante.suscripcion.gestionar`: solo ADMINISTRADOR (ruta `/restaurante` y `/paywall`). `restaurante.ver` (todos los roles de tenant) para el nombre del sidebar.
 
-> [!warning] Cambios anunciados (2026-10-08, sin verificar contra Swagger)
-> `renovar()` ya fue eliminado y el paywall muestra el pago manual (ver arriba). Falta: copy que indique que la plataforma regulariza; `subscriptionGuard` por `fechaFin < hoy`; aviso "Tu suscripción termina el {fechaFin}"; cancelar exige contraseña; sin suscripción vigente el GET devuelve 400. Checklist en [[Pendientes y Deuda Técnica]].
+> [!warning] Pendiente respecto del backend (verificado contra su código, 2026-10-16; estado contrastado con `src/app/` el 2026-10-17)
+> `renovar()` ya fue eliminado, el paywall muestra el pago manual (ver arriba), el `subscriptionGuard` ya sigue `fechaFin < hoy` y el tenant no cambia de plan. Falta:
+> - copy que indique que la plataforma regulariza la suscripción;
+> - aviso "Tu suscripción termina el {fechaFin}";
+> - cancelar con contraseña (`{password}`, solo ADMINISTRADOR);
+> - manejar el 400 del GET de suscripción cuando no hay ninguna vigente.
+>
+> `fechaFin` es **inclusiva** (el restaurante opera ese día) y un período es un mes calendario: los días restantes son `fechaFin - hoy + 1`. Checklist en [[Pendientes y Deuda Técnica]].
 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |

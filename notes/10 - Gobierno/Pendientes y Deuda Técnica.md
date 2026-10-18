@@ -17,28 +17,43 @@ Volver: [[00 - MOC]] · Relacionado: [[Estado Actual]] · [[API]] · [[Fases 4-9
 > [!abstract] Alcance
 > Todo lo abierto según `docs/progress/*`, `odd/tasks/*` y lo observado al leer el código. Cada ítem indica su origen.
 
-## Checklist de cambios anunciados por el backend (2026-10-08)
-Anunciados por backend, sin verificar contra Swagger.
+## Checklist de cambios del backend (2026-10-08 a 2026-10-16)
+Numeración de `CAMBIOS_FRONTEND.md` del backend. Verificados contra su código el 2026-10-16 (§1 a §17 en `main`; §18 en una rama en ese momento, que el front ya implementa); falta contrastar contra Swagger en ejecución. Los ítems marcan el trabajo del front; su estado se contrastó con `src/app/` el 2026-10-17.
 - [x] §1 `RestauranteApi.renovar()` eliminado; el botón del paywall ahora muestra el pago manual por Yape + WhatsApp ([[Restaurante]], `docs/progress/06-paywall-pago-manual.md`). Falta el copy de `suspendido.page.ts` ("la plataforma regulariza la suscripción"; hoy dice "renovar el plan").
 - [ ] Pago manual: el dueño debe completar `whatsappNumber` en `payment-contact.ts` y agregar `public/yape-qr.png`; decidir si se avisa en pantalla cuando el número no está configurado.
 - [ ] (en `main`, sin prueba en navegador) Renovación, cambio de plan y habilitación de restaurantes tras confirmar el pago: módulo [[Plataforma]] (el tenant no los hace). Acciones Renovar, Cambiar plan y Suspender/Reactivar mergeadas con Plataforma 01 a 05 (PR #13 de GitHub, `5e8b272`).
 - [ ] §2 Cancelar suscripción con `{password}` (400 si falta o es incorrecta); no renueva, opera hasta `fechaFin`.
 - [ ] (parcial) §3 `subscriptionGuard`: bloquear por `fechaFin < hoy`, no por `CANCELADA`. **Guard hecho y en `main`** (PR #8, `2b812b0`; ver [[Pedidos]]). Falta el aviso "Tu suscripción termina el {fechaFin}"; el 402 del backend sigue siendo la fuente de verdad.
 - [ ] §4 Sin suscripción vigente = solo lectura; manejar 400 en `GET /restaurantes/actual/suscripcion`; mensajes 402 terminan en "contactá a la plataforma para regularizar tu suscripción".
-- [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple y está en `main` (PR #10); **`/caja` (`POST /pagos`) cumple** (sin `subscriptionGuard`, ramas de Caja publicadas, PRs pendientes). Falta el reembolso al construirlo. Riesgo: si una llamada de pagos devolviera 402, el interceptor redirigiría a `/paywall` o `/suspendido`.
-- [ ] (parcial) §6 Reembolso cancela pedidos no entregados; ocultar "Cobrar" en pedidos reembolsados. Lo segundo está hecho en las ramas de Caja (`isCobrable` y `porCobrar` solo ofrecen pedidos nunca cobrados); falta el reembolso, bloqueado por el `pagoId` (ver Caja).
+- [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple y está en `main` (PR #10); **`/caja` (`POST /pagos`) cumple** (sin `subscriptionGuard`, en `main` con Caja, PRs #19 a #22). Falta el reembolso al construirlo. Riesgo: si una llamada de pagos devolviera 402, el interceptor redirigiría a `/paywall` o `/suspendido`.
+- [ ] (parcial) §6 Reembolso cancela pedidos no entregados; ocultar "Cobrar" en pedidos reembolsados. Lo segundo está hecho y en `main` con Caja (`isCobrable` y `porCobrar` solo ofrecen pedidos nunca cobrados); falta el reembolso, bloqueado por el `pagoId` (ver Caja).
 - [ ] (parcial) §7 DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago. La tabla de transiciones de `pedidos.rules.ts` ya lo contempla (en `main`, PR #9); falta verificarlo contra un backend real.
 - [ ] §8 Validaciones cross-tenant a 400 (mostrar `message`).
 - [x] §9 `POST /pedidos` corregido (sin impacto).
 - [x] §10 `GET /cocina/listos` (cliente `cocina.api.ts` hecho).
 - [x] §11 WebSocket STOMP: cliente, proxy y página implementados (sin prueba manual).
+- [ ] §10b Usar el `listoAt` de `GET /cocina/listos` para "hace N min" (hoy se calcula con la hora local del aviso y se pierde al recargar).
+- [ ] (parcial) §12 Caja con `GET /pedidos?porCobrar=true` **hecha y en `main`** ("Cobrar" solo si `estadoPago` es `null`); falta el historial con `?fecha=` y "Reembolsar" solo si es `PAGADO` (bloqueado por el `pagoId`).
+- [ ] (parcial) §13 `pagos.registrar` = ADMINISTRADOR, RECEPCION y CAJERO **hecho y en `main`** (Caja, PR #19). Falta que `pedidos.gestionar` incluya a CAJERO para `GET /pedidos` (ver "Permisos del backend sin alinear").
+- [x] §14 Sin cambio de plan del tenant (`PATCH /restaurantes/actual/plan` ya no existe); el cambio va al panel de [[Plataforma]] (`PATCH /restaurantes/{id}/plan`, en `main`).
+- [ ] (parcial) §15 Fechas sin zona = hora de Lima: no agregar `Z` ni tratarlas como UTC. Pedidos (`formatCreatedAt`) y Plataforma (`America/Lima`) lo respetan; el comentario de `elapsedMinutes` en `cocina.rules.ts` aún dice que el backend envía UTC con `Z`: corregirlo.
+- [ ] §16 Panel de plataforma por rol (ADMIN = SUPERADMIN salvo crear ADMINs; MODERADOR ve y renueva) y alta de usuarios de plataforma (`POST /usuarios/plataforma`; a un ADMIN solo ofrecerle MODERADOR). MODERADOR necesita un home de plataforma.
+- [ ] (parcial) §17 `fechaFin` inclusiva y período de un mes calendario: Plataforma deriva "Vencida" con `fechaFin < hoy` (`isVencida`) y el guard no bloquea una `CANCELADA` vigente; faltan los textos "vence el {fechaFin}" y los días restantes `fechaFin - hoy + 1` en el tenant.
+- [x] §18 Formulario "Crear restaurante" con la sección Administrador en un asistente de dos pasos (nombre, apellido, email, contraseña con confirmación en el cliente); 409 bajo Email, 422 `administrador.*` bajo su campo; el aviso de éxito muestra `administrador.email` de la respuesta. En `main` (PR #14). El backend lo tenía en una rama al verificar (2026-10-16).
+
+## Permisos del backend sin alinear en el front
+Origen: tabla verificada contra los `@PreAuthorize` del backend (`c32dcba`, 2026-10-16) y comparada con `permissions.rules.ts` tras Caja (2026-10-17). Detalle en [[Modelo de Negocio]]. El backend es la autoridad, así que son acciones ocultas, no brechas de seguridad; decidir cada una con el usuario antes de tocar la matriz.
+- [ ] `GET /pedidos` también para CAJERO: `pedidos.gestionar` no lo incluye (el CAJERO cobra desde `/caja`).
+- [ ] `GET /restaurantes*` para ADMIN y MODERADOR: `plataforma.restaurantes.ver` es solo de SUPERADMIN, y MODERADOR mantiene `/sin-modulos` (necesitaría un home).
+- [ ] Renovar para ADMIN y MODERADOR; cambiar plan, suspender y reactivar para ADMIN: `plataforma.suscripcion.gestionar` y `plataforma.restaurantes.estado` son solo de SUPERADMIN.
+- [ ] Alta de usuarios de plataforma (`POST /usuarios/plataforma`): sin acción ni pantalla (§16).
 
 ## Cocina (implementada, por cerrar)
 - [x] Página, nota `docs/progress/05`, checkboxes de `odd/tasks/cocina.md` y tests de conexión/reconexión (cocina-live) hechos.
 - [ ] Prueba manual en navegador con backend (checklist en `docs/progress/05`).
 - [ ] Review nativa de `00c94dd..2fad5cb` (riesgo medio, presupuesto alcanzado).
-- [ ] Confirmar zona horaria de `createdAt` (se lee como hora local).
-- [ ] Verificar forma de `/cocina/cola` y `/listos` contra Swagger.
+- [x] Zona horaria de `createdAt`: el backend corre en `America/Lima` y manda la hora local sin zona (§15), así que leerla como local es correcto.
+- [ ] Verificar forma de `/cocina/cola` y `/listos` contra Swagger (ya coincide con los DTO del backend).
 - [ ] Actualizar `docs/FRONTEND_CONTEXT.md` §9 (aún dice "no existen WebSockets de cocina") y el flujo de polling de `Flujo - Recepcion Cocina.md`, `DESIGN_BRIEF` §6.6 y `frontend-alineacion-seguridad.md`.
 
 ## Pedidos (Fase 4, mergeada en `main` el 2026-10-15)
@@ -49,9 +64,9 @@ Origen: `docs/progress/07-fase-4-pedidos.md` y `odd/tasks/pedidos.md`. Ver [[Ped
 - [ ] Specs de las páginas no escritos por decisión (AGENTS §6); las reviews advirtieron la orquestación sin tests en ambas páginas. Reabrir la decisión con el usuario si se quiere cubrirlos.
 - [x] `homeFor` de ADMINISTRADOR y RECEPCION pasa a `/pedidos` (decisión del usuario 2026-10-14, commit `3598eb0`): un tenant bloqueado ya no vuelve al paywall al pulsar "Seguir en solo lectura". Un spec de rutas verifica que ningún home de rol de restaurante lleve `subscriptionGuard`.
 - [ ] Foto vieja de `/auth/me`: tras una renovación de la plataforma el tenant sigue en `/paywall` hasta recargar; un tenant que vence a mitad de sesión no se redirige hasta entonces. Propuesta: volver a pedir `/auth/me` desde el paywall o al navegar a una ruta bloqueada.
-- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): publicado en `feat/tablero-01-base` y `feat/tablero-02-tablero`; PRs 19 y 20 pendientes de merge.
+- [ ] Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): publicado en `feat/tablero-01-base` y `feat/tablero-02-tablero`; PRs pendientes de merge.
 - [ ] Tiempo real en el tablero de Pedidos y en Caja (hoy solo Cocina usa STOMP): requiere topic del backend. Por ahora ambos usan el botón "Actualizar" y recargan tras cada acción; falta verificar contra el contrato o Swagger si el backend publica más topics que el de cocina. Ver [[Arquitectura]] (Tiempo real y RxJS).
-- [x] Cobrar y roles: `pagos.registrar` ya es de ADMINISTRADOR, RECEPCION y CAJERO (contrato §3) y CAJERO aterriza en `/caja`; ramas de Caja publicadas, PRs pendientes (ver la sección de Caja). CAJERO no ve la lista de pedidos: cobra desde `/caja`.
+- [x] Cobrar y roles: `pagos.registrar` ya es de ADMINISTRADOR, RECEPCION y CAJERO (contrato §3) y CAJERO aterriza en `/caja`; en `main` con Caja (PR #19, ver la sección de Caja). CAJERO no ve la lista de pedidos: cobra desde `/caja`.
 - [ ] Reembolso: bloqueado por el backend (ver la sección de Caja).
 - [ ] Prueba manual en navegador (checklist en `docs/progress/07`), CSP e imágenes de producto. Depende de crear un restaurante desde [[Plataforma]] (01 a 06 en `main`, incluida la cuenta del dueño; ver la sección de Plataforma).
 - [ ] `fail()` duplicada en `pedidos.page.ts` y `nuevo-pedido.page.ts`.
@@ -83,9 +98,9 @@ Origen: `docs/progress/09-fase-6-catalogo.md` y `odd/tasks/catalogo.md`. Ver [[C
 - [ ] Sin specs de la página ni de los modales por decisión (AGENTS §6); las reglas sí tienen tests (catalogo 97).
 - [ ] El menú se filtra y pagina en el cliente (decenas de ítems); si crece, pasarlo al servidor.
 
-## Caja (Fase 7, publicada en tres ramas, PRs 21 a 23 pendientes)
+## Caja (Fase 7, en `main`)
 Origen: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`. Ver [[Pagos]] y [[Fase 7 - Caja]].
-- [ ] Mergear la cadena en orden (squash; ramas publicadas el 2026-10-17): `feat/caja-01-datos` (`e0fa5ed`, `25642e5`; 701 líneas), `feat/caja-02-pagina` (`14f394f`; 622) y `feat/caja-03-atajos` (`3bdb24b`; 70); reubicar cada rama sobre `main` tras cada merge. Las dos primeras piden `size:exception`. Reviews aprobadas: `review-aa065b1ede656df8` (riesgo alto: amplía `pagos.registrar`), `review-e2ff609e44106504` y `review-c12133e9629dfca7`; la review nativa aprobó además todo el rango (`review-6e314892b3ffcd3f`); T8.4a (70 líneas) queda bajo presupuesto, pendiente en la slice.
+- [x] Cadena mergeada por squash el 2026-10-17: PRs #19 (`16260dd`, `feat/caja-01-datos`; 701 líneas), #20 (`9a0eb4c`, `feat/caja-02-pagina`; 622), #21 (`c6f7a88`, `feat/caja-03-atajos`; 70) y #22 (`b7fb568`, avisos de review). Las dos primeras pedían `size:exception`. Reviews aprobadas: `review-aa065b1ede656df8` (riesgo alto: amplía `pagos.registrar`), `review-e2ff609e44106504` y `review-c12133e9629dfca7`; la review nativa aprobó además todo el rango (`review-6e314892b3ffcd3f`); T8.4a (70 líneas) quedó bajo presupuesto.
 - [ ] **Reembolso bloqueado por el backend (T8.6):** `POST /pagos/{id}/reembolso` necesita el `pagoId`, que ninguna lectura expone (`GET /pedidos` solo trae `estadoPago`; no existen `GET /pagos` ni `GET /pedidos/{id}`). **Solicitud al backend:** agregar a cada fila de `GET /pedidos` el resumen `pago { pagoId, metodoPago, monto, referenciaExterna }` (`null` si nunca se cobró); especificación en `docs/backend/pago-id-en-pedidos.md`. Con eso: modal `tDcwg` con motivo obligatorio, "Reembolsar" en Caja (ADMINISTRADOR y RECEPCION) y "Anular con reembolso" en el tablero (`Sd7pI`, `zFAgh`).
 - [ ] Chip "Cobrar S/ …" en las tarjetas del tablero (T8.4b): esperar el merge de `feat/tablero-01-base` y `feat/tablero-02-tablero` y reubicar; `pedidos.page.ts` y `icon.component.ts` los tocan ambas cadenas (posible conflicto de rebase).
 - [ ] Prueba manual en navegador de `/caja` y del atajo de la lista con ADMINISTRADOR, RECEPCION y CAJERO (efectivo con vuelto, monto corto, Yape con referencia, `?pedido=`, pedido ya pagado → 400) y con el tenant bloqueado: **no hecha**.
@@ -110,7 +125,7 @@ Origen: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`. Ver [[Pagos]] y
 - Foto del panel de login; confirmar campo `nombre` de `GET /restaurantes/actual`.
 - Textos redactados sin diseño (404, sin-modulos, suspendido, 403): revisar con el usuario. Copy del login (soporte@servidos.pe, titulares): sin respaldo documental.
 - Geist Mono para números (opcional).
-- MESERO y REPARTIDOR ven "Catálogo" pero su home es `/sin-modulos`. (Resuelto en las ramas de Caja: `pagos.registrar` incluye ahora a RECEPCION y CAJERO, así que RECEPCION ve Caja y el home de CAJERO es `/caja`.)
+- MESERO y REPARTIDOR ven "Catálogo" pero su home es `/sin-modulos`. (Resuelto con Caja, en `main`: `pagos.registrar` incluye ahora a RECEPCION y CAJERO, así que RECEPCION ve Caja y el home de CAJERO es `/caja`.)
 - Backlog backend: `GET /usuarios`. (`GET /pedidos` ya existe y está en uso; ver [[Pedidos]].)
 
 ## Infraestructura
@@ -129,4 +144,4 @@ Origen: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`. Ver [[Pagos]] y
 | `Flujo - Recepcion Cocina` regla 5 vs anuncio §7 | cancelación "hasta LISTO" vs `EN_ENTREGA` a `CANCELADO` |
 | Notas y `Fases 4-9` previas vs contrato verificado 2026-10-11 | decían que `GET /pedidos` no existe; existe (paginado). Corregido en [[Pedidos]], [[API]] y [[Modelo de Negocio]] |
 | `progress/02` vs código | "RECEPCION solo cocina" (previo a T1.7) vs matriz ampliada |
-| `Flujo - Recepcion Cocina` / `progress/03` vs `FRONTEND_CONTEXT` §3 | `pagos.registrar` solo ADMINISTRADOR vs ADMINISTRADOR, RECEPCION y CAJERO (vale el contrato; código actualizado en `feat/caja-01-datos`) |
+| `Flujo - Recepcion Cocina` / `progress/03` vs `FRONTEND_CONTEXT` §3 | `pagos.registrar` solo ADMINISTRADOR vs ADMINISTRADOR, RECEPCION y CAJERO (vale el contrato; código actualizado con Caja, PR #19) |
