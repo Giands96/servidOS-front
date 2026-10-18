@@ -1,6 +1,6 @@
 ---
 title: Arquitectura
-date: 2026-10-08
+date: 2026-10-17
 tags:
   - servidos
   - arquitectura
@@ -14,7 +14,7 @@ aliases:
 > [!abstract] Idea central
 > Modular por dominio. Cada feature separa **datos** (`data/*.api.ts`), **reglas puras** (`domain/*.rules.ts`) y **vista** (`*.page.ts`, que solo orquesta). Las **rutas** son la única fuente de verdad de permisos y menú.
 
-Volver: [[00 - MOC]] · Ver también [[Reglas anti-spaghetti]] · [[Decisiones (ADR)]] · [[Core]] · [[Shared]]
+Volver: [[00 - MOC]] · Ver también [[Buenas practicas|Reglas anti-spaghetti]] · [[Decisiones (ADR)]] · [[Core]] · [[Shared]]
 
 ## Estructura (`AGENTS.md` §4 y árbol real de `src/app`)
 ```
@@ -59,7 +59,7 @@ No hay NgModules. Estado en signals (`SessionStore.user`, `accessToken`, `ToastS
 - **Sin tiempo real**: la lista y el tablero de Pedidos, Caja, Catálogo y Plataforma usan el botón "Actualizar" y recargan tras cada acción. Dar tiempo real al tablero de Pedidos requiere que el backend publique un topic para él; no se sabe si el contrato cubre más que Cocina (pendiente de verificar contra el contrato o Swagger). Ver [[Pendientes y Deuda Técnica]].
 
 ## Rutas lazy
-Cada página se carga con `loadComponent: () => import(...)`. En la Fase 2 el initial bundle fue 283.80 kB raw (`docs/progress/04`). No se usa `loadChildren`: `navEntriesFrom` solo recorre `children` síncronos (advertencia de la review, ver [[Reglas anti-spaghetti]]).
+Cada página se carga con `loadComponent: () => import(...)`. En la Fase 2 el initial bundle fue 283.80 kB raw (`docs/progress/04`). No se usa `loadChildren`: `navEntriesFrom` solo recorre `children` síncronos (advertencia de la review, ver [[Buenas practicas|Reglas anti-spaghetti]]).
 
 ## Rutas como fuente única (permisos + menú)
 `moduleRoute(action, label, icon, guards = [], load)` en `src/app/app.routes.ts` devuelve:

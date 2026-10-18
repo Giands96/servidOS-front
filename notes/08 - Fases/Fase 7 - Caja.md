@@ -15,8 +15,8 @@ aliases:
 
 Volver: [[00 - MOC]] · Anterior: [[Fase 6 - Catálogo]] · Siguiente: [[Fases 4-9 - Planificadas]] · Módulo: [[Pagos]]
 
-> [!warning] Publicada en tres ramas, PRs pendientes de merge (2026-10-17)
-> Las tareas T8.1 a T8.4a están en tres ramas apiladas sobre `main` (`527e1e6`): `feat/caja-01-datos`, `feat/caja-02-pagina` y `feat/caja-03-atajos`. Se publicaron en origin el 2026-10-17 y sus PRs (21 a 23 en `docs/prs`) esperan el merge: **todavía no están en `main`**. La review nativa aprobó todo el rango (`review-6e314892b3ffcd3f`) y **nada de esta fase se probó en navegador**. El **reembolso está bloqueado por el backend** y el chip del tablero espera el merge del tablero. Fuente: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`.
+> [!success] En `main` (2026-10-17, PRs #19 a #22, `b7fb568`)
+> Las tareas T8.1 a T8.4a se mergearon por squash como `feat/caja-01-datos` (#19), `feat/caja-02-pagina` (#20) y `feat/caja-03-atajos` (#21), más los avisos de review (#22). Los cuerpos de PR 21 a 23 en `docs/prs` usan una numeración propia, no la de GitHub. La review nativa aprobó todo el rango (`review-6e314892b3ffcd3f`) y **nada de esta fase se probó en navegador**. El **reembolso está bloqueado por el backend** y el chip del tablero espera el merge del tablero. Fuente: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`.
 
 > [!abstract] Objetivo
 > Reemplazar el placeholder `/caja` por la **pantalla del cajero** (diseño `P25cfL`): lista "Por cobrar", formulario con seis métodos de pago y vuelto en efectivo, y atajos "Cobrar S/ …" desde los pedidos. Antes los pedidos se tomaban y se entregaban, pero no se podían cobrar desde la web.
@@ -39,7 +39,7 @@ Plan aprobado el 2026-10-16 ("implementa caja para realizar los pagos en el fluj
 - Punta de la cadena (`feat/caja-03-atajos`): **28 archivos, 1108 tests en verde**; `npx ng build` OK.
 - Por tarea (suite completa): T8.1 27 / 1028, T8.2 28 / 1084, T8.3 28 / 1085, T8.4a 28 / 1108.
 - RED registrados: matriz de permisos, home de CAJERO y menús (core 9 fallos / 310) más `pagos.api` inexistente; `caja.rules` inexistente; spec de rutas contra el placeholder.
-- Reviews nativas aprobadas: T8.1 `review-aa065b1ede656df8` (riesgo **alto**, autorización, 4 lentes); T8.2 `review-e2ff609e44106504` y T8.3 `review-c12133e9629dfca7` (medio, lente reliability). T8.4a (70 líneas) queda bajo presupuesto, pendiente en la slice.
+- Reviews nativas aprobadas: T8.1 `review-aa065b1ede656df8` (riesgo **alto**, autorización, 4 lentes); T8.2 `review-e2ff609e44106504` y T8.3 `review-c12133e9629dfca7` (medio, lente reliability). T8.4a (70 líneas) quedó bajo presupuesto.
 - Tamaños de slice: 701, 622 y 70 líneas; las dos primeras piden `size:exception` (cuerpos de PR en `docs/prs/21` a `23`).
 
 ## Cambio de roles (decisión de contrato)
@@ -67,6 +67,6 @@ Defaults del orquestador (a revisar con el usuario):
 - Prueba en navegador con ADMINISTRADOR, RECEPCION y CAJERO, y con el tenant bloqueado.
 - Más de 100 pedidos por cobrar: sin paginación ni aviso.
 - Riesgo del interceptor 402 si alguna llamada de pagos devolviera 402.
-- Mergear la cadena en orden 21 → 22 → 23 (ya publicada), reubicando cada rama sobre `main` tras cada squash.
+- (hecho) La cadena se mergeó en orden el 2026-10-17 (#19 a #22).
 
 Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]].

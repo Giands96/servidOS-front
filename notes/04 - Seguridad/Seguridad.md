@@ -1,6 +1,6 @@
 ---
 title: Seguridad
-date: 2026-10-08
+date: 2026-10-17
 tags:
   - servidos
   - seguridad
@@ -38,10 +38,10 @@ Concurrencia: `ensureRefreshed()` comparte una promesa; el interceptor reutiliza
 | `homeRedirectGuard` | raíz a home o login | — |
 | `roleGuard(action)` | `can()` (solo se usa en `/paywall`) | `/sin-permiso` |
 | `routeActionGuard` | `data.action` + `can()`; **sin acción deniega** | `/sin-permiso` |
-| `subscriptionGuard` | `estado === 'CANCELADA'` a paywall/suspendido; **falla abierto** si el GET falla | `/paywall` o `/suspendido` |
+| `subscriptionGuard` | decide con el usuario de sesión (`/auth/me`, sin petición): restaurante `INACTIVO`, sin suscripción o `vencida` van a paywall/suspendido; una `CANCELADA` vigente no bloquea (`isTenantWriteBlocked`); falla abierto si el campo falta | `/paywall` o `/suspendido` |
 
-> [!warning] `subscriptionGuard` hoy no está montado en ninguna ruta
-> `moduleRoute` se llama sin guards extra. Además, el anuncio del backend (2026-10-08) exige cambiar su criterio a `fechaFin < hoy` (no `CANCELADA`) y mostrar "Tu suscripción termina el {fechaFin}". Sin verificar contra Swagger. Ver [[API]] y [[Pendientes y Deuda Técnica]].
+> [!warning] `subscriptionGuard` solo está montado en `/pedidos/nuevo`
+> Las demás rutas de escritura lo omiten a propósito (cocina, caja, lista de pedidos y catálogo pasan con el tenant bloqueado o deshabilitan sus controles). El criterio ya sigue al backend (verificado contra su código): `fechaFin < hoy` con `fechaFin` inclusiva, no `CANCELADA`; la bandera `vencida` la calcula el backend. Falta el aviso "Tu suscripción termina el {fechaFin}". Ver [[API]] y [[Pendientes y Deuda Técnica]].
 
 ## Fail-closed
 - Ruta sin `data.action`: denegada.
@@ -71,6 +71,6 @@ Token en el frame `CONNECT` (`connectHeaders.Authorization`), nunca en la URL; s
 ## Riesgos conocidos
 1. Permisos duplicados respecto al backend (desfase posible).
 2. Texto de login con correo de soporte y copy no presentes en documentos (`login.page.ts`): confirmar con el usuario.
-3. `renovar()` del tenant sigue en `restaurante.api.ts`; el backend anunció su eliminación.
+3. Resuelto: `renovar()` del tenant ya se quitó de `restaurante.api.ts` (ver [[Restaurante]]); el endpoint tampoco existe en el backend.
 4. Sin CSP ni estrategia de despliegue documentadas.
 5. `POST /auth/refresh` con backend lento retrasa el arranque hasta 8 s.

@@ -12,21 +12,21 @@ aliases:
 
 # Fases 4-9 — Planificadas
 
-Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en `main`: [[Fase 4 - Pedidos]] · Plataforma en `main`: [[Fase 5 - Plataforma]] · Catálogo en `main`: [[Fase 6 - Catálogo]] · Caja publicada en ramas, PRs pendientes: [[Fase 7 - Caja]] · Estado: [[Estado Actual]]
+Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en `main`: [[Fase 4 - Pedidos]] · Plataforma en `main`: [[Fase 5 - Plataforma]] · Catálogo en `main`: [[Fase 6 - Catálogo]] · Caja en `main`: [[Fase 7 - Caja]] · Estado: [[Estado Actual]]
 
 > [!abstract] Fuente
 > `docs/progress/00-plan-general.md` (2026-10-02) y los cambios del backend del 2026-10-08. Salvo lo indicado en Pedidos, Catálogo, Plataforma y Pagos (Caja), nada de esto está construido: hoy son rutas placeholder (`module-placeholder.page.ts`).
 
-> [!important] Plataforma y Catálogo en `main`; Caja publicada, PRs pendientes (2026-10-17)
-> Un restaurante debe crearse desde la plataforma antes de poder probar en navegador cualquier pantalla del tenant (decisión del usuario, 2026-10-15). Plataforma 01 a 06 y Catálogo 01 a 03 ya están en `main` (`527e1e6`). Caja está publicada en tres ramas, con sus PRs pendientes (punta `feat/caja-03-atajos`, 1108 tests); el reembolso está bloqueado por el backend. Orden: 1) prueba en navegador de Plataforma y del tenant (Cocina, Pedidos, Catálogo) con el restaurante creado; 2) mergear la cadena de Caja (21 → 22 → 23, ya publicada) y el tablero (19 → 20); 3) reembolso cuando el backend exponga el `pagoId`; 4) módulos restantes (Restaurante, Usuarios). Esto prima sobre el orden del plan general.
+> [!important] Plataforma, Catálogo y Caja en `main` (2026-10-17)
+> Un restaurante debe crearse desde la plataforma antes de poder probar en navegador cualquier pantalla del tenant (decisión del usuario, 2026-10-15). Plataforma 01 a 06, Catálogo 01 a 03 y Caja 01 a 03 ya están en `main` (`b7fb568`, PRs #19 a #22); el reembolso está bloqueado por el backend. Orden: 1) prueba en navegador de Plataforma y del tenant (Cocina, Pedidos, Catálogo, Caja) con el restaurante creado; 2) mergear el tablero (`feat/tablero-01-base` y `-02-tablero`, ya publicadas); 3) reembolso cuando el backend exponga el `pagoId`; 4) módulos restantes (Restaurante, Usuarios). Esto prima sobre el orden del plan general.
 
 > [!warning] Numeración
 > El plan general numeraba: 3 Restaurante, 4 Catálogo, 5 Pedidos, 6 Cocina, 7 Pagos, 8 Usuarios, 9 Plataforma. El usuario eligió Cocina primero, por lo que Cocina pasó a ser la fase 3 (ver [[Fase 3 - Cocina]]). Las fases siguientes no tienen renumeración oficial; aquí se mantiene el orden del plan general excluyendo Cocina.
 
 ## Restaurante ([[Restaurante]])
-- **Objetivo**: ver restaurante y suscripción, cambiar plan (doble confirmación con contraseña), cancelar y paywall.
+- **Objetivo**: ver restaurante y suscripción, cancelar (con contraseña) y paywall. El cambio de plan ya no es del tenant: pasó a [[Plataforma]] (backend §14).
 - **Necesita diseño**: sí (`Efm03`, `m4qop`). **Decisión de negocio**: sí (paywall).
-- **Cambios anunciados** (sin verificar): sin `renovar()` del tenant, cancelar con contraseña, aviso "termina el {fechaFin}", `subscriptionGuard` por `fechaFin`.
+- **Cambios del backend** (verificados contra su código): sin `renovar()` ni cambio de plan del tenant, cancelar con contraseña, aviso "termina el {fechaFin}", `subscriptionGuard` por `fechaFin` (inclusiva, período de un mes calendario).
 - **Tests previstos**: reglas de suscripción y guard.
 
 ## Catálogo ([[Catálogo]]) — Fase 6, ver [[Fase 6 - Catálogo]]
@@ -37,16 +37,16 @@ Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en 
 
 ## Pedidos ([[Pedidos]]) — Fase 4, ver [[Fase 4 - Pedidos]]
 - **v1 mergeada en `main` (2026-10-15, PRs #8 a #12, `c66c3ff`)**: lista (`/pedidos`, `QU3DR`) y nuevo pedido (`/pedidos/nuevo`, `Blp89`) con confirmar, avanzar (DELIVERY y `EN_ENTREGA`) y cancelar, más `subscriptionGuard` según contrato §5. Sin prueba manual en navegador ni specs de página.
-- **Diferido**: tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`; publicado en `feat/tablero-01-base` y `feat/tablero-02-tablero`, PRs 19 y 20 pendientes de merge) y Cobrar (resuelto en la fase de Caja, ver abajo). El diseño `Ro7kZ`, listado en el plan original, no se usó en la v1.
+- **Diferido**: tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`; publicado en `feat/tablero-01-base` y `feat/tablero-02-tablero`, PRs pendientes de merge) y Cobrar (resuelto en la fase de Caja, ver abajo). El diseño `Ro7kZ`, listado en el plan original, no se usó en la v1.
 - `GET /pedidos` **existe** (paginado, filtros por estado, fecha y `porCobrar`); no hay `GET /pedidos/{id}`.
 - Tests: reglas de transición, MESA/`mesaId` y borrador del pedido (770 tests en total en `main`).
 
 ## Pagos ([[Pagos]]) — Fase 7, ver [[Fase 7 - Caja]]
-- **Estado: cobro publicado en tres ramas, PRs pendientes de merge (2026-10-17).** `feat/caja-01-datos` (`e0fa5ed`, `25642e5`), `feat/caja-02-pagina` (`14f394f`) y `feat/caja-03-atajos` (`3bdb24b`), apiladas sobre `main` (`527e1e6`); 28 archivos / 1108 tests, build OK, tres reviews aprobadas (y la review nativa aprobó todo el rango, `review-6e314892b3ffcd3f`). Sin prueba en navegador.
+- **Estado: en `main` (2026-10-17, PRs #19 a #22, `b7fb568`).** `feat/caja-01-datos` (#19), `feat/caja-02-pagina` (#20), `feat/caja-03-atajos` (#21) y los avisos de review (#22); 1108 tests, build OK, tres reviews aprobadas (y la review nativa aprobó todo el rango, `review-6e314892b3ffcd3f`). Sin prueba en navegador.
 - **Construido**: cliente `POST /pagos`, reglas del cobro (efectivo con vuelto, atajos de monto, errores), pantalla `/caja` según `P25cfL` (lista "Por cobrar" y formulario con seis métodos) y botón "Cobrar S/ …" en la lista de pedidos. `pagos.registrar` pasa de solo ADMINISTRADOR a ADMINISTRADOR, RECEPCION y CAJERO (contrato §3); el home de CAJERO es `/caja`.
 - **Huecos**: el **reembolso está bloqueado por el backend**: `POST /pagos/{id}/reembolso` necesita el `pagoId` y ninguna lectura lo expone (solicitud en `docs/backend/pago-id-en-pedidos.md`). El chip "Cobrar S/ …" del tablero espera el merge del tablero. Sin endpoint: cierre/arqueo, historial y pagos parciales.
 - Cambios anunciados: reembolso cancela pedidos no entregados; pedido reembolsado no se cobra de nuevo (la lista y el atajo ya no ofrecen pedidos cobrados).
-- **Siguiente**: mergear la cadena (21 → 22 → 23), probar en navegador y, con el `pagoId`, el modal de reembolso `tDcwg`.
+- **Siguiente**: probar en navegador y, con el `pagoId`, el modal de reembolso `tDcwg`.
 
 ## Usuarios ([[Usuarios]])
 - Crear con rol, cambiar rol, eliminar (409 por último ADMINISTRADOR). Diseño `VHQeZ`. **Bloqueo**: no existe `GET /usuarios`. Cambios anunciados: validaciones cross-tenant a 400.
@@ -57,7 +57,8 @@ Volver: [[00 - MOC]] · Anterior: [[Fase 3 - Cocina]] · Pedidos ya mergeado en 
 - **Construido**: lista SUPERADMIN paginada con panel de detalle (`x9DxqV`), alta de restaurante (`z8ZbK`; `demo` exige `demoDias` 1–30) y acciones Renovar, Cambiar plan y Suspender/Reactivar.
 - **Huecos**: gestionar usuarios de plataforma (sin `GET /usuarios`). El ADMINISTRADOR del tenant ya se crea en el alta del restaurante (T5.7).
 - **Siguiente**: probar en navegador las pantallas de plataforma y del tenant.
+- **Lo que falta frente al backend** (verificado el 2026-10-16): MODERADOR y ADMIN ven y renuevan según el backend, pero la UI de Plataforma es solo de SUPERADMIN, y no hay alta de usuarios de plataforma (`POST /usuarios/plataforma`). Permisos por rol en [[Modelo de Negocio]].
 
 ## Riesgos generales
 - Cada módulo de escritura debe montar `subscriptionGuard` por el parámetro `guards` de `moduleRoute` (excepto operaciones permitidas aun con 402).
-- Forma de varios endpoints sin verificar contra Swagger. Ver [[API]] y [[Pendientes y Deuda Técnica]].
+- La forma de los endpoints ya se verificó contra el código del backend (2026-10-16), pero no contra Swagger en ejecución. Ver [[API]] y [[Pendientes y Deuda Técnica]].

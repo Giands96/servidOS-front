@@ -1,6 +1,6 @@
 ---
 title: Contexto del Proyecto
-date: 2026-10-08
+date: 2026-10-17
 tags:
   - servidos
   - contexto
@@ -63,4 +63,4 @@ Explicación completa en [[Arquitectura]].
 Resumen de `AGENTS.md` §0: simple se hace de una; con incertidumbre se investiga y se pregunta; lo grande se parte en tareas con criterios de aceptación y evidencia. Cada fase deja una nota en `docs/progress/`. Ver [[Fase 0 - Infra]] y [[Estado Actual]].
 
 > [!tip] No-negociables para quien extienda el proyecto
-> No inventar UI ni flujos de negocio; no agregar dependencias sin aprobación; el `restauranteId` nunca va en un formulario; el backend es la autoridad final. Ver [[Reglas anti-spaghetti]].
+> No inventar UI ni flujos de negocio; no agregar dependencias sin aprobación; el `restauranteId` nunca va en un formulario; el backend es la autoridad final. Ver [[Buenas practicas|Reglas anti-spaghetti]].

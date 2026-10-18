@@ -18,8 +18,8 @@ Volver: [[00 - MOC]] · Fase: [[Fase 7 - Caja]] · Ver [[Modelo de Negocio]] · 
 > [!abstract] Responsabilidad
 > Cobrar pedidos desde la pantalla `/caja` (acción `pagos.registrar`). El reembolso queda pendiente.
 
-> [!warning] Estado: cobro publicado en tres ramas, PRs pendientes de merge (2026-10-17); reembolso bloqueado
-> `feat/caja-01-datos` (datos, permisos y reglas), `feat/caja-02-pagina` (página `/caja`) y `feat/caja-03-atajos` (botón "Cobrar" en la lista de pedidos), apiladas sobre `main` (`527e1e6`): 28 archivos / 1108 tests, build OK, sin prueba en navegador. **El reembolso no está implementado:** `POST /pagos/{id}/reembolso` necesita el `pagoId` y ninguna lectura lo expone (ver más abajo).
+> [!warning] Estado: cobro en `main` (2026-10-17, PRs #19 a #22, `b7fb568`); reembolso bloqueado
+> `feat/caja-01-datos` (datos, permisos y reglas, #19), `feat/caja-02-pagina` (página `/caja`, #20), `feat/caja-03-atajos` (botón "Cobrar" en la lista de pedidos, #21) y los avisos de review (#22): 1108 tests, build OK, sin prueba en navegador. **El reembolso no está implementado:** `POST /pagos/{id}/reembolso` necesita el `pagoId` y ninguna lectura lo expone (ver más abajo).
 
 ## Archivos
 | Ruta | Contenido |
@@ -33,13 +33,15 @@ Volver: [[00 - MOC]] · Fase: [[Fase 7 - Caja]] · Ver [[Modelo de Negocio]] · 
 ## API
 - `POST /pagos` (`pedidoId`, `metodoPago`, `montoEntregado?`, `referenciaExterna?` ≤ 100) → 201 `PagoResponse` (`pagoId, pedidoId, monto, vuelto, metodoPago, estado, reembolsoMotivo, reembolsoUsuarioId`). **El `monto` no va en la petición**: sale del pedido. 400 "Pedido inexistente, ya pagado o monto insuficiente" (también cancelado o reembolsado, según el contrato), 403, 422 `campo: mensaje`.
 - `GET /pedidos?porCobrar=true`: alimenta la lista "Por cobrar" (no cancelados y nunca cobrados, en cualquier estado).
-- `POST /pagos/{id}/reembolso` (`motivo` obligatorio): **sin cliente en el front** hasta tener el `pagoId`.
+- `POST /pagos/{id}/reembolso` (`motivo` obligatorio; solo un pago `PAGADO`; la respuesta incluye `reembolsoMotivo` y `reembolsoUsuarioId`): **sin cliente en el front** hasta tener el `pagoId`.
 
 ## Permisos
 | Acción | Roles |
 |---|---|
-| `pagos.registrar` | ADMINISTRADOR, **RECEPCION y CAJERO** (antes solo ADMINISTRADOR; cambio de la rama `feat/caja-01-datos`, según `FRONTEND_CONTEXT` §3) |
+| `pagos.registrar` | ADMINISTRADOR, **RECEPCION y CAJERO** (antes solo ADMINISTRADOR; cambio de la fase de Caja, PR #19, según `FRONTEND_CONTEXT` §3; coincide con el `@PreAuthorize` del backend) |
 | `pagos.reembolsar` | ADMINISTRADOR y RECEPCION |
+
+Backend (verificado contra su código, 2026-10-09 y 2026-10-16): cobrar = ADMINISTRADOR, RECEPCION y CAJERO; reembolsar = ADMINISTRADOR y RECEPCION. Con eso el front quedó alineado y se cerró la deuda "RECEPCION reembolsa pero no ve caja".
 
 - La ruta `/caja` exige `pagos.registrar` y **no lleva `subscriptionGuard`**: `POST /pagos` pasa con el tenant bloqueado (contrato §5).
 - **Home de CAJERO = `/caja`** (antes `/sin-modulos`); su menú muestra Caja y Catálogo. RECEPCION y ADMINISTRADOR conservan `/pedidos`, y RECEPCION gana la entrada Caja en el menú.
@@ -54,7 +56,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 7 - Caja]] · Ver [[Modelo de Negocio]] · 
 ## Reglas
 - Efectivo calcula vuelto con `montoEntregado`; solo ese método lo usa. Los montos se comparan en céntimos.
 - Cobrar **no cambia el estado** del pedido; un pedido pagado no se puede cancelar; `ENTREGADO` sin pago es válido.
-- Anunciado sin verificar: el reembolso cancela el pedido si no está `ENTREGADO` y un pedido reembolsado no se cobra de nuevo (400).
+- Verificado contra el código del backend (2026-10-16): solo se reembolsa un pago `PAGADO`; el reembolso cancela el pedido si no está `ENTREGADO`; un pedido reembolsado no se cobra de nuevo (400); un pedido pagado no se cancela, se reembolsa. Ambos endpoints funcionan con el restaurante bloqueado (402 no aplica). Al construir el reembolso, mostrar "Reembolsar" solo con `estadoPago` `PAGADO`.
 
 ## Reembolso: bloqueado por el backend
 `POST /pagos/{id}/reembolso` necesita el `pagoId`, pero `GET /pedidos` solo devuelve `estadoPago` y no existe `GET /pagos` ni `GET /pedidos/{id}`. El front solo conoce el `pagoId` en la respuesta 201 de `POST /pagos`, así que no puede reembolsar un cobro hecho antes, en otra sesión o por otro usuario.

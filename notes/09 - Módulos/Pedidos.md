@@ -63,5 +63,5 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 ## Cómo extenderlo
 - Reglas nuevas en `domain` con test; las páginas solo orquestan.
 - Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior, reutilizando `pedidos.rules.ts`.
-- Cobrar y Reembolsar pertenecen a [[Pagos]]. El cobro se implementó en [[Fase 7 - Caja]] (rama `feat/caja-03-atajos`, publicada, PR pendiente): la lista muestra "Cobrar S/ …" en las filas sin cobrar a quien tiene `pagos.registrar` y lleva a `/caja?pedido=ID`. CAJERO no ve esta lista: cobra desde `/caja`. El reembolso está bloqueado hasta que el backend exponga el `pagoId`.
+- Cobrar y Reembolsar pertenecen a [[Pagos]]. El cobro se implementó en [[Fase 7 - Caja]] (en `main`, PR #21): la lista muestra "Cobrar S/ …" en las filas sin cobrar a quien tiene `pagos.registrar` y lleva a `/caja?pedido=ID`. CAJERO no ve esta lista: cobra desde `/caja`. El reembolso está bloqueado hasta que el backend exponga el `pagoId`.
 - No añadas `subscriptionGuard` a `/pedidos`.

@@ -1,6 +1,6 @@
 ---
 title: Plataforma
-date: 2026-10-16
+date: 2026-10-17
 tags:
   - servidos
   - modulos
@@ -19,7 +19,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 5 - Plataforma]] · Ver [[Modelo de Negocio
 > Nivel plataforma: listar restaurantes con su suscripción, crear restaurantes **junto con la cuenta de su dueño** y operarlos (renovar, cambiar de plan, suspender o reactivar). El tenant paga al dueño por Yape, fuera de la app; el dueño confirma y habilita **desde aquí**.
 
 > [!success] Estado: en `main` (2026-10-17)
-> Las pantallas están mergeadas: PR #13 (ramas 01 a 05, `5e8b272`) y PR #14 (06, cuenta del dueño y asistente, `f7112e6`); `main` está en `527e1e6`. Pendiente: probar en navegador (nunca se probó) y sin spec de las páginas (AGENTS §6). Detalle en [[Fase 5 - Plataforma]].
+> Las pantallas están mergeadas: PR #13 (ramas 01 a 05, `5e8b272`) y PR #14 (06, cuenta del dueño y asistente, `f7112e6`); `main` está en `b7fb568`. Pendiente: probar en navegador (nunca se probó) y sin spec de las páginas (AGENTS §6). Detalle en [[Fase 5 - Plataforma]].
 
 ## Pantallas
 | Ruta | Rol | Qué hace |
@@ -63,7 +63,7 @@ Verificada contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Tabla 
 - `GET /planes`: solo planes `ACTIVO`, por precio ascendente.
 
 ## Permisos
-`plataforma.restaurantes.ver`: SUPERADMIN. `plataforma.restaurantes.crear`: SUPERADMIN y ADMIN. `plataforma.suscripcion.gestionar` (renovar y cambiar plan) y `plataforma.restaurantes.estado` (suspender y reactivar): solo SUPERADMIN, agregadas en T5.1. `navFor` oculta "Crear restaurante" si el rol ya ve la lista. MODERADOR no tiene módulos y mantiene `/sin-modulos`.
+`plataforma.restaurantes.ver`: SUPERADMIN. `plataforma.restaurantes.crear`: SUPERADMIN y ADMIN. `plataforma.suscripcion.gestionar` (renovar y cambiar plan) y `plataforma.restaurantes.estado` (suspender y reactivar): solo SUPERADMIN, agregadas en T5.1. `navFor` oculta "Crear restaurante" si el rol ya ve la lista. MODERADOR no tiene módulos y mantiene `/sin-modulos`. El backend ya da a ADMIN las mismas funciones que a SUPERADMIN (salvo crear ADMINs) y a MODERADOR ver y renovar: falta alinear la matriz, ver [[Modelo de Negocio]]. Existe prueba de que SUPERADMIN y ADMIN abren la ruta de crear.
 
 ## Decisiones
 - Usuario (2026-10-15): "Diseño + acciones".
@@ -73,9 +73,30 @@ Verificada contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Tabla 
 
 ## Huecos conocidos
 - ~~Crear el ADMINISTRADOR del tenant no tiene endpoint.~~ **Resuelto el 2026-10-16 (T5.7)**: el backend lo crea dentro del mismo `POST /restaurantes` y el script `scripts/sql/crear_admin.sql` ya no hace falta para restaurantes nuevos. Pendiente: probar en navegador el asistente y el login real del dueño.
-- **Usuarios de plataforma fuera de alcance**: `PATCH /usuarios/{id}/rol` necesita una lista de usuarios y ids de rol que no existen (no hay `GET /usuarios`). Ver [[Usuarios]].
+- **Usuarios de plataforma fuera de alcance**: `PATCH /usuarios/{id}/rol` necesita una lista de usuarios y ids de rol que no existen (no hay `GET /usuarios`). El alta (`POST /usuarios/plataforma`, §16) existe en el backend pero el front no la usa todavía. Ver [[Usuarios]].
 - Sin filtros ni búsqueda (el backend no los ofrece).
 - Tras renovar, el tenant sigue en `/paywall` hasta recargar su sesión (foto vieja de `/auth/me`; ver [[Pendientes y Deuda Técnica]]).
+
+### Roles en el backend (verificado contra su código, `c32dcba`, 2026-10-16)
+| Endpoint | Roles |
+|---|---|
+| `POST /restaurantes` | SUPERADMIN, ADMIN |
+| `GET /restaurantes?page=&size=`, `GET /restaurantes/{id}`, `GET /restaurantes/{id}/suscripcion` | SUPERADMIN, ADMIN, MODERADOR |
+| `POST /restaurantes/{id}/suscripcion/renovar` (`{planId?}`) | SUPERADMIN, ADMIN, MODERADOR |
+| `PATCH /restaurantes/{id}/plan` (`{nuevoPlanId}`, sin contraseña) | SUPERADMIN, ADMIN |
+| `PATCH /restaurantes/{id}/estado` | SUPERADMIN, ADMIN |
+| `POST /usuarios/plataforma` | SUPERADMIN (ADMIN o MODERADOR), ADMIN (solo MODERADOR) |
+
+La UI es más estricta que el backend: ver y operar es solo de SUPERADMIN (ver "Permisos").
+
+### Suscripción (backend)
+- `demo=true` exige `demoDias` (1 a 30) y monto 0.
+- `demo=false` crea un mes calendario con `fechaFin` inclusiva (antes eran 30 días).
+- La renovación se encadena al día siguiente de `fechaFin` si la actual sigue vigente; si no, arranca hoy.
+- Renovar un restaurante INACTIVO lo deja ACTIVO.
+
+### Crear con su dueño (§18)
+El backend crea en una sola transacción el restaurante, su suscripción y el usuario dueño con su membresía ADMINISTRADOR; si algo falla no se guarda nada. Límites: nombre y apellido hasta 100 caracteres, email hasta 150 y único en todo el sistema (se guarda en minúsculas, que es con el que el dueño inicia sesión), password de 8 a 72. Errores: 409 "El email ya existe", 422 con el campo anidado (`administrador.email: ...`), 400 por slug, plan o demo. Ya implementado en el front (T5.7).
 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |
@@ -86,4 +107,4 @@ Verificada contra el OpenAPI local y con una sonda en vivo el 2026-10-15. Tabla 
 | Aislamiento por scope evita mezclar plataforma y tenant | El PR #15 depende de que el backend con `administrador` esté desplegado antes |
 
 ## Cómo extenderlo
-Usar `Page<T>` de `core/http/api.types.ts`; no mezclar acciones de tenant; la lógica nueva va en `domain/*.rules.ts` con test. Antes de agregar más acciones, partir `restaurantes.page.ts` en componentes (tabla, panel y modales de acción). Rutas y permisos viven en `app.routes.ts` y `permissions.rules.ts`.
+Usar `Page<T>` de `core/http/api.types.ts`; no mezclar acciones de tenant; la lógica nueva va en `domain/*.rules.ts` con test. Antes de agregar más acciones, partir `restaurantes.page.ts` en componentes (tabla, panel y modales de acción). Rutas y permisos viven en `app.routes.ts` y `permissions.rules.ts`. MODERADOR ya tiene permisos en el backend (ver y renovar), así que necesitaría un home en plataforma en lugar de `/sin-modulos`. En el alta de usuarios de plataforma, a un ADMIN solo ofrecerle MODERADOR, y no fijar los `rolPlataformaId` (dependen de la base).
