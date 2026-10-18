@@ -1,6 +1,6 @@
 ---
 title: Pedidos
-date: 2026-10-15
+date: 2026-10-17
 tags:
   - servidos
   - modulos
@@ -63,5 +63,5 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 ## Cómo extenderlo
 - Reglas nuevas en `domain` con test; las páginas solo orquestan.
 - Tablero kanban (`EGPHx`, `Sd7pI`, `zFAgh`): feature posterior, reutilizando `pedidos.rules.ts`.
-- Cobrar y Reembolsar pertenecen a [[Pagos]]; el acceso de CAJERO a la lista llega con esa fase.
+- Cobrar y Reembolsar pertenecen a [[Pagos]]. El cobro se implementó en [[Fase 7 - Caja]] (rama `feat/caja-03-atajos`, sin mergear): la lista muestra "Cobrar S/ …" en las filas sin cobrar a quien tiene `pagos.registrar` y lleva a `/caja?pedido=ID`. CAJERO no ve esta lista: cobra desde `/caja`. El reembolso está bloqueado hasta que el backend exponga el `pagoId`.
 - No añadas `subscriptionGuard` a `/pedidos`.

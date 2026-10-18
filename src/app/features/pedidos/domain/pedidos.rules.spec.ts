@@ -7,6 +7,7 @@ import {
   PedidoAction,
   cancelCopy,
   canCancel,
+  cobrarLabel,
   emptyHeading,
   estadoLabel,
   estadoPagoLabel,
@@ -17,6 +18,7 @@ import {
   formatCreatedAt,
   formatMoney,
   formatOrderNumber,
+  isCobrable,
   isEstadoPedido,
   isRowBusy,
   nextEstados,
@@ -550,5 +552,37 @@ describe('failedLoadView', () => {
 
   it('shows the error panel when the view itself changed (tab or page), even if rows were loaded', () => {
     expect(failedLoadView({ hadData: true, sameView: false })).toBe('error-panel');
+  });
+});
+
+describe('isCobrable', () => {
+  const pagos: (EstadoPago | null)[] = [null, 'PAGADO', 'REEMBOLSADO'];
+
+  it.each(
+    ESTADOS_PEDIDO.flatMap((estado) =>
+      pagos.map(
+        (estadoPago) => [estado, estadoPago, estadoPago === null && estado !== 'CANCELADO'] as const,
+      ),
+    ),
+  )('%s with estadoPago %s -> %s', (estado, estadoPago, expected) => {
+    expect(isCobrable({ estado, estadoPago })).toBe(expected);
+  });
+
+  it('charges an unpaid delivered order (ENTREGADO without payment is valid)', () => {
+    expect(isCobrable(aPedidoListado({ estado: 'ENTREGADO', estadoPago: null }))).toBe(true);
+  });
+});
+
+describe('cobrarLabel', () => {
+  it.each([
+    [72, 'Cobrar S/ 72.00'],
+    [57.5, 'Cobrar S/ 57.50'],
+    [0, 'Cobrar S/ 0.00'],
+  ])('%s -> %s', (total, expected) => {
+    expect(cobrarLabel(total)).toBe(expected);
+  });
+
+  it('shows an em dash amount when the total is not a number', () => {
+    expect(cobrarLabel(Number.NaN)).toBe('Cobrar —');
   });
 });
