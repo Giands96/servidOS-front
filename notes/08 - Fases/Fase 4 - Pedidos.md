@@ -57,7 +57,7 @@ Los commits de trabajo vivían en ramas que ya se borraron; en `main` cada PR qu
 `homeFor` de ADMINISTRADOR y RECEPCION → `/pedidos` (decisión del usuario 2026-10-14, `3598eb0`; **cerrada**: la lista no lleva `subscriptionGuard`). Defaults del orquestador (a revisar con el usuario): "Pedidos" del menú → `/pedidos`; refresco manual y tras cada acción (sin polling ni WebSocket); pestañas sin conteos; cancelar con confirmación; tras crear se navega a la lista.
 
 ## Fase 4b — Tablero de pedidos (drag & drop)
-> [!warning] Implementada en dos ramas locales apiladas, sin publicar (2026-10-16)
+> [!warning] Reglas mergeadas (#24); la interfaz del tablero espera su PR (2026-10-18)
 > El usuario vio la lista y pidió el drag & drop ("No está el drag & drop"). Se construyó el tablero kanban de los diseños `EGPHx`, `Sd7pI` y `zFAgh` junto a la lista. Fuente: `docs/progress/10-tablero-pedidos.md` y `odd/tasks/pedidos-tablero.md`. Las ramas salen de `main` (`fdd9c50`).
 
 | Tarea | Commit | Rama | Qué |
@@ -70,7 +70,7 @@ Los commits de trabajo vivían en ramas que ya se borraron; en `main` cada PR qu
 - **Decisiones**: dependencia `@angular/cdk` aprobada por el usuario (ver ADR-20 en [[Decisiones (ADR)]]); minutos desde la creación sin umbrales; sin movimientos hacia atrás (manda el contrato sobre `zFAgh`); sin sincronización en vivo.
 - **Fuera de alcance (el backend no lo ofrece)**: ítems en la tarjeta, tiempo en la etapa y sus umbrales Atención/Crítico, presencia ("quién lo movió") y "En vivo"; Cobrar y Anular con reembolso van a Caja.
 - **Evidencia**: 27 archivos / 1087 tests en verde en la punta, `ng build` OK; reviews nativas aprobadas (`review-45064623d1db4e80`, `review-47ff13cfb690c463`). El escritor lo verificó en navegador contra una API simulada; **no se probó con touch ni contra el backend real**.
-- **Entrega**: `stacked-to-main`, PRs 19 → 20 en `docs/prs`, ambos piden `size:exception`.
+- **Entrega**: `stacked-to-main`. La primera slice (T7.1: reglas y `@angular/cdk`) entró a `main` en #24. La segunda (T7.2 + T7.3 y las notas) está rebaseada sobre `main` y espera su PR; pide `size:exception`. Los cuerpos `docs/prs/19` y `20` conservan la numeración planeada antes de abrir los PR.
 
 ## Pendientes
 Prueba manual en navegador con el backend (desbloqueada: Plataforma 06 ya está en `main`; falta usarla para crear un restaurante); aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación de la plataforma; publicar y mergear el tablero (Fase 4b) y probarlo con touch; Cobrar (fase de Caja) y acceso de CAJERO; CSP y revisión visual en navegador. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]]. La fase posterior a Pedidos fue [[Plataforma]] (decisión del usuario, 2026-10-15).

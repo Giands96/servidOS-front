@@ -101,7 +101,7 @@ Volver: [[00 - MOC]] · Ver [[Arquitectura]] · [[Seguridad]] · [[Fase 0 - Infr
 - **Alternativa descartada**: drag & drop nativo de HTML5, que **no soporta touch**. Otra salida sin dependencia es el menú "Mover a…", que se construyó igualmente como camino de teclado.
 - **Ventajas**: soporte táctil y de teclado del arrastre sin código propio; mantenida por el equipo de Angular y alineada con la versión del framework (`^22`).
 - **Desventajas**: dependencia nueva (trae `parse5` y `entities`, que el lockfile deja de marcar como `dev`); el comportamiento táctil sigue sin probarse en un dispositivo.
-- **Estado**: en la rama `feat/tablero-01-base`, sin mergear. Ver [[Fase 4 - Pedidos]].
+- **Estado**: mergeada en `main` (#24). Su primer uso, la interfaz del tablero, espera su PR. Ver [[Fase 4 - Pedidos]].
 
 > [!note] Decisión de proceso
 > Flujo ODD v3 con revisiones nativas (RDD) por commit/slice. Ver [[Infraestructura]].
