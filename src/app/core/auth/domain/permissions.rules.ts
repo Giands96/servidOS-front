@@ -17,6 +17,7 @@ export type Action =
   | 'pagos.registrar'
   | 'pagos.reembolsar'
   | 'usuarios.gestionar'
+  | 'reportes.ver'
   | 'cocina.ver'
   | 'cocina.listo';
 
@@ -49,6 +50,7 @@ const RESTAURANTE_ACTIONS: Partial<Record<Action, readonly RestauranteRol[]>> = 
   'pagos.registrar': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO'],
   'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
+  'reportes.ver': ['ADMINISTRADOR'],
   'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
   'cocina.listo': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
 };

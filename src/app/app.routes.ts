@@ -81,6 +81,13 @@ export const routes: Routes = [
           import('./features/catalogo/catalogo.page').then((m) => m.CatalogoPage),
         ),
       },
+      // Sales reports: tenant ADMINISTRADOR only. Read-only, so no subscriptionGuard.
+      {
+        path: 'reportes',
+        ...moduleRoute('reportes.ver', 'Reportes', 'chart', [], () =>
+          import('./features/reportes/reportes.page').then((m) => m.ReportesPage),
+        ),
+      },
       { path: 'usuarios', ...moduleRoute('usuarios.gestionar', 'Usuarios', 'users') },
       // Plan/subscription management screen: tenant ADMINISTRADOR only (user decision 2026-10-03).
       {

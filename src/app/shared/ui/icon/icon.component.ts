@@ -57,6 +57,7 @@ const ICONS = {
     'M10 14h4',
     'M10 18h4',
   ],
+  chart: ['M3 3v16a2 2 0 0 0 2 2h16', 'M18 17V9', 'M13 17V5', 'M8 17v-3'],
   plus: ['M5 12h14', 'M12 5v14'],
   folderPlus: [
     'M12 10v6',
