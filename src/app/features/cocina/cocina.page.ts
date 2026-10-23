@@ -110,7 +110,7 @@ interface CardView {
         </div>
       </header>
 
-      <div class="mt-6 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div class="mt-6 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         @if (loading()) {
           <div
             class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
