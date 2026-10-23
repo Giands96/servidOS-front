@@ -5,15 +5,28 @@ import { RestauranteApi } from '../../features/restaurante/data/restaurante.api'
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { initialsOf, navEntriesFrom, navFor, roleLabel } from '../auth/domain/navigation.rules';
 import { SessionStore } from '../auth/session.store';
+import { TopBarComponent } from './top-bar.component';
 
-/** Authenticated layout: role-filtered sidebar (no counters: no list endpoints exist yet) plus the page outlet. */
+/**
+ * Authenticated layout: role-filtered navigation (no counters: no list endpoints exist yet) plus the page outlet.
+ * From `lg` it is the sidebar; below `lg` the top bar with pill links takes its place (both render from `items()`).
+ */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, TopBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex min-h-screen flex-col lg:flex-row">
-      <aside class="flex shrink-0 flex-col bg-ink p-3 text-white lg:sticky lg:top-0 lg:h-screen lg:w-60">
+    <div class="flex min-h-dvh flex-col lg:flex-row">
+      <app-top-bar
+        [items]="items()"
+        [tenantName]="tenantName()"
+        [initials]="initials()"
+        [userName]="user()?.nombre ?? ''"
+        [role]="role()"
+        (logout)="logout()"
+      />
+
+      <aside class="hidden shrink-0 flex-col bg-ink p-3 text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60">
         <div class="flex items-center gap-3 px-2 py-3">
           <span class="flex size-8 items-center justify-center rounded-control bg-brand"><app-icon name="chef" [size]="18" /></span>
           <span class="font-display text-lg font-semibold">ServidOS</span>
@@ -24,7 +37,7 @@ import { SessionStore } from '../auth/session.store';
           <p class="mt-0.5 truncate text-sm font-medium">{{ tenantName() }}</p>
         </div>
 
-        <nav class="mt-6 flex flex-1 flex-row flex-wrap gap-1 lg:flex-col lg:flex-nowrap" aria-label="Principal">
+        <nav class="mt-6 flex flex-1 flex-col gap-1" aria-label="Principal">
           @for (item of items(); track item.route) {
             <a
               class="flex items-center gap-3 rounded-control px-3 py-2.5 text-sm text-ink-muted transition-colors hover:text-white"
