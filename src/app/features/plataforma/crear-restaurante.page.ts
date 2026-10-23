@@ -13,7 +13,7 @@ import { RestauranteCreado } from './plataforma.types';
   imports: [CrearRestauranteFormComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-screen bg-surface p-6">
+    <section class="flex-1 bg-surface p-4 sm:p-6">
       <header>
         <h1 class="text-3xl font-bold tracking-tight">Crear restaurante</h1>
         <p class="mt-1 text-sm text-muted">

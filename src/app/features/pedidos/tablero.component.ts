@@ -61,6 +61,7 @@ import {
   moveRequest,
   moveSuccessMessage,
   nextEnabledIndex,
+  shouldCloseOnResize,
   tipoFilterChips,
 } from './domain/tablero.rules';
 import { EstadoPedido, Pedido, PedidoListado } from './pedidos.types';
@@ -114,6 +115,14 @@ const DOT: Record<BadgeVariant, string> = {
 const MENU_WIDTH = 288;
 const MENU_HEADING_HEIGHT = 44;
 const MENU_ITEM_HEIGHT = 52;
+/**
+ * Board height: the viewport minus what sits above it (top bar below `lg`, page header and filter chips). The header
+ * wraps on narrow screens, so the offset shrinks at each breakpoint; measured at 375, 640, 768 and 1280 px.
+ */
+const BOARD_HEIGHT =
+  'h-[calc(100dvh-25.5rem)] min-h-[24rem] sm:h-[calc(100dvh-20.5rem)] md:h-[calc(100dvh-17.5rem)] lg:h-[calc(100dvh-15rem)] lg:min-h-[26rem]';
+/** Open columns: most of the viewport on phones (a peek of the next one), fixed width from `sm`. */
+const OPEN_COLUMN = 'min-w-[85%] sm:min-w-72';
 const ALL_ESTADOS: readonly EstadoPedido[] = [...BOARD_COLUMNS, ...CLOSED_COLUMNS];
 const REFRESH_MS = 60_000;
 
@@ -135,7 +144,7 @@ const MENU_ICON: Record<MoveMenuItem['direction'], IconName> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:keydown.escape)': 'closeMenu(true)',
-    '(window:resize)': 'closeMenu()',
+    '(window:resize)': 'onResize()',
   },
   template: `
     <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por tipo">
@@ -169,12 +178,16 @@ const MENU_ICON: Record<MoveMenuItem['direction'], IconName> = {
       </app-state-panel>
     } @else if (board() === null) {
       <div
-        class="mt-4 flex h-[calc(100dvh-15rem)] min-h-[26rem] gap-3 overflow-hidden"
+        class="mt-4 flex gap-3 overflow-hidden"
+        [class]="boardHeight"
         aria-busy="true"
         aria-label="Cargando el tablero"
       >
         @for (n of skeletons; track n) {
-          <div class="flex min-w-72 flex-1 animate-pulse flex-col gap-3 rounded-card bg-neutral-soft p-3">
+          <div
+            class="flex flex-1 animate-pulse flex-col gap-3 rounded-card bg-neutral-soft p-3"
+            [class]="openColumn"
+          >
             <div class="h-5 w-32 rounded-full bg-card"></div>
             <div class="h-28 rounded-card bg-card"></div>
             <div class="h-28 rounded-card bg-card"></div>
@@ -186,7 +199,8 @@ const MENU_ICON: Record<MoveMenuItem['direction'], IconName> = {
     } @else {
       <div
         cdkDropListGroup
-        class="mt-4 flex h-[calc(100dvh-15rem)] min-h-[26rem] gap-3 overflow-x-auto pb-2 transition-opacity"
+        class="mt-4 flex gap-3 overflow-x-auto pb-2 transition-opacity"
+        [class]="boardHeight + (dragging() === null ? ' snap-x snap-proximity lg:snap-none' : '')"
         [class.opacity-70]="loading()"
         [attr.aria-busy]="loading()"
       >
@@ -195,8 +209,8 @@ const MENU_ICON: Record<MoveMenuItem['direction'], IconName> = {
           <section
             cdkDropList
             cdkDropListSortingDisabled
-            class="min-h-0 min-w-72 flex-1 overflow-y-auto rounded-card border p-3 transition-colors"
-            [class]="zoneClass(col.estado, state)"
+            class="min-h-0 flex-1 snap-start overflow-y-auto rounded-card border p-3 transition-colors"
+            [class]="openColumn + ' ' + zoneClass(col.estado, state)"
             [cdkDropListData]="col.estado"
             [cdkDropListEnterPredicate]="canEnter"
             [attr.aria-label]="col.header.label"
@@ -350,7 +364,7 @@ const MENU_ICON: Record<MoveMenuItem['direction'], IconName> = {
       <div class="fixed inset-0 z-30" aria-hidden="true" (click)="closeMenu()"></div>
       <div
         role="menu"
-        class="fixed z-30 w-72 rounded-card border border-line bg-card p-2 shadow-modal"
+        class="fixed z-30 w-72 max-w-[calc(100vw-1rem)] rounded-card border border-line bg-card p-2 shadow-modal"
         [attr.aria-label]="view.menu.heading"
         [style.top.px]="view.top"
         [style.left.px]="view.left"
@@ -410,9 +424,12 @@ export class TableroComponent {
   /** Cards whose move was applied and that wait for the board reload to show their new column. */
   private readonly awaitingReload = signal<ReadonlySet<number>>(new Set());
   private readonly cancelTarget = signal<PedidoListado | null>(null);
+  private lastWidth = this.document.defaultView?.innerWidth ?? 0;
   private readonly menuItems = viewChildren<ElementRef<HTMLButtonElement>>('menuItem');
 
   protected readonly skeletons = [1, 2, 3, 4] as const;
+  protected readonly boardHeight = BOARD_HEIGHT;
+  protected readonly openColumn = OPEN_COLUMN;
   protected readonly startDelay: DragStartDelay = { touch: 150, mouse: 0 };
   protected readonly previewClass = ['rotate-2', 'shadow-modal', 'opacity-95'];
   protected readonly board = signal<BoardData | null>(null);
@@ -640,6 +657,16 @@ export class TableroComponent {
     );
     this.menu.set({ pedido, ...position, trigger });
     afterNextRender(() => this.focusItem(nextEnabledIndex(items, -1, 1)), { injector: this.injector });
+  }
+
+  /** Mobile browsers fire `resize` on every URL-bar change; the menu only closes when the width really changed. */
+  protected onResize(): void {
+    const width = this.document.defaultView?.innerWidth ?? this.lastWidth;
+    const close = shouldCloseOnResize(this.lastWidth, width);
+    this.lastWidth = width;
+    if (close) {
+      this.closeMenu();
+    }
   }
 
   protected closeMenu(restoreFocus = false): void {

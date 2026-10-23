@@ -80,7 +80,7 @@ interface RowView {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-screen bg-surface p-6">
+    <section class="flex-1 bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Catálogo</h1>
@@ -152,7 +152,7 @@ interface RowView {
                 Categorías
               </p>
               <ul
-                class="-mx-6 flex gap-2 overflow-x-auto px-6 pb-3 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0"
+                class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0"
               >
                 @for (entry of entries(); track entry.id) {
                   <li class="shrink-0">

@@ -4,9 +4,12 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -78,7 +81,7 @@ interface Rejection {
   imports: [ButtonComponent, IconComponent, StatePanelComponent, TextFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-screen bg-surface p-6">
+    <section class="flex-1 bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Caja</h1>
@@ -161,14 +164,17 @@ interface Rejection {
 
             @if (selected(); as pedido) {
               <form
+                #detail
                 novalidate
-                class="mt-6 flex min-h-[32rem] min-w-0 flex-1 flex-col rounded-card border border-line bg-card lg:mt-0"
+                class="mt-6 flex min-w-0 flex-1 scroll-mt-32 flex-col rounded-card border border-line bg-card lg:mt-0 lg:min-h-[32rem] lg:scroll-mt-0"
                 [attr.aria-label]="cobroTitle()"
                 (submit)="submit($event)"
               >
                 <div class="flex flex-wrap items-start justify-between gap-4 border-b border-line px-6 py-6">
                   <div class="min-w-0">
-                    <h2 class="text-sm text-muted">{{ cobroTitle() }}</h2>
+                    <h2 #detailHeading tabindex="-1" class="text-sm text-muted focus:outline-none">
+                      {{ cobroTitle() }}
+                    </h2>
                     @if (observacion(); as text) {
                       <p class="mt-1 text-base text-ink">{{ text }}</p>
                     }
@@ -306,6 +312,9 @@ export class CajaPage {
   private readonly route = inject(ActivatedRoute);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  private readonly detail = viewChild<ElementRef<HTMLElement>>('detail');
+  private readonly detailHeading = viewChild<ElementRef<HTMLElement>>('detailHeading');
   private loadRequest: Subscription | null = null;
   /** `?pedido=` as it arrived; consumed by the first successful load. */
   private requestedId = parsePedidoParam(this.route.snapshot.queryParamMap.get('pedido'));
@@ -434,6 +443,30 @@ export class CajaPage {
       return;
     }
     this.setSelected(id);
+    this.revealDetail();
+  }
+
+  /**
+   * Below `lg` the charge form stacks under the list and lands below the fold: once it has rendered the picked
+   * order, scrolls it into view and moves the focus to its heading. Side by side (`lg`+) nothing moves.
+   */
+  private revealDetail(): void {
+    if (typeof window.matchMedia !== 'function' || window.matchMedia('(min-width: 1024px)').matches) {
+      return;
+    }
+    afterNextRender(
+      () => {
+        const detail = this.detail()?.nativeElement;
+        if (detail === undefined) {
+          return;
+        }
+        if (typeof detail.scrollIntoView === 'function') {
+          detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        this.detailHeading()?.nativeElement.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
   }
 
   protected setMetodo(metodo: MetodoPago): void {

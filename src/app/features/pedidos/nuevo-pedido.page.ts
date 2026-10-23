@@ -73,7 +73,7 @@ interface LineView {
   imports: [RouterLink, ButtonComponent, IconComponent, ModalComponent, StatePanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-screen bg-surface p-6">
+    <section class="flex-1 bg-surface p-4 sm:p-6">
       <header>
         <nav aria-label="Ruta de navegación" class="flex items-center gap-2 text-sm text-muted">
           <a routerLink="/pedidos" class="hover:text-ink">Pedidos</a>
@@ -243,7 +243,8 @@ interface LineView {
           </div>
 
           <form
-            class="rounded-card border border-line bg-card lg:sticky lg:top-6"
+            #cart
+            class="scroll-mt-32 rounded-card border lg:scroll-mt-4 border-line bg-card lg:sticky lg:top-6"
             aria-label="Pedido en curso"
             novalidate
             (submit)="submit($event)"
@@ -283,7 +284,7 @@ interface LineView {
                   inputmode="numeric"
                   autocomplete="off"
                   placeholder="Ej. 4"
-                  class="mt-1.5 w-full rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-subtle focus:border-ink"
+                  class="mt-1.5 w-full rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors placeholder:text-subtle focus:border-ink"
                   [class.border-line]="!errors().mesaId"
                   [class.border-danger]="errors().mesaId"
                   [value]="mesaId()"
@@ -306,7 +307,14 @@ interface LineView {
 
             <section class="border-t border-line p-5" aria-labelledby="nuevo-pedido-items">
               <div class="flex items-baseline justify-between gap-3">
-                <h2 id="nuevo-pedido-items" class="text-sm font-medium">Ítems</h2>
+                <h2
+                  #cartHeading
+                  id="nuevo-pedido-items"
+                  tabindex="-1"
+                  class="text-sm font-medium outline-none"
+                >
+                  Ítems
+                </h2>
                 <p class="text-xs text-muted" aria-live="polite">{{ resumen() }}</p>
               </div>
 
@@ -360,7 +368,7 @@ interface LineView {
                           type="text"
                           autocomplete="off"
                           placeholder="Ej. sin ají"
-                          class="mt-2 w-full rounded-control border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:border-ink"
+                          class="mt-2 w-full rounded-control border border-line bg-card px-3 py-2 text-base text-ink sm:text-sm outline-none placeholder:text-subtle focus:border-ink"
                           [id]="'nuevo-pedido-nota-' + line.linea.productoId"
                           [value]="line.linea.observacion"
                           (input)="setNota(line.linea.productoId, valueOf($event))"
@@ -390,7 +398,7 @@ interface LineView {
                 name="observacion"
                 rows="3"
                 placeholder="Ej. alergias, preferencias de la mesa…"
-                class="mt-2 w-full resize-y rounded-control border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none placeholder:text-subtle focus:border-ink"
+                class="mt-2 w-full resize-y rounded-control border border-line bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none placeholder:text-subtle focus:border-ink"
                 [value]="observacion()"
                 (input)="observacion.set(valueOf($event))"
               ></textarea>
@@ -402,7 +410,7 @@ interface LineView {
                   <p class="text-sm text-muted">Total referencial</p>
                   <p class="text-xs text-subtle">El total final lo calcula el sistema</p>
                 </div>
-                <p class="font-mono text-2xl font-bold" aria-live="polite">{{ total() }}</p>
+                <p class="whitespace-nowrap font-mono text-2xl font-bold" aria-live="polite">{{ total() }}</p>
               </div>
               <div class="mt-4 flex gap-3">
                 <button
@@ -431,6 +439,22 @@ interface LineView {
             </div>
           </form>
         </div>
+
+        @if (hasItems()) {
+          <!-- Spacer so the fixed bar never covers the cart buttons. -->
+          <div class="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true"></div>
+          <div
+            class="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-line bg-card px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 lg:hidden"
+          >
+            <div class="min-w-0">
+              <p class="text-xs text-muted">{{ resumen() }}</p>
+              <p class="font-mono text-lg font-bold">{{ total() }}</p>
+            </div>
+            <button appButton type="button" variant="primary" (click)="verPedido(cart, cartHeading)">
+              Ver pedido
+            </button>
+          </div>
+        }
       }
 
       @if (confirmingDiscard()) {
@@ -489,6 +513,7 @@ export class NuevoPedidoPage {
   );
   protected readonly total = computed(() => formatMoney(totalReferencial(this.lineas())));
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
+  protected readonly hasItems = computed(() => this.lineas().length > 0);
 
   protected readonly tabs = computed(() => categoryTabs(this.menu()?.categorias ?? []));
 
@@ -539,6 +564,14 @@ export class NuevoPedidoPage {
           this.fail(error);
         },
       });
+  }
+
+  /** Phones and tablets: brings the order into view and moves focus to its heading. */
+  protected verPedido(cart: HTMLElement, heading: HTMLElement): void {
+    if (typeof cart.scrollIntoView === 'function') {
+      cart.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    heading.focus({ preventScroll: true });
   }
 
   protected selectCategoria(categoriaId: number | null): void {

@@ -57,13 +57,13 @@ Los commits de trabajo vivían en ramas que ya se borraron; en `main` cada PR qu
 `homeFor` de ADMINISTRADOR y RECEPCION → `/pedidos` (decisión del usuario 2026-10-14, `3598eb0`; **cerrada**: la lista no lleva `subscriptionGuard`). Defaults del orquestador (a revisar con el usuario): "Pedidos" del menú → `/pedidos`; refresco manual y tras cada acción (sin polling ni WebSocket); pestañas sin conteos; cancelar con confirmación; tras crear se navega a la lista.
 
 ## Fase 4b — Tablero de pedidos (drag & drop)
-> [!warning] Reglas mergeadas (#24); la interfaz del tablero espera su PR (2026-10-18)
+> [!success] Tablero mergeado en `main`: reglas (#24) e interfaz (#27, `6a6a4a7`, 2026-10-23)
 > El usuario vio la lista y pidió el drag & drop ("No está el drag & drop"). Se construyó el tablero kanban de los diseños `EGPHx`, `Sd7pI` y `zFAgh` junto a la lista. Fuente: `docs/progress/10-tablero-pedidos.md` y `odd/tasks/pedidos-tablero.md`. Las ramas salen de `main` (`fdd9c50`).
 
 | Tarea | Commit | Rama | Qué |
 |---|---|---|---|
 | T7.1 | `8bae4e3` | `feat/tablero-01-base` | `@angular/cdk` 22.2.3 y reglas puras del tablero (670 líneas) |
-| T7.2 + T7.3 | `335ef1e` | `feat/tablero-02-tablero` | tablero, arrastre CDK, menú "⋯ Mover a…" y zonas Entregado / Cancelar (1125 líneas) |
+| T7.2 + T7.3 | `335ef1e` | `feat/tablero-02-tablero` | tablero, arrastre CDK, menú "⋯ Mover a…" y zonas Entregado / Cancelar (1125 líneas); mergeada en `main` (#27, `6a6a4a7`) |
 | T7.4 | — | `feat/tablero-02-tablero` | nota de progreso, cuerpos de PR 19 y 20 y notas del Vault |
 
 - **Qué hace**: alternancia Tablero | Lista (tablero por defecto, `?vista=lista`), chips por tipo con conteos, cuatro columnas de tarjetas y Entregado / Cancelado colapsadas con el conteo de hoy; mover por arrastre, por el botón primario o por el menú, siempre por las transiciones del contrato.
@@ -72,7 +72,7 @@ Los commits de trabajo vivían en ramas que ya se borraron; en `main` cada PR qu
 - **Evidencia**: 27 archivos / 1087 tests en verde en la punta, `ng build` OK; reviews nativas aprobadas (`review-45064623d1db4e80`, `review-47ff13cfb690c463`). El escritor lo verificó en navegador contra una API simulada.
 - **Prueba contra el backend real (2026-10-22)**: con un restaurante de prueba "Tablero QA" creado desde [[Plataforma]] y pedidos de Recojo y Delivery. Pasó: carga del tablero; "0 min" en tarjetas nuevas (la hora de Lima se lee bien); botón primario; arrastre Pendiente → En preparación; arrastre inválido Pendiente → Listo vuelve a su lugar sin llamar al backend; menú "⋯ Mover a…" con solo las transiciones del contrato; soltar sobre Entregado; cancelar con confirmación; Delivery hasta En entrega; chips por tipo; alternancia Tablero | Lista; 375 px sin scroll horizontal de página. Consola: solo el 401 del arranque sin sesión. **Sin probar: arrastre con touch real** (la emulación manda eventos de mouse).
 - **Observaciones de la prueba**: el menú titula "Mover Recojo a…" (el tipo, no el número); el backend deja pasar a Entregado un Recojo sin cobrar; un restaurante nuevo no tiene mesas, así que un pedido de Mesa da 400 "La mesa no existe" (el front lo muestra bien).
-- **Entrega**: `stacked-to-main`. La primera slice (T7.1: reglas y `@angular/cdk`) entró a `main` en #24. La segunda (T7.2 + T7.3 y las notas) está rebaseada sobre `main` y espera su PR; pide `size:exception`. Los cuerpos `docs/prs/19` y `20` conservan la numeración planeada antes de abrir los PR.
+- **Entrega**: `stacked-to-main`. La primera slice (T7.1: reglas y `@angular/cdk`) entró a `main` en #24. La segunda (T7.2 + T7.3 y las notas) entró a `main` en #27 (`6a6a4a7`, squash del 2026-10-23; la rama remota se borró) con `size:exception`. Los cuerpos `docs/prs/19` y `20` conservan la numeración planeada antes de abrir los PR.
 
 ## Pendientes
-Prueba manual con RECEPCION (con ADMINISTRADOR ya se probaron la lista, Nuevo pedido y el tablero contra el backend el 2026-10-22, con un restaurante creado desde Plataforma); aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación de la plataforma; publicar y mergear el tablero (Fase 4b; ya probado en navegador contra el backend real el 2026-10-22, sin touch) y probarlo con touch; Cobrar (fase de Caja) y acceso de CAJERO; CSP y revisión visual en navegador. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]]. La fase posterior a Pedidos fue [[Plataforma]] (decisión del usuario, 2026-10-15).
+Prueba manual con RECEPCION (con ADMINISTRADOR ya se probaron la lista, Nuevo pedido y el tablero contra el backend el 2026-10-22, con un restaurante creado desde Plataforma); aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación de la plataforma; probar con touch el tablero (Fase 4b; ya en `main`, #27, y probado en navegador contra el backend real el 2026-10-22); Cobrar (fase de Caja) y acceso de CAJERO; CSP y revisión visual en navegador. Ver [[Pendientes y Deuda Técnica]] y [[Estado Actual]]. La fase posterior a Pedidos fue [[Plataforma]] (decisión del usuario, 2026-10-15).

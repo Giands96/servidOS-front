@@ -32,7 +32,7 @@ let nextId = 0;
       [attr.aria-labelledby]="titleId"
     >
       @if (form()) {
-        <div class="flex items-center justify-between gap-4 border-b border-line px-6 py-5">
+        <div class="flex items-center justify-between gap-4 border-b border-line px-4 py-5 sm:px-6">
           <h2 class="text-xl font-bold tracking-tight" [id]="titleId">{{ heading() }}</h2>
           <button
             type="button"
@@ -54,7 +54,7 @@ let nextId = 0;
         <div [class]="form() ? '' : 'mt-2 text-sm leading-relaxed text-muted'"><ng-content /></div>
       </div>
       <div
-        class="flex items-center gap-3 border-t border-line bg-surface/60 px-6 py-4 empty:hidden"
+        class="flex flex-wrap items-center gap-3 border-t border-line bg-surface/60 px-4 py-4 sm:px-6 empty:hidden"
         [class]="form() ? 'justify-end' : 'justify-between'"
       >
         <ng-content select="[footer]" />

@@ -12,7 +12,7 @@ let nextId = 0;
   template: `
     <label class="mb-1.5 block text-sm font-medium text-ink" [for]="id">{{ label() }}</label>
     <input
-      class="w-full rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-subtle focus:border-ink disabled:bg-surface disabled:text-muted"
+      class="w-full rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors placeholder:text-subtle focus:border-ink disabled:bg-surface disabled:text-muted"
       [class.font-mono]="mono()"
       [class.border-line]="!error() && !invalid()"
       [class.border-danger]="error() || invalid()"

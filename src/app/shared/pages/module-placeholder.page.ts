@@ -6,7 +6,7 @@ import { ActivatedRoute } from '@angular/router';
   selector: 'app-module-placeholder',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="p-8">
+    <section class="p-4 sm:p-8">
       <h1 class="text-3xl font-bold tracking-tight">{{ title }}</h1>
       <p class="mt-3 inline-block rounded-card border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
         Módulo en construcción
