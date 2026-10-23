@@ -52,7 +52,7 @@ import { NavItem } from '../auth/domain/navigation.rules';
           {{ initials() }}
         </button>
         @if (menuOpen()) {
-          <div class="absolute right-0 top-full mt-2 w-56 rounded-card border border-line bg-card p-2 text-ink shadow-modal">
+          <div class="absolute right-0 top-full z-10 mt-2 w-56 rounded-card border border-line bg-card p-2 text-ink shadow-modal">
             <div class="px-2 py-1.5">
               <p class="truncate text-sm font-medium">{{ userName() }}</p>
               <p class="truncate text-xs text-muted">{{ role() }}</p>
