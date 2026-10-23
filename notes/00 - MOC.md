@@ -28,7 +28,7 @@ aliases:
 > Contrato en [[API]], permisos en [[Modelo de Negocio]] y trabajo pendiente del front en [[Pendientes y Deuda Técnica]]. Qué parte ya implementa el front se indica en cada módulo ([[Plataforma]], [[Pagos]], [[Cocina]], [[Pedidos]]).
 
 > [!info] Estado del módulo Pedidos
-> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`). El **tablero kanban con drag & drop** (Fase 4b) va en dos cortes: el corte 1 (reglas `tablero.rules.ts` y la dependencia `@angular/cdk`, ADR-20) está **en `main`** (PR #24); el corte 2 (la interfaz del tablero, con alternancia "Tablero | Lista") está implementado en la rama `feat/tablero-02-tablero` y su PR está pendiente. Probado en navegador contra el backend real (2026-10-22); falta la prueba táctil. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
+> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`). El **tablero kanban con drag & drop** (Fase 4b) va en dos cortes: el corte 1 (reglas `tablero.rules.ts` y la dependencia `@angular/cdk`, ADR-20) está **en `main`** (PR #24); el corte 2 (la interfaz del tablero, con alternancia "Tablero | Lista") está **en `main`** (PR #27, `6a6a4a7`, 2026-10-23). Probado en navegador contra el backend real (2026-10-22); falta la prueba táctil. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Plataforma
 > Plataforma 01 a 06 (lista, alta con cuenta del dueño y acciones de restaurantes) está **en `main`** (PRs #13 y #14, `f7112e6`). Sin prueba en navegador. Ver [[Fase 5 - Plataforma]], [[Plataforma]] y [[Estado Actual]].
