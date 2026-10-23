@@ -73,7 +73,7 @@ interface LineView {
   imports: [RouterLink, ButtonComponent, IconComponent, ModalComponent, StatePanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="flex-1 bg-surface p-4 sm:p-6">
+    <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
       <header>
         <nav aria-label="Ruta de navegación" class="flex items-center gap-2 text-sm text-muted">
           <a routerLink="/pedidos" class="hover:text-ink">Pedidos</a>
