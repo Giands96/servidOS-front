@@ -244,7 +244,7 @@ interface LineView {
 
           <form
             #cart
-            class="scroll-mt-4 rounded-card border border-line bg-card lg:sticky lg:top-6"
+            class="scroll-mt-32 rounded-card border lg:scroll-mt-4 border-line bg-card lg:sticky lg:top-6"
             aria-label="Pedido en curso"
             novalidate
             (submit)="submit($event)"
@@ -410,7 +410,7 @@ interface LineView {
                   <p class="text-sm text-muted">Total referencial</p>
                   <p class="text-xs text-subtle">El total final lo calcula el sistema</p>
                 </div>
-                <p class="font-mono text-2xl font-bold" aria-live="polite">{{ total() }}</p>
+                <p class="whitespace-nowrap font-mono text-2xl font-bold" aria-live="polite">{{ total() }}</p>
               </div>
               <div class="mt-4 flex gap-3">
                 <button
