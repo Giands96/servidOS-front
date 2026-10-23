@@ -1,6 +1,6 @@
 ---
 title: Infraestructura
-date: 2026-10-08
+date: 2026-10-16
 tags:
   - servidos
   - infraestructura
@@ -49,6 +49,7 @@ No existe `environments/`. La base es la constante `API_BASE = '/api/v1'` en `sr
 | `rxjs` `~7.8.0` | prod | HttpClient, STOMP |
 | `tslib` | prod | helpers TS |
 | `@stomp/rx-stomp` `^2.4.0` | prod | tablero de cocina en vivo (aprobada, `00c94dd`); trae `@stomp/stompjs 7.3.0` |
+| `@angular/cdk` `^22.2.3` | prod | drag & drop del tablero de pedidos (aprobada 2026-10-16, mergeada en #24; ver ADR-20 en [[Decisiones (ADR)]]) |
 | `@angular/build`, `cli`, `compiler-cli` | dev | toolchain |
 | `tailwindcss`, `@tailwindcss/postcss`, `postcss` | dev | estilos |
 | `vitest`, `jsdom` | dev | tests |

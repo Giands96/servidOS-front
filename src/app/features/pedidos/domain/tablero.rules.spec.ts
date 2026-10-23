@@ -5,7 +5,11 @@ import {
   CLOSED_COLUMNS,
   canDrop,
   cardView,
+  closedColumnHint,
+  closedCountQuery,
+  columnDropState,
   columnHeader,
+  columnQuery,
   dropTargets,
   elapsedLabel,
   elapsedMinutes,
@@ -13,7 +17,10 @@ import {
   groupByColumn,
   moveMenu,
   moveRequest,
+  menuPlacement,
   moveSuccessMessage,
+  nextEnabledIndex,
+  parseVista,
   tipoFilterChips,
   todayLima,
 } from './tablero.rules';
@@ -367,5 +374,121 @@ describe('todayLima', () => {
 describe('moveSuccessMessage', () => {
   it('reuses the transition toast text', () => {
     expect(moveSuccessMessage(order({ pedidoId: 479 }), 'LISTO')).toBe('#0479 ahora está listo');
+  });
+});
+
+describe('parseVista', () => {
+  it('reads "lista" from the URL and falls back to the board for anything else', () => {
+    expect(parseVista('lista')).toBe('lista');
+    expect(parseVista('tablero')).toBe('tablero');
+    expect(parseVista(null)).toBe('tablero');
+    expect(parseVista('LISTA')).toBe('tablero');
+    expect(parseVista(undefined)).toBe('tablero');
+  });
+});
+
+describe('board queries', () => {
+  it('asks for the first 100 orders of a board column', () => {
+    expect(columnQuery('EN_PREPARACION')).toEqual({ estado: 'EN_PREPARACION', page: 0, size: 100 });
+  });
+
+  it("asks for a single row of a closed column filtered by Lima's today (only the total is read)", () => {
+    expect(closedCountQuery('ENTREGADO', new Date('2026-10-16T02:30:00Z'))).toEqual({
+      estado: 'ENTREGADO',
+      fecha: '2026-10-15',
+      page: 0,
+      size: 1,
+    });
+  });
+});
+
+describe('columnDropState', () => {
+  const mesa = order({ tipoPedido: 'MESA', estado: 'EN_PREPARACION' });
+
+  it('is idle for every column when nothing is being dragged', () => {
+    expect(columnDropState(null, 'LISTO')).toEqual({ kind: 'idle', reason: null });
+  });
+
+  it('marks the order own column as origin, the allowed ones and the locked ones with their reason', () => {
+    expect(columnDropState(mesa, 'EN_PREPARACION')).toEqual({ kind: 'origin', reason: null });
+    expect(columnDropState(mesa, 'LISTO')).toEqual({ kind: 'allowed', reason: null });
+    expect(columnDropState(mesa, 'EN_ENTREGA')).toEqual({ kind: 'locked', reason: 'Solo pedidos delivery' });
+    expect(columnDropState(mesa, 'PENDIENTE')).toEqual({
+      kind: 'locked',
+      reason: 'No disponible desde En preparación',
+    });
+  });
+
+  it('locks Cancelado for a paid order with its reason', () => {
+    const paid = order({ estado: 'LISTO', estadoPago: 'PAGADO' });
+    expect(columnDropState(paid, 'CANCELADO')).toEqual({
+      kind: 'locked',
+      reason: 'Un pedido pagado no se puede cancelar',
+    });
+  });
+});
+
+describe('closedColumnHint', () => {
+  it('is "Hoy" while idle (the counts are those of today)', () => {
+    expect(closedColumnHint('ENTREGADO', { kind: 'idle', reason: null })).toBe('Hoy');
+    expect(closedColumnHint('CANCELADO', { kind: 'origin', reason: null })).toBe('Hoy');
+  });
+
+  it('invites to drop when the dragged order is accepted', () => {
+    expect(closedColumnHint('ENTREGADO', { kind: 'allowed', reason: null })).toBe('Soltar para marcar entregado');
+    expect(closedColumnHint('CANCELADO', { kind: 'allowed', reason: null })).toBe('Soltar para cancelar');
+  });
+
+  it('explains the refusal when locked', () => {
+    expect(closedColumnHint('CANCELADO', { kind: 'locked', reason: 'Un pedido pagado no se puede cancelar' })).toBe(
+      'Un pedido pagado no se puede cancelar',
+    );
+    expect(closedColumnHint('ENTREGADO', { kind: 'locked', reason: null })).toBe('No disponible');
+  });
+});
+
+describe('menuPlacement', () => {
+  const viewport = { width: 1000, height: 800 };
+  const menu = { width: 288, height: 300 };
+
+  it('opens below the button, right-aligned to it', () => {
+    const anchor = { top: 100, bottom: 140, left: 500, right: 540 };
+    expect(menuPlacement(anchor, menu, viewport)).toEqual({ top: 144, left: 252 });
+  });
+
+  it('flips above the button when there is no room below but there is above', () => {
+    const anchor = { top: 600, bottom: 640, left: 500, right: 540 };
+    expect(menuPlacement(anchor, menu, viewport)).toEqual({ top: 296, left: 252 });
+  });
+
+  it('stays below, clamped into the viewport, when it fits neither below nor above', () => {
+    const anchor = { top: 150, bottom: 190, left: 500, right: 540 };
+    expect(menuPlacement(anchor, menu, { width: 1000, height: 400 })).toEqual({ top: 92, left: 252 });
+  });
+
+  it('keeps the menu inside the horizontal edges of the viewport', () => {
+    expect(menuPlacement({ top: 10, bottom: 50, left: 0, right: 40 }, menu, viewport).left).toBe(8);
+    expect(menuPlacement({ top: 10, bottom: 50, left: 960, right: 1000 }, menu, viewport).left).toBe(704);
+  });
+});
+
+describe('nextEnabledIndex', () => {
+  const items = [{ allowed: true }, { allowed: false }, { allowed: true }, { allowed: false }];
+
+  it('moves to the next enabled entry, skipping disabled ones and wrapping around', () => {
+    expect(nextEnabledIndex(items, 0, 1)).toBe(2);
+    expect(nextEnabledIndex(items, 2, 1)).toBe(0);
+    expect(nextEnabledIndex(items, 2, -1)).toBe(0);
+    expect(nextEnabledIndex(items, 0, -1)).toBe(2);
+  });
+
+  it('starts at the first (down) or the last (up) enabled entry when nothing is focused', () => {
+    expect(nextEnabledIndex(items, -1, 1)).toBe(0);
+    expect(nextEnabledIndex(items, -1, -1)).toBe(2);
+  });
+
+  it('answers -1 when no entry is enabled', () => {
+    expect(nextEnabledIndex([{ allowed: false }], -1, 1)).toBe(-1);
+    expect(nextEnabledIndex([], -1, 1)).toBe(-1);
   });
 });
