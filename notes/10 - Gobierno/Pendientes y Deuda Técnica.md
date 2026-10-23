@@ -27,7 +27,7 @@ Numeración de `CAMBIOS_FRONTEND.md` del backend. Verificados contra su código 
 - [ ] §4 Sin suscripción vigente = solo lectura; manejar 400 en `GET /restaurantes/actual/suscripcion`; mensajes 402 terminan en "contactá a la plataforma para regularizar tu suscripción".
 - [ ] (parcial) §5 Rutas permitidas con 402 sin `subscriptionGuard`: cocina listo cumple; la **lista de pedidos** (estado/confirmar) cumple y está en `main` (PR #10); **`/caja` (`POST /pagos`) cumple** (sin `subscriptionGuard`, en `main` con Caja, PRs #19 a #22). Falta el reembolso al construirlo. Riesgo: si una llamada de pagos devolviera 402, el interceptor redirigiría a `/paywall` o `/suspendido`.
 - [ ] (parcial) §6 Reembolso cancela pedidos no entregados; ocultar "Cobrar" en pedidos reembolsados. Lo segundo está hecho y en `main` con Caja (`isCobrable` y `porCobrar` solo ofrecen pedidos nunca cobrados); falta el reembolso, bloqueado por el `pagoId` (ver Caja).
-- [ ] (parcial) §7 DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago. La tabla de transiciones de `pedidos.rules.ts` ya lo contempla (en `main`, PR #9); falta verificarlo contra un backend real.
+- [ ] (parcial) §7 DELIVERY `EN_ENTREGA` a `CANCELADO` si no pagado; `ENTREGADO` sin pago. La tabla de transiciones de `pedidos.rules.ts` ya lo contempla (en `main`, PR #9); falta verificarlo contra un backend real. Visto el 2026-10-22: el backend deja pasar a `ENTREGADO` un pedido RECOJO sin cobrar.
 - [ ] §8 Validaciones cross-tenant a 400 (mostrar `message`).
 - [x] §9 `POST /pedidos` corregido (sin impacto).
 - [x] §10 `GET /cocina/listos` (cliente `cocina.api.ts` hecho).
@@ -78,7 +78,8 @@ Origen: `docs/progress/10-tablero-pedidos.md` y `odd/tasks/pedidos-tablero.md`. 
 - [x] Corte 1 mergeado en `main`: PR #24 (`1d3e3c8`, `feat/tablero-01-base`; 670 líneas; reglas `tablero.rules.ts` con su spec y `@angular/cdk`). Review aprobada: `review-45064623d1db4e80`.
 - [ ] Corte 2 (`feat/tablero-02-tablero`; 1125 líneas; tablero, arrastre y menú): abrir su PR y mergearlo (squash); pide `size:exception`. Review aprobada: `review-47ff13cfb690c463`.
 - [ ] **Prueba táctil** del arrastre: no hecha. El escritor lo verificó en navegador contra una API simulada desechable (arrastre, 400, cancelar con confirmación, menú con teclado, alternancia de vista), sin touch.
-- [ ] Prueba en navegador contra el **backend real**, con ADMINISTRADOR y RECEPCION: no hecha.
+- [x] Prueba en navegador contra el **backend real** con ADMINISTRADOR (2026-10-22): pasó (detalle en [[Fase 4 - Pedidos]]). Falta repetirla con RECEPCION.
+- [ ] Título del menú "Mover Recojo a…": muestra el tipo y no el número del pedido; decidir con el usuario.
 - [ ] Más de 100 pedidos en una columna: la petición pide `size=100` y no hay indicador de truncamiento.
 - [ ] Aviso de error duplicado (~10 líneas) entre el componente del tablero y la página; unificar en un helper.
 - [ ] Sin spec del componente ni de la página por decisión (AGENTS §6); las reglas sí tienen tests (`tablero.rules.spec.ts`, pedidos 382 en la punta).

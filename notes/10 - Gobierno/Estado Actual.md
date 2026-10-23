@@ -39,13 +39,13 @@ Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[
 | Caja: botón "Cobrar S/ …" en la lista de pedidos (`feat/caja-03-atajos`, `3bdb24b`) | en `main`: PR #21 (`c6f7a88`); el chip del tablero espera el merge de la interfaz del tablero | [[Pagos]] · `docs/progress/11-fase-7-caja.md` |
 | Caja: avisos de la review (`caja.rules.ts`, `caja.page.ts`) | en `main`: PR #22 (`b7fb568`) | [[Pagos]] |
 | Pedidos: reglas del tablero y dependencia `@angular/cdk` (corte 1 de la Fase 4b) | en `main`: PR #24 (`1d3e3c8`); review aprobada | [[Pedidos]] · [[Fase 4 - Pedidos]] · ADR-20 en [[Decisiones (ADR)]] |
-| Pedidos: tablero kanban con drag & drop, menú "Mover a…" y zonas Entregado / Cancelado (corte 2, `feat/tablero-02-tablero`) | implementada en la rama, **PR pendiente**; review aprobada; sin prueba táctil ni contra el backend real | [[Pedidos]] · `docs/progress/10-tablero-pedidos.md` |
+| Pedidos: tablero kanban con drag & drop, menú "Mover a…" y zonas Entregado / Cancelado (corte 2, `feat/tablero-02-tablero`) | implementada en la rama, **PR pendiente**; review aprobada; probado en navegador contra el backend real el 2026-10-22, sin touch | [[Pedidos]] · `docs/progress/10-tablero-pedidos.md` |
 
 ## Pendiente de cierre de Cocina
 Prueba manual en navegador con backend, verificación del payload contra Swagger y zona horaria de `createdAt`.
 
 ## Pendiente de Pedidos
-Prueba manual en navegador con backend; aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación hecha por la plataforma; abrir y mergear la interfaz del tablero (Fase 4b, corte 2) y probarla con touch y contra el backend real; el chip "Cobrar" en el tablero (T8.4b). Detalle en [[Pendientes y Deuda Técnica]].
+Prueba manual con RECEPCION (con ADMINISTRADOR ya se hizo contra el backend el 2026-10-22); aviso por borrador sin guardar en Nuevo pedido; foto vieja de `/auth/me` tras una renovación hecha por la plataforma; abrir y mergear la interfaz del tablero (Fase 4b, corte 2) y probarla con touch (contra el backend real ya se probó el 2026-10-22); el chip "Cobrar" en el tablero (T8.4b). Detalle en [[Pendientes y Deuda Técnica]].
 
 ## Pendiente de Plataforma
 Prueba en navegador de todas las pantallas, incluido el asistente y el login real del dueño; Escape para cerrar panel y modal; partir `restaurantes.page.ts` (847 líneas). Detalle en [[Pendientes y Deuda Técnica]].
@@ -54,7 +54,7 @@ Prueba en navegador de todas las pantallas, incluido el asistente y el login rea
 Prueba en navegador de la pantalla y los modales con ADMINISTRADOR, COCINERO y RECEPCION; decidir el cierre del modal durante un guardado. Detalle en [[Pendientes y Deuda Técnica]] y [[Fase 6 - Catálogo]].
 
 ## Pendiente del tablero de Pedidos
-Abrir y mergear el PR de la interfaz (`feat/tablero-02-tablero`; el corte 1, reglas y `@angular/cdk`, ya está en `main` por el PR #24); prueba táctil del arrastre; prueba en navegador contra el backend real (solo se verificó con una API simulada); indicador cuando una columna pase de 100 pedidos; unificar el aviso de error duplicado. Detalle en [[Pendientes y Deuda Técnica]] y [[Fase 4 - Pedidos]].
+Abrir y mergear el PR de la interfaz (`feat/tablero-02-tablero`; el corte 1, reglas y `@angular/cdk`, ya está en `main` por el PR #24); prueba táctil del arrastre (la prueba en navegador contra el backend real pasó el 2026-10-22); indicador cuando una columna pase de 100 pedidos; unificar el aviso de error duplicado. Detalle en [[Pendientes y Deuda Técnica]] y [[Fase 4 - Pedidos]].
 
 ## Pendiente de alineación con el backend
 Verificación contra el backend (`c32dcba`) incorporada el 2026-10-17. Quedan diferencias reales entre sus `@PreAuthorize` y la matriz del front: `GET /pedidos` para CAJERO; ver restaurantes, renovar, cambiar plan, suspender y reactivar para ADMIN y MODERADOR (hoy solo SUPERADMIN); alta de usuarios de plataforma. Cobrar ya quedó alineado con Caja. Tabla en [[Modelo de Negocio]] y detalle en [[Pendientes y Deuda Técnica]].

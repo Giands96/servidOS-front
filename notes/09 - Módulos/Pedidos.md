@@ -21,7 +21,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 > Lista (`/pedidos`) y nuevo pedido (`/pedidos/nuevo`) mergeados por squash en los PRs #8 a #12 (`c66c3ff`). Sin spec de las páginas (AGENTS §6) y sin prueba en navegador.
 
 > [!info] Tablero kanban (Fase 4b): corte 1 en `main`, corte 2 con su PR pendiente (2026-10-16)
-> Corte 1, en `main` (PR #24, `1d3e3c8`): `tablero.rules.ts` con su spec y la dependencia `@angular/cdk` (ADR-20). Corte 2, en la rama `feat/tablero-02-tablero` (tablero, arrastre y menú), con su PR pendiente; ambos cortes pasaron dos reviews aprobadas. El arrastre no se probó con touch ni contra el backend real. Detalle en [[Fase 4 - Pedidos]] y `docs/progress/10-tablero-pedidos.md`.
+> Corte 1, en `main` (PR #24, `1d3e3c8`): `tablero.rules.ts` con su spec y la dependencia `@angular/cdk` (ADR-20). Corte 2, en la rama `feat/tablero-02-tablero` (tablero, arrastre y menú), con su PR pendiente; ambos cortes pasaron dos reviews aprobadas. El tablero se probó en navegador contra el backend real (2026-10-22); el arrastre no se probó con touch. Detalle en [[Fase 4 - Pedidos]] y `docs/progress/10-tablero-pedidos.md`.
 
 ## Archivos
 | Ruta | Contenido |
@@ -62,7 +62,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |
 |---|---|
-| Reglas de transición, de borrador y del tablero en `domain`, testeadas (pedidos 382 tests en la punta del tablero) | Las páginas y el componente del tablero no tienen spec; no se probó en navegador ni con touch |
+| Reglas de transición, de borrador y del tablero en `domain`, testeadas (pedidos 382 tests en la punta del tablero) | Las páginas y el componente del tablero no tienen spec; el tablero se probó en navegador contra el backend real, no con touch |
 | La lista sigue operable con el tenant bloqueado | `homeFor` apunta a `/pedidos` (sin guard), así que "Seguir en solo lectura" del paywall lleva a la lista |
 | El backend calcula precios; el front nunca envía montos | Sin aviso por borrador sin guardar; el tablero aún no está en `main` |
 | Pedidos es dueño de los tipos; cocina los re-exporta | `fail()` duplicada en ambas páginas y un aviso de error duplicado en el tablero |
