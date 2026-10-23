@@ -1,6 +1,6 @@
 ---
 title: Pendientes y Deuda Técnica
-date: 2026-10-17
+date: 2026-10-23
 tags:
   - servidos
   - gobierno
@@ -123,6 +123,17 @@ Origen: `docs/progress/11-fase-7-caja.md` y `odd/tasks/caja.md`. Ver [[Pagos]] y
 - [ ] Riesgo del interceptor 402: el contrato dice que `pagos` pasa con el tenant bloqueado; si alguna llamada de pagos devolviera 402, el interceptor redirigiría al paywall en lugar de mostrar el mensaje en Caja. Verificar contra el backend real.
 - [ ] Sin specs de la página por decisión (AGENTS §6); las reglas sí tienen tests (pagos 61).
 - [ ] Sin endpoint en el backend, fuera de alcance: cierre/arqueo, historial de pagos y pagos parciales.
+
+## UI responsive (teléfonos y tabletas; slice 1 publicada, slice 2 lista en su rama)
+Origen: `docs/progress/12-responsive-ui.md` y `odd/tasks/responsive-ui.md`. Ver [[Styles y Diseño]] y ADR-21 en [[Decisiones (ADR)]].
+- [ ] Abrir el PR de `feat/responsive-01-shell` (publicada, `a49b62e`) y publicar y abrir el de `feat/responsive-02-pages` (`stacked-to-main`). Reviews aprobadas: `review-af39a8ca79b7ef9d` (riesgo alto, 4 lentes) y `review-bafd76275f80cf31` (riesgo medio, 1 lente).
+- [ ] **Prueba táctil real** del arrastre del tablero y del deslizamiento de columnas: no hecha (la revisión en navegador a 375 / 768 / 1024 px usó el backend local, sin touch).
+- [ ] Toast sobre la barra fija de Nuevo pedido: el toast puede solaparse con la barra bajo `lg` (aceptado en R4); decidir si se desplaza sobre la barra.
+- [ ] Avisos de la review de la slice 1 (no bloqueantes, baja prioridad): marca duplicada en `top-bar.component.ts` (líneas 36-38); `text-base` sin explicar en `text-field.component.ts` (línea 15); degradados de la fila de píldoras sin test y sin recálculo cuando cambian los ítems (`top-bar.component.ts` 169-174); sugerencia de resiliencia en `shell.layout.ts:20`.
+- [ ] Avisos de la review de la slice 2 (SUGGESTION, baja prioridad): `tablero.component.ts` 662-671, `caja.page.ts` 453-469 y `nuevo-pedido.page.ts` 569-576.
+- [ ] Las tablas conservan el desplazamiento horizontal y no hay versión de tarjetas ni bottom sheets: necesitan un diseño del usuario.
+- [ ] Plataforma entre 1024 y 1279 px: el cajón del detalle cubre parte de la tabla; aceptado, revisar con el usuario.
+- [ ] Reportes responsive: fuera de alcance, depende de la feature de Reportes (necesita un endpoint del backend).
 
 ## Deuda técnica y advisories de las reviews
 - Ruta/permiso duplicado entre `app.routes.ts` y `navigation.rules.ts`: **resuelto** por `02bca02` (menú derivado); queda el test de consistencia como guardia.

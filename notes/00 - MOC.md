@@ -1,6 +1,6 @@
 ---
 title: ServidOS Front - MOC
-date: 2026-10-17
+date: 2026-10-23
 tags:
   - servidos
   - frontend
@@ -39,6 +39,9 @@ aliases:
 > [!info] Estado del módulo Pagos (Caja)
 > El cobro de pedidos (`/caja` y el atajo "Cobrar" de la lista) está **en `main`** (PRs #19 a #22, `b7fb568`, 2026-10-17); sin prueba en navegador. `pagos.registrar` incluye ahora a RECEPCION y CAJERO. El **reembolso está bloqueado** hasta que el backend exponga el `pagoId`. Ver [[Fase 7 - Caja]], [[Pagos]] y [[Estado Actual]].
 
+> [!info] Estado de la UI responsive
+> La UI para teléfonos y tabletas (barra superior con píldoras bajo `lg`, sidebar desde `lg`) tiene su slice 1 publicada (PR pendiente) y la slice 2 lista en `feat/responsive-02-pages`. Ver [[Styles y Diseño]], ADR-21 en [[Decisiones (ADR)]] y [[Estado Actual]].
+
 ## Navegación
 
 ### 01 - Contexto
@@ -59,7 +62,7 @@ aliases:
 - [[Seguridad]] — token en memoria, refresh, guards, riesgos
 - [[API]] — contrato `/api/v1`, errores, endpoints, cambios anunciados
 - [[Flujo del Sistema]] — diagramas de arranque, login, refresh, guards, pedido, cocina en vivo
-- [[Styles y Diseño]] — tokens Tailwind 4, tipografía, primitivas, índice de pantallas
+- [[Styles y Diseño]] — tokens Tailwind 4, tipografía, primitivas, responsive, índice de pantallas
 
 ### 08 - Fases
 - [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] (incluye la Fase 4b, tablero) · [[Fase 5 - Plataforma]] · [[Fase 6 - Catálogo]] · [[Fase 7 - Caja]] · [[Fases 4-9 - Planificadas]]

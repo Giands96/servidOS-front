@@ -1,6 +1,6 @@
 ---
 title: Decisiones (ADR)
-date: 2026-10-16
+date: 2026-10-23
 tags:
   - servidos
   - adr
@@ -102,6 +102,15 @@ Volver: [[00 - MOC]] · Ver [[Arquitectura]] · [[Seguridad]] · [[Fase 0 - Infr
 - **Ventajas**: soporte táctil y de teclado del arrastre sin código propio; mantenida por el equipo de Angular y alineada con la versión del framework (`^22`).
 - **Desventajas**: dependencia nueva (trae `parse5` y `entities`, que el lockfile deja de marcar como `dev`); el comportamiento táctil sigue sin probarse en un dispositivo.
 - **Estado**: mergeada en `main` (#24). Su primer uso, la interfaz del tablero, espera su PR. Ver [[Fase 4 - Pedidos]].
+
+## ADR-21 Navegación responsive: barra superior con píldoras bajo `lg`, sidebar desde `lg`
+- **Contexto**: bajo `lg` el sidebar completo se apilaba sobre cada página y quitaba unos 250 a 300 px de alto en teléfonos. No existe diseño móvil en `pencil-export`.
+- **Decisión del usuario (2026-10-23, revisada el mismo día)**: bajo `lg` (teléfonos y tabletas) una barra superior oscura (logo, "ServidOS", nombre del restaurante, avatar) con una fila de píldoras de enlace desplazable en horizontal (ícono + etiqueta; la activa en naranja), según una imagen de diseño que el usuario compartió en el chat. Desde `lg` se conserva el sidebar. Commits `42e6a10` y `f8e2cf3` en `feat/responsive-01-shell`.
+- **Alternativa descartada**: cajón con hamburguesa y riel de iconos en tabletas, implementado como `f0357f5` y descartado con un reset local al llegar el diseño del usuario.
+- **Defaults del orquestador** (a revisar): sin contadores en las píldoras (el backend no tiene endpoints de conteo, igual que en la Fase 2); degradado en el borde que desborda; la píldora activa se desplaza a la vista; "Cerrar sesión" pasa a un menú del avatar; la barra no se oculta al desplazar.
+- **Ventajas**: la cabecera baja de unos 250-300 px a 108 px; todos los módulos siguen a un toque, sin abrir ni cerrar un cajón; reutiliza tokens y primitivas existentes (sin lenguaje visual nuevo); el escritorio no cambia; el comportamiento (menú del avatar, navegación) tiene tests.
+- **Desventajas**: la fila de píldoras desborda con muchos módulos y obliga a desplazar (mitigado con el degradado y el auto-scroll de la activa); la barra siempre ocupa 108 px de alto; la marca queda duplicada entre la barra y el sidebar; los degradados no tienen test y no se recalculan si cambian los ítems; un solo quiebre (`lg`) significa que una tableta apaisada de 1024 px ya recibe el sidebar.
+- **Estado**: slice 1 publicada (`origin/feat/responsive-01-shell`, PR por abrir); slice 2 lista en `feat/responsive-02-pages`. Ver [[Styles y Diseño]] (sección Responsive) y [[Estado Actual]].
 
 > [!note] Decisión de proceso
 > Flujo ODD v3 con revisiones nativas (RDD) por commit/slice. Ver [[Infraestructura]].
