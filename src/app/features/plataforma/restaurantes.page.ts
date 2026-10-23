@@ -135,7 +135,7 @@ interface ActionModalView {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-screen bg-surface p-6">
+    <section class="min-h-dvh bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Restaurantes</h1>
@@ -451,7 +451,7 @@ interface ActionModalView {
                 <select
                   id="panel-action-plan"
                   name="planId"
-                  class="w-full rounded-control border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
+                  class="w-full rounded-control border border-line bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
                   [disabled]="planes() === null || acting()"
                   (change)="selectPlan($event)"
                 >

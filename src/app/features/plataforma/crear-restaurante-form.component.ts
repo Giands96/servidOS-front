@@ -117,7 +117,7 @@ const STEP_LABEL: Readonly<Record<CrearStep, string>> = {
               <select
                 id="crear-restaurante-plan"
                 name="planId"
-                class="w-full rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
+                class="w-full rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
                 [class.border-line]="!messages().planId"
                 [class.border-danger]="messages().planId"
                 [disabled]="planes() === null || submitting()"

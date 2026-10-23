@@ -19,7 +19,7 @@ const DEFAULT_RETRY_SECONDS = 60;
   imports: [ButtonComponent, IconComponent, ModalComponent, TextFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="grid min-h-screen lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+    <main class="grid min-h-dvh lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <aside class="relative hidden flex-col justify-between overflow-hidden bg-ink p-8 text-white lg:flex">
         <div
           class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgb(217_72_15/0.45),transparent_60%)]"

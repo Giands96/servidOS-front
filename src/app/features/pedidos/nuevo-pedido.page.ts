@@ -73,7 +73,7 @@ interface LineView {
   imports: [RouterLink, ButtonComponent, IconComponent, ModalComponent, StatePanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-screen bg-surface p-6">
+    <section class="min-h-dvh bg-surface p-4 sm:p-6">
       <header>
         <nav aria-label="Ruta de navegación" class="flex items-center gap-2 text-sm text-muted">
           <a routerLink="/pedidos" class="hover:text-ink">Pedidos</a>
@@ -283,7 +283,7 @@ interface LineView {
                   inputmode="numeric"
                   autocomplete="off"
                   placeholder="Ej. 4"
-                  class="mt-1.5 w-full rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-subtle focus:border-ink"
+                  class="mt-1.5 w-full rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors placeholder:text-subtle focus:border-ink"
                   [class.border-line]="!errors().mesaId"
                   [class.border-danger]="errors().mesaId"
                   [value]="mesaId()"
@@ -360,7 +360,7 @@ interface LineView {
                           type="text"
                           autocomplete="off"
                           placeholder="Ej. sin ají"
-                          class="mt-2 w-full rounded-control border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:border-ink"
+                          class="mt-2 w-full rounded-control border border-line bg-card px-3 py-2 text-base text-ink sm:text-sm outline-none placeholder:text-subtle focus:border-ink"
                           [id]="'nuevo-pedido-nota-' + line.linea.productoId"
                           [value]="line.linea.observacion"
                           (input)="setNota(line.linea.productoId, valueOf($event))"
@@ -390,7 +390,7 @@ interface LineView {
                 name="observacion"
                 rows="3"
                 placeholder="Ej. alergias, preferencias de la mesa…"
-                class="mt-2 w-full resize-y rounded-control border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none placeholder:text-subtle focus:border-ink"
+                class="mt-2 w-full resize-y rounded-control border border-line bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none placeholder:text-subtle focus:border-ink"
                 [value]="observacion()"
                 (input)="observacion.set(valueOf($event))"
               ></textarea>

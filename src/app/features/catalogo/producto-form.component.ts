@@ -75,7 +75,7 @@ let nextId = 0;
           <select
             [id]="categoriaFieldId"
             name="categoriaId"
-            class="w-full rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
+            class="w-full rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors focus:border-ink disabled:bg-surface disabled:text-muted"
             [class.border-line]="!errors().categoriaId"
             [class.border-danger]="errors().categoriaId"
             [disabled]="submitting()"
@@ -101,7 +101,7 @@ let nextId = 0;
           <textarea
             [id]="descripcionFieldId"
             name="descripcion"
-            class="w-full resize-y rounded-control border bg-card px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-subtle focus:border-ink disabled:bg-surface disabled:text-muted"
+            class="w-full resize-y rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors placeholder:text-subtle focus:border-ink disabled:bg-surface disabled:text-muted"
             [class.border-line]="!errors().descripcion"
             [class.border-danger]="errors().descripcion"
             [rows]="descripcionRows"
