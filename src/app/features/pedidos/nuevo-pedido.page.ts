@@ -243,7 +243,8 @@ interface LineView {
           </div>
 
           <form
-            class="rounded-card border border-line bg-card lg:sticky lg:top-6"
+            #cart
+            class="scroll-mt-4 rounded-card border border-line bg-card lg:sticky lg:top-6"
             aria-label="Pedido en curso"
             novalidate
             (submit)="submit($event)"
@@ -306,7 +307,14 @@ interface LineView {
 
             <section class="border-t border-line p-5" aria-labelledby="nuevo-pedido-items">
               <div class="flex items-baseline justify-between gap-3">
-                <h2 id="nuevo-pedido-items" class="text-sm font-medium">Ítems</h2>
+                <h2
+                  #cartHeading
+                  id="nuevo-pedido-items"
+                  tabindex="-1"
+                  class="text-sm font-medium outline-none"
+                >
+                  Ítems
+                </h2>
                 <p class="text-xs text-muted" aria-live="polite">{{ resumen() }}</p>
               </div>
 
@@ -431,6 +439,22 @@ interface LineView {
             </div>
           </form>
         </div>
+
+        @if (hasItems()) {
+          <!-- Spacer so the fixed bar never covers the cart buttons. -->
+          <div class="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true"></div>
+          <div
+            class="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-line bg-card px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 lg:hidden"
+          >
+            <div class="min-w-0">
+              <p class="text-xs text-muted">{{ resumen() }}</p>
+              <p class="font-mono text-lg font-bold">{{ total() }}</p>
+            </div>
+            <button appButton type="button" variant="primary" (click)="verPedido(cart, cartHeading)">
+              Ver pedido
+            </button>
+          </div>
+        }
       }
 
       @if (confirmingDiscard()) {
@@ -489,6 +513,7 @@ export class NuevoPedidoPage {
   );
   protected readonly total = computed(() => formatMoney(totalReferencial(this.lineas())));
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
+  protected readonly hasItems = computed(() => this.lineas().length > 0);
 
   protected readonly tabs = computed(() => categoryTabs(this.menu()?.categorias ?? []));
 
@@ -539,6 +564,14 @@ export class NuevoPedidoPage {
           this.fail(error);
         },
       });
+  }
+
+  /** Phones and tablets: brings the order into view and moves focus to its heading. */
+  protected verPedido(cart: HTMLElement, heading: HTMLElement): void {
+    if (typeof cart.scrollIntoView === 'function') {
+      cart.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    heading.focus({ preventScroll: true });
   }
 
   protected selectCategoria(categoriaId: number | null): void {
