@@ -21,6 +21,7 @@ import {
   moveSuccessMessage,
   nextEnabledIndex,
   parseVista,
+  shouldCloseOnResize,
   tipoFilterChips,
   todayLima,
 } from './tablero.rules';
@@ -469,6 +470,30 @@ describe('menuPlacement', () => {
   it('keeps the menu inside the horizontal edges of the viewport', () => {
     expect(menuPlacement({ top: 10, bottom: 50, left: 0, right: 40 }, menu, viewport).left).toBe(8);
     expect(menuPlacement({ top: 10, bottom: 50, left: 960, right: 1000 }, menu, viewport).left).toBe(704);
+  });
+});
+
+describe('menuPlacement on a phone', () => {
+  const menu = { width: 288, height: 300 };
+
+  it('keeps the 288px menu 8px inside a 375px viewport, whichever edge the button is on', () => {
+    const viewport = { width: 375, height: 700 };
+    const nearLeft = menuPlacement({ top: 100, bottom: 140, left: 0, right: 40 }, menu, viewport);
+    const nearRight = menuPlacement({ top: 100, bottom: 140, left: 335, right: 375 }, menu, viewport);
+    expect(nearLeft.left).toBe(8);
+    expect(nearRight.left).toBe(79);
+    expect(nearRight.left + menu.width).toBe(367);
+  });
+});
+
+describe('shouldCloseOnResize', () => {
+  it('closes the menu when the viewport width changed (rotation, split screen)', () => {
+    expect(shouldCloseOnResize(375, 812)).toBe(true);
+    expect(shouldCloseOnResize(1024, 900)).toBe(true);
+  });
+
+  it('keeps it open when only the height changed (mobile URL bar showing or hiding)', () => {
+    expect(shouldCloseOnResize(375, 375)).toBe(false);
   });
 });
 
