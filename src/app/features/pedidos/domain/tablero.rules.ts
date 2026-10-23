@@ -368,6 +368,14 @@ export function menuPlacement(
 }
 
 /**
+ * Whether a `resize` should close the "⋯" popover. Mobile browsers fire `resize` when the URL bar shows or hides
+ * (height only), which must not dismiss the menu; a width change (rotation, split screen) invalidates its position.
+ */
+export function shouldCloseOnResize(previousWidth: number, nextWidth: number): boolean {
+  return previousWidth !== nextWidth;
+}
+
+/**
  * Arrow-key navigation of the menu: the next enabled entry in `step` direction, wrapping around. From `-1`
  * (nothing focused) it lands on the first (down) or last (up) enabled entry. `-1` when none is enabled.
  */

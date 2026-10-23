@@ -78,7 +78,7 @@ interface CardView {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:fullscreenchange)': 'syncFullscreen()' },
   template: `
-    <section #board class="min-h-dvh bg-surface p-4 sm:p-6">
+    <section #board class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Cocina</h1>
@@ -110,7 +110,7 @@ interface CardView {
         </div>
       </header>
 
-      <div class="mt-6 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div class="mt-6 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         @if (loading()) {
           <div
             class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"

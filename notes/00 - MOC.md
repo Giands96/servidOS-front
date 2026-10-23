@@ -1,6 +1,6 @@
 ---
 title: ServidOS Front - MOC
-date: 2026-10-17
+date: 2026-10-23
 tags:
   - servidos
   - frontend
@@ -28,7 +28,7 @@ aliases:
 > Contrato en [[API]], permisos en [[Modelo de Negocio]] y trabajo pendiente del front en [[Pendientes y Deuda Técnica]]. Qué parte ya implementa el front se indica en cada módulo ([[Plataforma]], [[Pagos]], [[Cocina]], [[Pedidos]]).
 
 > [!info] Estado del módulo Pedidos
-> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`). El **tablero kanban con drag & drop** (Fase 4b) va en dos cortes: el corte 1 (reglas `tablero.rules.ts` y la dependencia `@angular/cdk`, ADR-20) está **en `main`** (PR #24); el corte 2 (la interfaz del tablero, con alternancia "Tablero | Lista") está implementado en la rama `feat/tablero-02-tablero` y su PR está pendiente. Probado en navegador contra el backend real (2026-10-22); falta la prueba táctil. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
+> Pedidos (lista + nuevo pedido) está **mergeado en `main`** desde el 2026-10-15 (PRs #8 a #12, `c66c3ff`). El **tablero kanban con drag & drop** (Fase 4b) va en dos cortes: el corte 1 (reglas `tablero.rules.ts` y la dependencia `@angular/cdk`, ADR-20) está **en `main`** (PR #24); el corte 2 (la interfaz del tablero, con alternancia "Tablero | Lista") está **en `main`** (PR #27, `6a6a4a7`, 2026-10-23). Probado en navegador contra el backend real (2026-10-22); falta la prueba táctil. Ver [[Fase 4 - Pedidos]] y [[Estado Actual]].
 
 > [!info] Estado del módulo Plataforma
 > Plataforma 01 a 06 (lista, alta con cuenta del dueño y acciones de restaurantes) está **en `main`** (PRs #13 y #14, `f7112e6`). Sin prueba en navegador. Ver [[Fase 5 - Plataforma]], [[Plataforma]] y [[Estado Actual]].
@@ -38,6 +38,9 @@ aliases:
 
 > [!info] Estado del módulo Pagos (Caja)
 > El cobro de pedidos (`/caja` y el atajo "Cobrar" de la lista) está **en `main`** (PRs #19 a #22, `b7fb568`, 2026-10-17); sin prueba en navegador. `pagos.registrar` incluye ahora a RECEPCION y CAJERO. El **reembolso está bloqueado** hasta que el backend exponga el `pagoId`. Ver [[Fase 7 - Caja]], [[Pagos]] y [[Estado Actual]].
+
+> [!info] Estado de la UI responsive
+> La UI para teléfonos y tabletas (barra superior con píldoras bajo `lg`, sidebar desde `lg`) tiene su slice 1 publicada (PR pendiente) y la slice 2 lista en `feat/responsive-02-pages`. Ver [[Styles y Diseño]], ADR-21 en [[Decisiones (ADR)]] y [[Estado Actual]].
 
 ## Navegación
 
@@ -59,7 +62,7 @@ aliases:
 - [[Seguridad]] — token en memoria, refresh, guards, riesgos
 - [[API]] — contrato `/api/v1`, errores, endpoints, cambios anunciados
 - [[Flujo del Sistema]] — diagramas de arranque, login, refresh, guards, pedido, cocina en vivo
-- [[Styles y Diseño]] — tokens Tailwind 4, tipografía, primitivas, índice de pantallas
+- [[Styles y Diseño]] — tokens Tailwind 4, tipografía, primitivas, responsive, índice de pantallas
 
 ### 08 - Fases
 - [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] (incluye la Fase 4b, tablero) · [[Fase 5 - Plataforma]] · [[Fase 6 - Catálogo]] · [[Fase 7 - Caja]] · [[Fases 4-9 - Planificadas]]

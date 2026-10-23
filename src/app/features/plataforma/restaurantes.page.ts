@@ -135,7 +135,7 @@ interface ActionModalView {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-dvh bg-surface p-4 sm:p-6">
+    <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Restaurantes</h1>
@@ -161,7 +161,7 @@ interface ActionModalView {
         </div>
       </header>
 
-      <div class="mt-6 lg:flex lg:items-start lg:gap-6">
+      <div class="mt-6 xl:flex xl:items-start xl:gap-6">
         <div class="min-w-0 flex-1">
           @if (failed()) {
             <app-state-panel
@@ -303,7 +303,7 @@ interface ActionModalView {
 
         @if (panel(); as view) {
           <aside
-            class="fixed inset-0 z-40 overflow-y-auto bg-card lg:static lg:inset-auto lg:z-auto lg:w-[470px] lg:shrink-0 lg:overflow-visible lg:rounded-card lg:border lg:border-line"
+            class="fixed inset-0 z-40 overflow-y-auto bg-card lg:left-auto lg:w-[470px] lg:border-l lg:border-line lg:shadow-modal xl:static xl:inset-auto xl:z-auto xl:shrink-0 xl:overflow-visible xl:rounded-card xl:border xl:shadow-none"
             aria-label="Detalle del restaurante"
           >
             <header class="flex items-start justify-between gap-4 border-b border-line p-6">

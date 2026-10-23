@@ -80,7 +80,7 @@ interface RowView {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="min-h-dvh bg-surface p-4 sm:p-6">
+    <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Catálogo</h1>
