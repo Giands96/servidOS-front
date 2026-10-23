@@ -61,7 +61,10 @@ import { TopBarComponent } from './top-bar.component';
         </div>
       </aside>
 
-      <main class="min-w-0 flex-1"><router-outlet /></main>
+      <!-- Column flex so the routed page (host element) and its root section can fill the height left by the top bar. -->
+      <main class="flex min-w-0 flex-1 flex-col [&>:not(router-outlet)]:flex [&>:not(router-outlet)]:flex-1 [&>:not(router-outlet)]:flex-col">
+        <router-outlet />
+      </main>
     </div>
   `,
 })

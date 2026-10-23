@@ -78,7 +78,7 @@ interface CardView {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:fullscreenchange)': 'syncFullscreen()' },
   template: `
-    <section #board class="min-h-dvh bg-surface p-4 sm:p-6">
+    <section #board class="flex-1 bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">Cocina</h1>
