@@ -6,6 +6,7 @@ import {
 } from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
+import { CuentaMesa, Mesa, PedidoCuenta } from '../app/features/mesas/mesas.types';
 import { Pago } from '../app/features/pagos/pagos.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
 import {
@@ -120,6 +121,47 @@ export function aPage<T>(content: T[], overrides: Partial<Page<T>> = {}): Page<T
     number: 0,
     first: true,
     last: true,
+    ...overrides,
+  };
+}
+
+/** `MesaResponse` of GET /mesas (a free table by default). */
+export function aMesa(overrides: Partial<Mesa> = {}): Mesa {
+  return {
+    mesaId: 1,
+    numero: 1,
+    capacidad: 4,
+    comensales: null,
+    estado: 'LIBRE',
+    activa: true,
+    ...overrides,
+  };
+}
+
+/** `CuentaMesaResponse` of GET /mesas/{id}/cuenta (an occupied table with an empty bill by default). */
+export function aCuentaMesa(overrides: Partial<CuentaMesa> = {}): CuentaMesa {
+  return {
+    mesaId: 1,
+    numero: 1,
+    estado: 'OCUPADA',
+    comensales: 2,
+    capacidad: 4,
+    pedidos: [],
+    total: 0,
+    ...overrides,
+  };
+}
+
+/** Order of a table bill: a MESA round with one item by default. */
+export function aPedidoCuenta(overrides: Partial<PedidoCuenta> = {}): PedidoCuenta {
+  return {
+    pedidoId: 476,
+    tipoPedido: 'MESA',
+    estado: 'PENDIENTE',
+    createdAt: '2026-10-08T12:30:00',
+    items: [{ nombre: 'Lomo saltado', cantidad: 2, subtotal: 50 }],
+    observacion: null,
+    total: 50,
     ...overrides,
   };
 }
