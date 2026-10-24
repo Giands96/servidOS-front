@@ -56,6 +56,16 @@ export function pasoTrasMesa(mesa: Pick<Mesa, 'estado'>): PasoNuevoPedido {
   return mesa.estado === 'LIBRE' ? 'COMENSALES' : 'PRODUCTOS';
 }
 
+/**
+ * Steps the page walks through once the table is known: an OCUPADA table never asks the guests, so
+ * "Atrás" from PRODUCTOS skips COMENSALES for it. No table yet (or LIBRE) keeps every step.
+ */
+export function pasosDisponibles(mesa: Pick<Mesa, 'estado'> | null): PasoNuevoPedido[] {
+  return mesa?.estado === 'OCUPADA'
+    ? ['TIPO', 'MESA', 'PRODUCTOS']
+    : ['TIPO', 'MESA', 'COMENSALES', 'PRODUCTOS'];
+}
+
 export type EstadoProgreso = 'done' | 'current' | 'todo';
 
 export interface ItemProgreso {
@@ -95,6 +105,19 @@ export function puedeSumarComensal(comensales: number, capacidad: number): boole
 
 export function puedeRestarComensal(comensales: number): boolean {
   return comensales > 1;
+}
+
+/**
+ * Line shown in the products summary: "Mesa 5 · 2 comensales" (singular for 1) for a LIBRE table with the
+ * guests just chosen; "Mesa 5 · 3/4 comensales" for an OCUPADA one; just "Mesa 5" when its guests are unknown.
+ */
+export function resumenMesa(mesa: MesaCard, comensales: number): string {
+  if (mesa.estado === 'LIBRE') {
+    return `Mesa ${mesa.numero} · ${comensales} ${comensales === 1 ? 'comensal' : 'comensales'}`;
+  }
+  return mesa.comensales === null || mesa.ocupacion === null
+    ? `Mesa ${mesa.numero}`
+    : `Mesa ${mesa.numero} · ${mesa.ocupacion} comensales`;
 }
 
 // ---- Time alert ----

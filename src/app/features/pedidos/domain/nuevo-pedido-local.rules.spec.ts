@@ -18,9 +18,11 @@ import {
   pasoAnteriorDisponible,
   pasoTrasMesa,
   pasoTrasTipo,
+  pasosDisponibles,
   pasosDe,
   paginasRestantes,
   progresoLocal,
+  resumenMesa,
   puedeRestarComensal,
   puedeSumarComensal,
   tipoPasoLabel,
@@ -28,6 +30,7 @@ import {
   OPCIONES_TIPO,
   seccionesCuenta,
 } from './nuevo-pedido-local.rules';
+import type { MesaCard } from './nuevo-pedido-local.rules';
 
 /** Freezes recursively: any in-place mutation throws (ES modules run in strict mode). */
 function deepFreeze<T>(value: T): T {
@@ -122,6 +125,55 @@ describe('pasoAnteriorDisponible', () => {
 
   it('returns null when no earlier step is available', () => {
     expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', ['PRODUCTOS'])).toBeNull();
+  });
+});
+
+describe('pasosDisponibles', () => {
+  it('a free table (or none yet) keeps the guests step', () => {
+    expect(pasosDisponibles({ estado: 'LIBRE' })).toEqual(['TIPO', 'MESA', 'COMENSALES', 'PRODUCTOS']);
+    expect(pasosDisponibles(null)).toEqual(['TIPO', 'MESA', 'COMENSALES', 'PRODUCTOS']);
+  });
+
+  it('an occupied table has no guests step, so Atrás from PRODUCTOS lands on MESA', () => {
+    const pasos = pasosDisponibles({ estado: 'OCUPADA' });
+    expect(pasos).toEqual(['TIPO', 'MESA', 'PRODUCTOS']);
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', pasos)).toBe('MESA');
+  });
+
+  it('a free table goes back from PRODUCTOS to COMENSALES and from COMENSALES to MESA', () => {
+    const pasos = pasosDisponibles({ estado: 'LIBRE' });
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', pasos)).toBe('COMENSALES');
+    expect(pasoAnteriorDisponible('COMENSALES', 'MESA', pasos)).toBe('MESA');
+  });
+});
+
+describe('resumenMesa', () => {
+  const card = (overrides: Partial<MesaCard> = {}): MesaCard => ({
+    mesaId: 805,
+    numero: 5,
+    estado: 'LIBRE',
+    capacidad: 4,
+    comensales: null,
+    ocupacion: null,
+    consumido: null,
+    minutosAbierta: null,
+    alerta: null,
+    ...overrides,
+  });
+
+  it('a free table shows the chosen guests, singular for one', () => {
+    expect(resumenMesa(card(), 2)).toBe('Mesa 5 · 2 comensales');
+    expect(resumenMesa(card(), 1)).toBe('Mesa 5 · 1 comensal');
+  });
+
+  it('an occupied table shows its current occupation and ignores the guests of the step', () => {
+    const ocupada = card({ estado: 'OCUPADA', comensales: 3, ocupacion: '3/4' });
+    expect(resumenMesa(ocupada, 1)).toBe('Mesa 5 · 3/4 comensales');
+  });
+
+  it('an occupied table without known guests shows only the number', () => {
+    const ocupada = card({ estado: 'OCUPADA', comensales: null, ocupacion: '–/4' });
+    expect(resumenMesa(ocupada, 1)).toBe('Mesa 5');
   });
 });
 

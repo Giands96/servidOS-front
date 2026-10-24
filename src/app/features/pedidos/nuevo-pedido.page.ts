@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin, map, of, switchMap } from 'rxjs';
+import { Subscription, forkJoin, map, of, switchMap } from 'rxjs';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
@@ -47,22 +47,23 @@ import {
   MAX_PAGE_SIZE,
   MesaCard,
   PasoNuevoPedido,
+  clampComensales,
   mesaCards,
   paginasRestantes,
   pasoAnteriorDisponible,
   pasoTrasMesa,
   pasoTrasTipo,
+  pasosDisponibles,
+  resumenMesa,
   tipoPasoLabel,
   tipoPasoResumen,
 } from './domain/nuevo-pedido-local.rules';
 import { formatMoney, tipoIcon } from './domain/pedidos.rules';
+import { ComensalesStepComponent } from './nuevo-pedido/comensales-step.component';
 import { EstadoMesaPicker, MesaPickerComponent } from './nuevo-pedido/mesa-picker.component';
 import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component';
 import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
 import { TipoPedido } from './pedidos.types';
-
-/** Steps the page renders today; L6 adds COMENSALES. */
-const PASOS_DISPONIBLES: readonly PasoNuevoPedido[] = ['TIPO', 'MESA', 'PRODUCTOS'];
 
 interface Menu {
   categorias: Categoria[];
@@ -93,6 +94,7 @@ interface LineView {
   imports: [
     RouterLink,
     ButtonComponent,
+    ComensalesStepComponent,
     IconComponent,
     MesaPickerComponent,
     ModalComponent,
@@ -143,6 +145,15 @@ interface LineView {
           (reintentar)="cargarMesas()"
           (cambiarTipo)="cambiarTipo()"
         />
+      } @else if (paso() === 'COMENSALES') {
+        @if (mesaElegida(); as mesa) {
+          <app-comensales-step
+            [mesa]="mesa"
+            [comensales]="comensales()"
+            (cambiar)="cambiarComensales($event)"
+            (confirmar)="irA('PRODUCTOS')"
+          />
+        }
       } @else if (failed()) {
         <app-state-panel
           class="!min-h-[24rem]"
@@ -329,41 +340,16 @@ interface LineView {
                 <button
                   type="button"
                   class="text-sm font-semibold text-brand hover:text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                  (click)="cambiarTipo()"
+                  (click)="cambiarResumen()"
                 >
                   Cambiar
                 </button>
               </div>
 
-              @if (tipoPedido() === 'MESA') {
-                <label class="mt-4 block text-sm font-medium" for="nuevo-pedido-mesa">
-                  Mesa <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  id="nuevo-pedido-mesa"
-                  name="mesaId"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  placeholder="Ej. 4"
-                  class="mt-1.5 w-full rounded-control border bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none transition-colors placeholder:text-subtle focus:border-ink"
-                  [class.border-line]="!errors().mesaId"
-                  [class.border-danger]="errors().mesaId"
-                  [value]="mesaId()"
-                  [attr.aria-invalid]="errors().mesaId ? 'true' : null"
-                  [attr.aria-describedby]="errors().mesaId ? 'nuevo-pedido-mesa-error' : null"
-                  required
-                  (input)="mesaId.set(valueOf($event))"
-                />
-                @if (errors().mesaId; as message) {
-                  <p
-                    id="nuevo-pedido-mesa-error"
-                    class="mt-1.5 flex items-center gap-1.5 text-xs text-danger"
-                    role="alert"
-                  >
-                    <app-icon name="alert" [size]="14" />{{ message }}
-                  </p>
-                }
+              @if (errors().mesaId; as message) {
+                <p class="mt-3 flex items-center gap-1.5 text-xs text-danger" role="alert">
+                  <app-icon name="alert" [size]="14" />{{ message }}
+                </p>
               }
             </div>
 
@@ -554,9 +540,10 @@ export class NuevoPedidoPage {
   protected readonly tipoPedido = signal<TipoPedido>('MESA');
   /** Current step of the flow; the page keeps it (no router state yet). */
   protected readonly paso = signal<PasoNuevoPedido>('TIPO');
-  protected readonly mesaId = signal('');
-  /** Table picked in the MESA step (L6 will read the guests limit from it). */
+  /** Table picked in the MESA step; the draft `mesaId` and the guests limit come from it. */
   protected readonly mesaElegida = signal<MesaCard | null>(null);
+  /** Guests of a LIBRE table, chosen in the COMENSALES step (1 until the user changes it). */
+  protected readonly comensales = signal(1);
   protected readonly observacion = signal('');
   protected readonly lineas = signal<readonly LineaPedido[]>([]);
   /** Lines whose observation input was opened by the user (a line with text always shows it). */
@@ -568,13 +555,16 @@ export class NuevoPedidoPage {
   protected readonly estadoMesas = signal<EstadoMesaPicker>('cargando');
   protected readonly errorMesas = signal('');
 
+  /** The table load in flight, cancelled when a newer one starts or the user leaves the MESA step. */
+  private mesasSub: Subscription | null = null;
+
   private readonly submitAttempted = signal(false);
   protected readonly submitting = signal(false);
   protected readonly confirmingDiscard = signal(false);
 
   private readonly draft = computed<BorradorPedido>(() => ({
     tipoPedido: this.tipoPedido(),
-    mesaId: this.mesaId(),
+    mesaId: this.mesaElegida()?.mesaId ?? null,
     observacion: this.observacion(),
     lineas: this.lineas(),
   }));
@@ -584,7 +574,15 @@ export class NuevoPedidoPage {
     () => this.submitting() || isDraftEmpty(this.draft()),
   );
   protected readonly tipoLabel = computed(() => tipoPasoLabel(this.tipoPedido()));
-  protected readonly tipoResumen = computed(() => tipoPasoResumen(this.tipoPedido()));
+  /** Second line of the cart summary: the type description, or "Mesa 5 · 2 comensales" for Local. */
+  protected readonly tipoResumen = computed(() => {
+    const mesa = this.mesaElegida();
+    return this.tipoPedido() === 'MESA'
+      ? mesa === null
+        ? null
+        : resumenMesa(mesa, this.comensales())
+      : tipoPasoResumen(this.tipoPedido());
+  });
   protected readonly tipoIconName = computed(() => tipoIcon(this.tipoPedido()));
   protected readonly total = computed(() => formatMoney(totalReferencial(this.lineas())));
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
@@ -629,9 +627,10 @@ export class NuevoPedidoPage {
 
   /** Tables and every page of the unpaid orders in parallel; any failure shows the picker's error state. */
   protected cargarMesas(): void {
+    this.cancelarCargaMesas();
     this.estadoMesas.set('cargando');
     this.errorMesas.set('');
-    forkJoin({
+    this.mesasSub = forkJoin({
       mesas: this.mesas.listar(),
       pendientes: this.pedidos.listar({ porCobrar: true, page: 0, size: MAX_PAGE_SIZE }).pipe(
         switchMap((first) => {
@@ -661,11 +660,31 @@ export class NuevoPedidoPage {
       });
   }
 
+  /** A late response must not overwrite state once the step changed or a newer load started. */
+  private cancelarCargaMesas(): void {
+    this.mesasSub?.unsubscribe();
+    this.mesasSub = null;
+  }
+
+  /** The only way to change step: leaving MESA cancels a table load still in flight. */
+  protected irA(paso: PasoNuevoPedido): void {
+    if (paso !== 'MESA') {
+      this.cancelarCargaMesas();
+    }
+    this.paso.set(paso);
+  }
+
   protected elegirMesa(card: MesaCard): void {
     this.mesaElegida.set(card);
-    this.mesaId.set(String(card.mesaId));
-    // L6: a LIBRE table will go to COMENSALES (`pasoTrasMesa`); until that step exists both kinds reach the products.
-    this.paso.set(card.estado === 'LIBRE' ? 'PRODUCTOS' : pasoTrasMesa(card));
+    this.comensales.set(1);
+    this.irA(pasoTrasMesa(card));
+  }
+
+  protected cambiarComensales(value: number): void {
+    const mesa = this.mesaElegida();
+    if (mesa !== null) {
+      this.comensales.set(clampComensales(value, mesa.capacidad));
+    }
   }
 
   /** Categories and the whole product list in parallel; any failure shows the error panel, never a partial menu. */
@@ -708,26 +727,40 @@ export class NuevoPedidoPage {
   protected elegirTipo(tipo: TipoPedido): void {
     this.tipoPedido.set(tipo);
     this.mesaElegida.set(null);
-    this.mesaId.set('');
+    this.comensales.set(1);
     const paso = pasoTrasTipo(tipo);
     if (paso === 'MESA') {
       this.cargarMesas();
     }
-    this.paso.set(paso);
+    this.irA(paso);
   }
 
-  /** "Atrás" keeps the cart lines and only lands on steps this page renders (no COMENSALES until L6). */
+  /** "Atrás" keeps the cart lines and the guests; an OCUPADA table has no COMENSALES step to return to. */
   protected atras(): void {
     const paso =
-      pasoAnteriorDisponible(this.paso(), this.tipoPedido(), PASOS_DISPONIBLES) ?? 'TIPO';
+      pasoAnteriorDisponible(
+        this.paso(),
+        this.tipoPedido(),
+        pasosDisponibles(this.mesaElegida()),
+      ) ?? 'TIPO';
     if (paso === 'MESA') {
       this.cargarMesas();
     }
-    this.paso.set(paso);
+    this.irA(paso);
   }
 
   protected cambiarTipo(): void {
-    this.paso.set('TIPO');
+    this.irA('TIPO');
+  }
+
+  /** "Cambiar" of the cart summary: Local returns to the table picker, the others to the type step. Lines stay. */
+  protected cambiarResumen(): void {
+    if (this.tipoPedido() === 'MESA') {
+      this.cargarMesas();
+      this.irA('MESA');
+    } else {
+      this.cambiarTipo();
+    }
   }
 
   protected agregar(producto: Producto): void {
@@ -796,14 +829,14 @@ export class NuevoPedidoPage {
   protected confirmDiscard(): void {
     this.confirmingDiscard.set(false);
     this.resetDraft();
-    this.paso.set('TIPO');
+    this.irA('TIPO');
   }
 
   private resetDraft(): void {
     const blank = emptyDraft();
     this.tipoPedido.set(blank.tipoPedido);
-    this.mesaId.set(blank.mesaId);
     this.mesaElegida.set(null);
+    this.comensales.set(1);
     this.observacion.set(blank.observacion);
     this.lineas.set(blank.lineas);
     this.openNotes.set(new Set());
