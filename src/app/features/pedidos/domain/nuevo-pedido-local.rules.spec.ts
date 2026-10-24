@@ -19,6 +19,9 @@ import {
   progresoLocal,
   puedeRestarComensal,
   puedeSumarComensal,
+  tipoPasoLabel,
+  tipoPasoResumen,
+  OPCIONES_TIPO,
   seccionesCuenta,
 } from './nuevo-pedido-local.rules';
 
@@ -355,5 +358,37 @@ describe('seccionesCuenta', () => {
       }),
     );
     expect(seccionesCuenta(cuenta).rondas.map((r) => r.pedido.pedidoId)).toEqual([8, 9]);
+  });
+});
+
+describe('tipo de pedido options', () => {
+  it('offers Local (MESA), Delivery and Recojo in that order', () => {
+    expect(OPCIONES_TIPO.map((o) => o.tipoPedido)).toEqual(['MESA', 'DELIVERY', 'RECOJO']);
+    expect(OPCIONES_TIPO.map((o) => o.label)).toEqual(['Local', 'Delivery', 'Recojo']);
+  });
+
+  it('describes each option and where it leads', () => {
+    expect(OPCIONES_TIPO.map((o) => o.descripcion)).toEqual([
+      'Pedido para una mesa del salón',
+      'Envío a domicilio',
+      'El cliente recoge en el local',
+    ]);
+    expect(OPCIONES_TIPO.map((o) => o.pie)).toEqual([
+      'Mesa · Comensales · Productos',
+      'Directo a productos',
+      'Directo a productos',
+    ]);
+  });
+
+  it('labels MESA as "Local" for the step and summaries', () => {
+    expect(tipoPasoLabel('MESA')).toBe('Local');
+    expect(tipoPasoLabel('DELIVERY')).toBe('Delivery');
+    expect(tipoPasoLabel('RECOJO')).toBe('Recojo');
+  });
+
+  it('summarizes Delivery and Recojo; Local has no fixed line', () => {
+    expect(tipoPasoResumen('DELIVERY')).toBe('Envío a domicilio');
+    expect(tipoPasoResumen('RECOJO')).toBe('El cliente recoge en el local');
+    expect(tipoPasoResumen('MESA')).toBeNull();
   });
 });

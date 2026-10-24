@@ -218,3 +218,47 @@ export function seccionesCuenta(cuenta: CuentaMesa): SeccionesCuenta {
     paraLlevar: sorted.filter((p) => p.tipoPedido !== 'MESA'),
   };
 }
+
+// ---- Step 0: tipo de pedido ----
+
+export interface OpcionTipo {
+  tipoPedido: TipoPedido;
+  /** "Local" for MESA: the API value stays `MESA`. */
+  label: string;
+  descripcion: string;
+  /** Footer of the card: where the flow goes next. */
+  pie: string;
+}
+
+export const OPCIONES_TIPO: readonly OpcionTipo[] = [
+  {
+    tipoPedido: 'MESA',
+    label: 'Local',
+    descripcion: 'Pedido para una mesa del salón',
+    pie: 'Mesa · Comensales · Productos',
+  },
+  {
+    tipoPedido: 'DELIVERY',
+    label: 'Delivery',
+    descripcion: 'Envío a domicilio',
+    pie: 'Directo a productos',
+  },
+  {
+    tipoPedido: 'RECOJO',
+    label: 'Recojo',
+    descripcion: 'El cliente recoge en el local',
+    pie: 'Directo a productos',
+  },
+];
+
+/** Label of a tipo in the new-order flow (MESA reads "Local"). */
+export function tipoPasoLabel(tipo: TipoPedido): string {
+  return OPCIONES_TIPO.find((opcion) => opcion.tipoPedido === tipo)?.label ?? tipo;
+}
+
+/** One-line description for the cart summary; null for MESA, whose line is the table itself. */
+export function tipoPasoResumen(tipo: TipoPedido): string | null {
+  return tipo === 'MESA'
+    ? null
+    : (OPCIONES_TIPO.find((opcion) => opcion.tipoPedido === tipo)?.descripcion ?? null);
+}

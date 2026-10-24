@@ -22,7 +22,6 @@ import { PedidosApi } from './data/pedidos.api';
 import {
   BorradorPedido,
   LineaPedido,
-  TIPOS_PEDIDO,
   addProducto,
   canAdd,
   cantidadDe,
@@ -41,7 +40,15 @@ import {
   totalReferencial,
   visibleErrors,
 } from './domain/nuevo-pedido.rules';
+import {
+  PasoNuevoPedido,
+  pasoAnterior,
+  tipoPasoLabel,
+  tipoPasoResumen,
+} from './domain/nuevo-pedido-local.rules';
 import { formatMoney, tipoIcon } from './domain/pedidos.rules';
+import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component';
+import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
 import { TipoPedido } from './pedidos.types';
 
 interface Menu {
@@ -70,20 +77,48 @@ interface LineView {
  */
 @Component({
   selector: 'app-nuevo-pedido',
-  imports: [RouterLink, ButtonComponent, IconComponent, ModalComponent, StatePanelComponent],
+  imports: [
+    RouterLink,
+    ButtonComponent,
+    IconComponent,
+    ModalComponent,
+    ProgresoLocalComponent,
+    StatePanelComponent,
+    TipoPedidoStepComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
-      <header>
-        <nav aria-label="Ruta de navegación" class="flex items-center gap-2 text-sm text-muted">
-          <a routerLink="/pedidos" class="hover:text-ink">Pedidos</a>
-          <span aria-hidden="true">›</span>
-          <span class="text-ink" aria-current="page">Nuevo pedido</span>
-        </nav>
-        <h1 class="mt-2 text-3xl font-bold tracking-tight">Nuevo pedido</h1>
+      <header class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <nav aria-label="Ruta de navegación" class="flex items-center gap-2 text-sm text-muted">
+            <a routerLink="/pedidos" class="hover:text-ink">Pedidos</a>
+            <span aria-hidden="true">›</span>
+            @if (paso() === 'TIPO') {
+              <span class="text-ink" aria-current="page">Nuevo pedido</span>
+            } @else {
+              <span>Nuevo pedido</span>
+              <span aria-hidden="true">›</span>
+              <span class="text-ink" aria-current="page">{{ tipoLabel() }}</span>
+            }
+          </nav>
+          <h1 class="mt-2 text-3xl font-bold tracking-tight">Nuevo pedido</h1>
+        </div>
+        @if (paso() !== 'TIPO') {
+          <div class="flex flex-wrap items-center gap-4">
+            <button appButton type="button" variant="secondary" (click)="atras()">
+              <app-icon name="arrowLeft" [size]="16" />Atrás
+            </button>
+            @if (tipoPedido() === 'MESA') {
+              <app-progreso-local [paso]="paso()" />
+            }
+          </div>
+        }
       </header>
 
-      @if (failed()) {
+      @if (paso() === 'TIPO') {
+        <app-tipo-pedido-step (elegir)="elegirTipo($event)" />
+      } @else if (failed()) {
         <app-state-panel
           class="!min-h-[24rem]"
           icon="alert"
@@ -249,28 +284,30 @@ interface LineView {
             novalidate
             (submit)="submit($event)"
           >
-            <fieldset class="min-w-0 p-5">
-              <legend class="text-sm font-medium">Tipo de pedido</legend>
-              <div class="mt-3 grid grid-cols-3 gap-1 rounded-card bg-surface p-1">
-                @for (tipo of tipos; track tipo.tipoPedido) {
-                  <label class="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipoPedido"
-                      class="peer sr-only"
-                      [value]="tipo.tipoPedido"
-                      [checked]="tipo.tipoPedido === tipoPedido()"
-                      (change)="setTipo(tipo.tipoPedido)"
-                    />
-                    <span
-                      class="flex items-center justify-center gap-2 rounded-control px-3 py-2.5 text-sm font-medium text-muted transition-colors peer-checked:bg-card peer-checked:font-semibold peer-checked:text-ink peer-checked:shadow-sm peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand"
-                    >
-                      @if (tipo.icon) {
-                        <app-icon [name]="tipo.icon" [size]="18" />
-                      }{{ tipo.label }}
-                    </span>
-                  </label>
-                }
+            <div class="min-w-0 p-5">
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-10 shrink-0 items-center justify-center rounded-card bg-brand-soft text-brand"
+                >
+                  @if (tipoIconName(); as icon) {
+                    <app-icon [name]="icon" [size]="20" />
+                  }
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                    {{ tipoLabel() }}
+                  </p>
+                  @if (tipoResumen(); as resumenTipo) {
+                    <p class="text-sm">{{ resumenTipo }}</p>
+                  }
+                </div>
+                <button
+                  type="button"
+                  class="text-sm font-semibold text-brand hover:text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  (click)="cambiarTipo()"
+                >
+                  Cambiar
+                </button>
               </div>
 
               @if (tipoPedido() === 'MESA') {
@@ -303,7 +340,7 @@ interface LineView {
                   </p>
                 }
               }
-            </fieldset>
+            </div>
 
             <section class="border-t border-line p-5" aria-labelledby="nuevo-pedido-items">
               <div class="flex items-baseline justify-between gap-3">
@@ -481,7 +518,6 @@ export class NuevoPedidoPage {
 
   protected readonly skeletonTabs = [1, 2, 3, 4] as const;
   protected readonly skeletonCards = [1, 2, 3, 4, 5, 6] as const;
-  protected readonly tipos = TIPOS_PEDIDO.map((tipo) => ({ ...tipo, icon: tipoIcon(tipo.tipoPedido) }));
 
   protected readonly menu = signal<Menu | null>(null);
   protected readonly failed = signal(false);
@@ -490,6 +526,8 @@ export class NuevoPedidoPage {
 
   // The draft, one signal per field so typing in a text field does not recompute the product grid.
   protected readonly tipoPedido = signal<TipoPedido>('MESA');
+  /** Current step of the flow; the page keeps it (no router state yet). */
+  protected readonly paso = signal<PasoNuevoPedido>('TIPO');
   protected readonly mesaId = signal('');
   protected readonly observacion = signal('');
   protected readonly lineas = signal<readonly LineaPedido[]>([]);
@@ -511,6 +549,9 @@ export class NuevoPedidoPage {
   protected readonly discardDisabled = computed(
     () => this.submitting() || isDraftEmpty(this.draft()),
   );
+  protected readonly tipoLabel = computed(() => tipoPasoLabel(this.tipoPedido()));
+  protected readonly tipoResumen = computed(() => tipoPasoResumen(this.tipoPedido()));
+  protected readonly tipoIconName = computed(() => tipoIcon(this.tipoPedido()));
   protected readonly total = computed(() => formatMoney(totalReferencial(this.lineas())));
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
   protected readonly hasItems = computed(() => this.lineas().length > 0);
@@ -582,8 +623,19 @@ export class NuevoPedidoPage {
     this.failedImages.update((set) => new Set(set).add(productoId));
   }
 
-  protected setTipo(tipo: TipoPedido): void {
+  protected elegirTipo(tipo: TipoPedido): void {
     this.tipoPedido.set(tipo);
+    // L5: MESA will go to the 'MESA' step (table picker) instead of straight to the products.
+    this.paso.set('PRODUCTOS');
+  }
+
+  /** "Atrás" keeps the cart lines; until the MESA/COMENSALES steps exist every tipo returns to TIPO. */
+  protected atras(): void {
+    this.paso.set(pasoAnterior(this.paso(), this.tipoPedido()) ?? 'TIPO');
+  }
+
+  protected cambiarTipo(): void {
+    this.paso.set('TIPO');
   }
 
   protected agregar(producto: Producto): void {
@@ -652,6 +704,7 @@ export class NuevoPedidoPage {
   protected confirmDiscard(): void {
     this.confirmingDiscard.set(false);
     this.resetDraft();
+    this.paso.set('TIPO');
   }
 
   private resetDraft(): void {
