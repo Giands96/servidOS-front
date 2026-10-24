@@ -3,11 +3,15 @@ import { VentaReporte } from '../reportes.types';
 import {
   barRatio,
   canGoNext,
+  exportMenuLine,
   fallbackFilename,
   pageIndicator,
+  pagerItems,
   pageSummary,
+  parseReportesView,
   periodCaption,
   rangeLabel,
+  reportesQueryParams,
   shiftFecha,
   tipoVentaLabel,
   todayInLima,
@@ -223,5 +227,119 @@ describe('pageIndicator', () => {
 
   it('never shows page 0 of 0', () => {
     expect(pageIndicator(page({ number: 0, totalPages: 0 }))).toBe('Pág. 1 de 1');
+  });
+});
+
+const TODAY = '2026-10-23';
+const fromParams = (params: Record<string, string>) => parseReportesView((key) => params[key] ?? null, TODAY);
+
+describe('parseReportesView', () => {
+  it('defaults to the current week of the Ventas tab, newest first, first page', () => {
+    expect(fromParams({})).toEqual({
+      periodo: 'SEMANAL',
+      fecha: TODAY,
+      tab: 'ventas',
+      orden: 'MAS_RECIENTES',
+      page: 0,
+    });
+  });
+
+  it('reads valid values; the page travels 1-based and is held 0-based', () => {
+    expect(
+      fromParams({ periodo: 'MENSUAL', fecha: '2026-09-30', tab: 'productos', orden: 'MAYOR_VENTA', page: '3' }),
+    ).toEqual({ periodo: 'MENSUAL', fecha: '2026-09-30', tab: 'productos', orden: 'MAYOR_VENTA', page: 2 });
+  });
+
+  it('falls back to the default of each value that is unknown', () => {
+    const view = fromParams({ periodo: 'ANUAL', tab: 'x', orden: 'daily', page: 'abc' });
+    expect(view).toMatchObject({ periodo: 'SEMANAL', tab: 'ventas', orden: 'MAS_RECIENTES', page: 0 });
+  });
+
+  it('rejects dates that are malformed, impossible or in the future', () => {
+    for (const fecha of ['2026-13-01', '2026-02-30', '23/10/2026', '2026-10-24', '2027-01-01', '']) {
+      expect(fromParams({ fecha }).fecha).toBe(TODAY);
+    }
+  });
+
+  it('accepts today and past dates, including a leap day', () => {
+    expect(fromParams({ fecha: TODAY }).fecha).toBe(TODAY);
+    expect(fromParams({ fecha: '2024-02-29' }).fecha).toBe('2024-02-29');
+  });
+
+  it('rejects pages that are not positive integers', () => {
+    for (const page of ['0', '-2', '1.5', '1e3', ' 2']) {
+      expect(fromParams({ page }).page).toBe(0);
+    }
+  });
+});
+
+describe('reportesQueryParams', () => {
+  it('leaves every default out of the URL', () => {
+    const view = fromParams({});
+    expect(reportesQueryParams(view, TODAY)).toEqual({
+      periodo: null,
+      fecha: null,
+      tab: null,
+      orden: null,
+      page: null,
+    });
+  });
+
+  it('writes what differs from the defaults, the page 1-based', () => {
+    const view = fromParams({ periodo: 'DIARIO', fecha: '2026-10-20', tab: 'productos', orden: 'MAS_ANTIGUOS', page: '2' });
+    expect(reportesQueryParams(view, TODAY)).toEqual({
+      periodo: 'DIARIO',
+      fecha: '2026-10-20',
+      tab: 'productos',
+      orden: 'MAS_ANTIGUOS',
+      page: '2',
+    });
+  });
+
+  it('round-trips through the parser', () => {
+    const view = fromParams({ periodo: 'MENSUAL', fecha: '2026-08-15', orden: 'MAYOR_VENTA', page: '4' });
+    const params = reportesQueryParams(view, TODAY);
+    expect(parseReportesView((key) => params[key] ?? null, TODAY)).toEqual(view);
+  });
+});
+
+describe('pagerItems', () => {
+  it('lists every page when there are few', () => {
+    expect(pagerItems(0, 3)).toEqual([0, 1, 2]);
+    expect(pagerItems(0, 7)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it('shows a single page for an empty or single-page result', () => {
+    expect(pagerItems(0, 0)).toEqual([0]);
+    expect(pagerItems(0, 1)).toEqual([0]);
+  });
+
+  it('collapses the far end with an ellipsis near the start', () => {
+    expect(pagerItems(0, 20)).toEqual([0, 1, 'gap', 19]);
+    expect(pagerItems(2, 20)).toEqual([0, 1, 2, 3, 'gap', 19]);
+  });
+
+  it('collapses both sides in the middle', () => {
+    expect(pagerItems(9, 20)).toEqual([0, 'gap', 8, 9, 10, 'gap', 19]);
+  });
+
+  it('collapses the near end with an ellipsis at the end', () => {
+    expect(pagerItems(19, 20)).toEqual([0, 'gap', 18, 19]);
+    expect(pagerItems(17, 20)).toEqual([0, 'gap', 16, 17, 18, 19]);
+  });
+
+  it('never hides a single page behind an ellipsis', () => {
+    expect(pagerItems(3, 9)).toEqual([0, 1, 2, 3, 4, 'gap', 8]);
+  });
+});
+
+describe('exportMenuLine', () => {
+  it('names the tab and the period that would be exported', () => {
+    expect(exportMenuLine('ventas', '19 – 25 oct 2026')).toBe('Ventas · 19 – 25 oct 2026');
+    expect(exportMenuLine('productos', 'Octubre 2026')).toBe('Productos más vendidos · Octubre 2026');
+  });
+
+  it('shows only the tab while the period is unknown', () => {
+    expect(exportMenuLine('ventas', null)).toBe('Ventas');
   });
 });

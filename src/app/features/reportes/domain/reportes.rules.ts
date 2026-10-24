@@ -1,6 +1,6 @@
 import { Page } from '../../../core/http/api.types';
 import { tipoLabel } from '../../pedidos/domain/pedidos.rules';
-import { FormatoExport, Periodo, TipoReporte, VentaReporte } from '../reportes.types';
+import { FormatoExport, OrdenVentas, Periodo, TipoReporte, VentaReporte } from '../reportes.types';
 
 /*
  * Pure rules of the reports screen. Dates travel as `yyyy-MM-dd` strings and all calendar math runs on
@@ -195,4 +195,100 @@ export function pageSummary(page: Pick<Page<unknown>, 'content' | 'number' | 'si
 /** Phone pager text "Pág. 1 de 3"; an empty result still reads "Pág. 1 de 1". */
 export function pageIndicator(page: Pick<Page<unknown>, 'number' | 'totalPages'>): string {
   return `Pág. ${page.number + 1} de ${Math.max(page.totalPages, 1)}`;
+}
+
+/** Tab of the screen; the same word names the report to export. */
+export type ReportesTab = TipoReporte;
+
+/** Everything the screen shows depends on these five values; they live in the URL. */
+export interface ReportesView {
+  periodo: Periodo;
+  /** Any day of the period, `yyyy-MM-dd`, never after today. */
+  fecha: string;
+  tab: ReportesTab;
+  orden: OrdenVentas;
+  /** 0-based page of the sales table. */
+  page: number;
+}
+
+const PERIODOS: readonly Periodo[] = ['DIARIO', 'SEMANAL', 'MENSUAL'];
+const ORDENES: readonly OrdenVentas[] = ['MAS_RECIENTES', 'MAS_ANTIGUOS', 'MAYOR_VENTA'];
+const DEFAULT_PERIODO: Periodo = 'SEMANAL';
+const DEFAULT_TAB: ReportesTab = 'ventas';
+const DEFAULT_ORDEN: OrdenVentas = 'MAS_RECIENTES';
+const YMD_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const PAGE_PATTERN = /^[1-9]\d{0,8}$/;
+
+/** A calendar date written `yyyy-MM-dd` that exists (no 2026-02-30). */
+function isRealYmd(value: string): boolean {
+  const match = YMD_PATTERN.exec(value);
+  if (match === null) {
+    return false;
+  }
+  const { y, m, d } = parseYmd(value);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+/**
+ * Reads the screen state from the query params, each value on its own: an unknown or malformed one falls back to
+ * its default (week, today, Ventas, newest first, first page) instead of failing. `page` travels 1-based.
+ */
+export function parseReportesView(get: (key: string) => string | null, today: string): ReportesView {
+  const periodo = PERIODOS.find((p) => p === get('periodo')) ?? DEFAULT_PERIODO;
+  const fecha = get('fecha') ?? '';
+  const page = get('page') ?? '';
+  return {
+    periodo,
+    fecha: isRealYmd(fecha) && fecha <= today ? fecha : today,
+    tab: get('tab') === 'productos' ? 'productos' : DEFAULT_TAB,
+    orden: ORDENES.find((o) => o === get('orden')) ?? DEFAULT_ORDEN,
+    page: PAGE_PATTERN.test(page) ? Number(page) - 1 : 0,
+  };
+}
+
+/** Query params of a view for `router.navigate`: a value equal to its default is `null` so it leaves the URL. */
+export function reportesQueryParams(view: ReportesView, today: string): Record<string, string | null> {
+  return {
+    periodo: view.periodo === DEFAULT_PERIODO ? null : view.periodo,
+    fecha: view.fecha === today ? null : view.fecha,
+    tab: view.tab === DEFAULT_TAB ? null : view.tab,
+    orden: view.orden === DEFAULT_ORDEN ? null : view.orden,
+    page: view.page === 0 ? null : String(view.page + 1),
+  };
+}
+
+export type PagerItem = number | 'gap';
+
+const PAGER_FULL_LIMIT = 7;
+
+/**
+ * Buttons of the sales pager, 0-based: all pages when there are few, otherwise the first, the last and the current
+ * one with its neighbours, with an ellipsis ('gap') for each hidden run. A run of a single page is shown instead.
+ */
+export function pagerItems(current: number, totalPages: number): PagerItem[] {
+  if (totalPages <= PAGER_FULL_LIMIT) {
+    return Array.from({ length: Math.max(totalPages, 1) }, (_, i) => i);
+  }
+  const last = totalPages - 1;
+  const shown = [...new Set([0, current - 1, current, current + 1, last].filter((p) => p >= 0 && p <= last))].sort(
+    (a, b) => a - b,
+  );
+  const items: PagerItem[] = [];
+  shown.forEach((page, index) => {
+    const previous = shown[index - 1];
+    if (previous !== undefined && page - previous === 2) {
+      items.push(previous + 1);
+    } else if (previous !== undefined && page - previous > 2) {
+      items.push('gap');
+    }
+    items.push(page);
+  });
+  return items;
+}
+
+/** Second line of the export menu: what the file will contain, "Ventas · 19 – 25 oct 2026". */
+export function exportMenuLine(tab: ReportesTab, range: string | null): string {
+  const name = tab === 'ventas' ? 'Ventas' : 'Productos más vendidos';
+  return range === null ? name : `${name} · ${range}`;
 }
