@@ -6,6 +6,7 @@ import {
 } from '../app/features/catalogo/catalogo.types';
 import { ColaItem, ColaPedido } from '../app/features/cocina/cocina.types';
 import { ApiError, Page } from '../app/core/http/api.types';
+import { Mesa } from '../app/features/mesas/mesas.types';
 import { Pago } from '../app/features/pagos/pagos.types';
 import { PedidoListado } from '../app/features/pedidos/pedidos.types';
 import {
@@ -120,6 +121,19 @@ export function aPage<T>(content: T[], overrides: Partial<Page<T>> = {}): Page<T
     number: 0,
     first: true,
     last: true,
+    ...overrides,
+  };
+}
+
+/** `MesaResponse` of GET /mesas (a free table by default). */
+export function aMesa(overrides: Partial<Mesa> = {}): Mesa {
+  return {
+    mesaId: 1,
+    numero: 1,
+    capacidad: 4,
+    comensales: null,
+    estado: 'LIBRE',
+    activa: true,
     ...overrides,
   };
 }
