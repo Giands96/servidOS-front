@@ -27,6 +27,35 @@ export function pasoAnterior(paso: PasoNuevoPedido, tipo: TipoPedido | null): Pa
   return index > 0 ? pasos[index - 1] : null;
 }
 
+/**
+ * Walks back from `paso` to the closest earlier step the page can render (`disponibles`), so "Atrás"
+ * never lands on a step that is not built yet; null at TIPO, outside the flow, or with no such step.
+ */
+export function pasoAnteriorDisponible(
+  paso: PasoNuevoPedido,
+  tipo: TipoPedido | null,
+  disponibles: readonly PasoNuevoPedido[],
+): PasoNuevoPedido | null {
+  let anterior = pasoAnterior(paso, tipo);
+  while (anterior !== null && !disponibles.includes(anterior)) {
+    anterior = pasoAnterior(anterior, tipo);
+  }
+  return anterior;
+}
+
+/** First step after choosing the tipo: Local asks the table, Delivery/Recojo go to the products. */
+export function pasoTrasTipo(tipo: TipoPedido): PasoNuevoPedido {
+  return tipo === 'MESA' ? 'MESA' : 'PRODUCTOS';
+}
+
+/**
+ * Step after choosing a table: a LIBRE one asks the guests. An OCUPADA one goes to PRODUCTOS for now;
+ * L8 will open its bill detail instead.
+ */
+export function pasoTrasMesa(mesa: Pick<Mesa, 'estado'>): PasoNuevoPedido {
+  return mesa.estado === 'LIBRE' ? 'COMENSALES' : 'PRODUCTOS';
+}
+
 export type EstadoProgreso = 'done' | 'current' | 'todo';
 
 export interface ItemProgreso {

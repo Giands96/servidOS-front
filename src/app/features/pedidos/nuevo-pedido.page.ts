@@ -4,18 +4,20 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map, of, switchMap } from 'rxjs';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { MesasApi } from '../mesas/data/mesas.api';
 import { CatalogoApi } from '../catalogo/data/catalogo.api';
 import { Categoria, Producto } from '../catalogo/catalogo.types';
 import { PedidosApi } from './data/pedidos.api';
@@ -41,15 +43,26 @@ import {
   visibleErrors,
 } from './domain/nuevo-pedido.rules';
 import {
+  FiltroMesas,
+  MAX_PAGE_SIZE,
+  MesaCard,
   PasoNuevoPedido,
-  pasoAnterior,
+  mesaCards,
+  paginasRestantes,
+  pasoAnteriorDisponible,
+  pasoTrasMesa,
+  pasoTrasTipo,
   tipoPasoLabel,
   tipoPasoResumen,
 } from './domain/nuevo-pedido-local.rules';
 import { formatMoney, tipoIcon } from './domain/pedidos.rules';
+import { EstadoMesaPicker, MesaPickerComponent } from './nuevo-pedido/mesa-picker.component';
 import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component';
 import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
 import { TipoPedido } from './pedidos.types';
+
+/** Steps the page renders today; L6 adds COMENSALES. */
+const PASOS_DISPONIBLES: readonly PasoNuevoPedido[] = ['TIPO', 'MESA', 'PRODUCTOS'];
 
 interface Menu {
   categorias: Categoria[];
@@ -81,6 +94,7 @@ interface LineView {
     RouterLink,
     ButtonComponent,
     IconComponent,
+    MesaPickerComponent,
     ModalComponent,
     ProgresoLocalComponent,
     StatePanelComponent,
@@ -118,6 +132,17 @@ interface LineView {
 
       @if (paso() === 'TIPO') {
         <app-tipo-pedido-step (elegir)="elegirTipo($event)" />
+      } @else if (paso() === 'MESA') {
+        <app-mesa-picker
+          [cards]="mesasCards()"
+          [filtro]="filtroMesas()"
+          [estado]="estadoMesas()"
+          [mensajeError]="errorMesas()"
+          (elegir)="elegirMesa($event)"
+          (cambiarFiltro)="filtroMesas.set($event)"
+          (reintentar)="cargarMesas()"
+          (cambiarTipo)="cambiarTipo()"
+        />
       } @else if (failed()) {
         <app-state-panel
           class="!min-h-[24rem]"
@@ -512,6 +537,7 @@ interface LineView {
 export class NuevoPedidoPage {
   private readonly catalogo = inject(CatalogoApi);
   private readonly pedidos = inject(PedidosApi);
+  private readonly mesas = inject(MesasApi);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -529,10 +555,18 @@ export class NuevoPedidoPage {
   /** Current step of the flow; the page keeps it (no router state yet). */
   protected readonly paso = signal<PasoNuevoPedido>('TIPO');
   protected readonly mesaId = signal('');
+  /** Table picked in the MESA step (L6 will read the guests limit from it). */
+  protected readonly mesaElegida = signal<MesaCard | null>(null);
   protected readonly observacion = signal('');
   protected readonly lineas = signal<readonly LineaPedido[]>([]);
   /** Lines whose observation input was opened by the user (a line with text always shows it). */
   private readonly openNotes = signal<ReadonlySet<number>>(new Set());
+
+  // Mesa picker: tables + unpaid orders, loaded every time the MESA step is entered.
+  protected readonly mesasCards = signal<readonly MesaCard[]>([]);
+  protected readonly filtroMesas = signal<FiltroMesas>('TODAS');
+  protected readonly estadoMesas = signal<EstadoMesaPicker>('cargando');
+  protected readonly errorMesas = signal('');
 
   private readonly submitAttempted = signal(false);
   protected readonly submitting = signal(false);
@@ -584,6 +618,54 @@ export class NuevoPedidoPage {
 
   constructor() {
     this.loadMenu();
+    // Every step is a "new screen": start at the top instead of keeping the previous scroll position.
+    effect(() => {
+      this.paso();
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0 });
+      }
+    });
+  }
+
+  /** Tables and every page of the unpaid orders in parallel; any failure shows the picker's error state. */
+  protected cargarMesas(): void {
+    this.estadoMesas.set('cargando');
+    this.errorMesas.set('');
+    forkJoin({
+      mesas: this.mesas.listar(),
+      pendientes: this.pedidos.listar({ porCobrar: true, page: 0, size: MAX_PAGE_SIZE }).pipe(
+        switchMap((first) => {
+          const restantes = paginasRestantes(first);
+          // forkJoin([]) completes without emitting, so a single page must not go through it.
+          if (restantes.length === 0) {
+            return of(first.content);
+          }
+          return forkJoin(
+            restantes.map((page) => this.pedidos.listar({ porCobrar: true, page, size: MAX_PAGE_SIZE })),
+          ).pipe(map((rest) => [first, ...rest].flatMap((page) => page.content)));
+        }),
+      ),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ mesas, pendientes }) => {
+          this.mesasCards.set(mesaCards(mesas, pendientes, new Date()));
+          this.estadoMesas.set('listo');
+        },
+        error: (error: unknown) => {
+          this.errorMesas.set(
+            error instanceof HttpErrorResponse ? (readApiError(error.error)?.message ?? '') : '',
+          );
+          this.estadoMesas.set('error');
+        },
+      });
+  }
+
+  protected elegirMesa(card: MesaCard): void {
+    this.mesaElegida.set(card);
+    this.mesaId.set(String(card.mesaId));
+    // L6: a LIBRE table will go to COMENSALES (`pasoTrasMesa`); until that step exists both kinds reach the products.
+    this.paso.set(card.estado === 'LIBRE' ? 'PRODUCTOS' : pasoTrasMesa(card));
   }
 
   /** Categories and the whole product list in parallel; any failure shows the error panel, never a partial menu. */
@@ -625,13 +707,23 @@ export class NuevoPedidoPage {
 
   protected elegirTipo(tipo: TipoPedido): void {
     this.tipoPedido.set(tipo);
-    // L5: MESA will go to the 'MESA' step (table picker) instead of straight to the products.
-    this.paso.set('PRODUCTOS');
+    this.mesaElegida.set(null);
+    this.mesaId.set('');
+    const paso = pasoTrasTipo(tipo);
+    if (paso === 'MESA') {
+      this.cargarMesas();
+    }
+    this.paso.set(paso);
   }
 
-  /** "Atrás" keeps the cart lines; until the MESA/COMENSALES steps exist every tipo returns to TIPO. */
+  /** "Atrás" keeps the cart lines and only lands on steps this page renders (no COMENSALES until L6). */
   protected atras(): void {
-    this.paso.set(pasoAnterior(this.paso(), this.tipoPedido()) ?? 'TIPO');
+    const paso =
+      pasoAnteriorDisponible(this.paso(), this.tipoPedido(), PASOS_DISPONIBLES) ?? 'TIPO';
+    if (paso === 'MESA') {
+      this.cargarMesas();
+    }
+    this.paso.set(paso);
   }
 
   protected cambiarTipo(): void {
@@ -711,6 +803,7 @@ export class NuevoPedidoPage {
     const blank = emptyDraft();
     this.tipoPedido.set(blank.tipoPedido);
     this.mesaId.set(blank.mesaId);
+    this.mesaElegida.set(null);
     this.observacion.set(blank.observacion);
     this.lineas.set(blank.lineas);
     this.openNotes.set(new Set());

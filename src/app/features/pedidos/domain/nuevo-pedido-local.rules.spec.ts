@@ -13,7 +13,11 @@ import {
   conteoFiltros,
   filtrarMesas,
   mesaCards,
+  PasoNuevoPedido,
   pasoAnterior,
+  pasoAnteriorDisponible,
+  pasoTrasMesa,
+  pasoTrasTipo,
   pasosDe,
   paginasRestantes,
   progresoLocal,
@@ -70,6 +74,54 @@ describe('pasosDe / pasoAnterior', () => {
 
   it('a step outside the flow of the tipo has no previous step', () => {
     expect(pasoAnterior('COMENSALES', 'DELIVERY')).toBeNull();
+  });
+});
+
+describe('pasoTrasTipo', () => {
+  it('Local asks for the table first', () => {
+    expect(pasoTrasTipo('MESA')).toBe('MESA');
+  });
+
+  it('Delivery and Recojo go straight to the products', () => {
+    expect(pasoTrasTipo('DELIVERY')).toBe('PRODUCTOS');
+    expect(pasoTrasTipo('RECOJO')).toBe('PRODUCTOS');
+  });
+});
+
+describe('pasoTrasMesa', () => {
+  it('a free table asks the guests', () => {
+    expect(pasoTrasMesa({ estado: 'LIBRE' })).toBe('COMENSALES');
+  });
+
+  it('an occupied table skips the guests', () => {
+    expect(pasoTrasMesa({ estado: 'OCUPADA' })).toBe('PRODUCTOS');
+  });
+});
+
+describe('pasoAnteriorDisponible', () => {
+  const sinComensales: readonly PasoNuevoPedido[] = ['TIPO', 'MESA', 'PRODUCTOS'];
+
+  it('skips a step the page cannot render yet', () => {
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', sinComensales)).toBe('MESA');
+  });
+
+  it('behaves like pasoAnterior when every step is available', () => {
+    const todos = pasosDe('MESA');
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', todos)).toBe('COMENSALES');
+    expect(pasoAnteriorDisponible('MESA', 'MESA', todos)).toBe('TIPO');
+  });
+
+  it('goes back to TIPO for Delivery and Recojo', () => {
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'DELIVERY', sinComensales)).toBe('TIPO');
+  });
+
+  it('has nothing before TIPO or outside the flow', () => {
+    expect(pasoAnteriorDisponible('TIPO', 'MESA', sinComensales)).toBeNull();
+    expect(pasoAnteriorDisponible('COMENSALES', 'DELIVERY', sinComensales)).toBeNull();
+  });
+
+  it('returns null when no earlier step is available', () => {
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', ['PRODUCTOS'])).toBeNull();
   });
 });
 
