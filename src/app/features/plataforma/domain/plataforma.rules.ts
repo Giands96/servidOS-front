@@ -1,5 +1,6 @@
 import { Page } from '../../../core/http/api.types';
 import { BadgeVariant } from '../../../shared/ui/badge/badge.component';
+import { formatAmount } from '../../pedidos/domain/pedidos.rules';
 import { formatDate } from '../../restaurante/domain/subscription.rules';
 import {
   EstadoRestaurante,
@@ -297,7 +298,7 @@ export function formatPrecio(precio: number, moneda: string): string {
   if (!Number.isFinite(precio)) {
     return EM_DASH;
   }
-  const amount = precio.toFixed(2);
+  const amount = formatAmount(precio);
   return moneda === 'PEN' ? `S/ ${amount}` : `${moneda} ${amount}`;
 }
 
