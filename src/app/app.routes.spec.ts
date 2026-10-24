@@ -86,6 +86,31 @@ describe('routes', () => {
     expect(url()).toBe('/sin-permiso');
   });
 
+  it('lets the tenant ADMINISTRADOR open Reportes', async () => {
+    signIn({ rol: 'ADMINISTRADOR' });
+    const harness = await RouterTestingHarness.create('/reportes');
+    expect(url()).toBe('/reportes');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Reportes');
+  });
+
+  it.each(['RECEPCION', 'COCINERO', 'CAJERO'] as const)('keeps %s out of Reportes', async (rol) => {
+    signIn({ rol });
+    await RouterTestingHarness.create('/reportes');
+    expect(url()).toBe('/sin-permiso');
+  });
+
+  it('declares /reportes with its permission and a chart entry between Catálogo and Usuarios', () => {
+    const reportes = shellChild('reportes');
+    expect(reportes.canActivate).toEqual([routeActionGuard]);
+    expect(reportes.data).toMatchObject({
+      action: 'reportes.ver',
+      nav: { label: 'Reportes', icon: 'chart' },
+    });
+    const labels = navEntriesFrom(routes).map((e) => e.label);
+    expect(labels.indexOf('Reportes')).toBe(labels.indexOf('Catálogo') + 1);
+    expect(labels.indexOf('Usuarios')).toBe(labels.indexOf('Reportes') + 1);
+  });
+
   it('lets the SUPERADMIN open the platform list', async () => {
     signIn({ rol: 'SUPERADMIN', restauranteId: null });
     const harness = await RouterTestingHarness.create('/plataforma/restaurantes');

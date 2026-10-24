@@ -35,6 +35,7 @@ const ACTIONS: Action[] = [
   'pagos.registrar',
   'pagos.reembolsar',
   'usuarios.gestionar',
+  'reportes.ver',
   'cocina.ver',
   'cocina.listo',
 ];
@@ -54,6 +55,7 @@ const ALLOWED: Record<Action, Rol[]> = {
   'pagos.registrar': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO'],
   'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
+  'reportes.ver': ['ADMINISTRADOR'],
   'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
   'cocina.listo': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
 };

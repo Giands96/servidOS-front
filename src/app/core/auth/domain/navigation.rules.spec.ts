@@ -53,7 +53,7 @@ describe('navEntriesFrom', () => {
 
 describe('navFor', () => {
   it.each([
-    ['ADMINISTRADOR', ['/pedidos', '/cocina', '/caja', '/catalogo', '/usuarios', '/restaurante']],
+    ['ADMINISTRADOR', ['/pedidos', '/cocina', '/caja', '/catalogo', '/reportes', '/usuarios', '/restaurante']],
     ['RECEPCION', ['/pedidos', '/cocina', '/caja', '/catalogo']],
     ['COCINERO', ['/cocina', '/catalogo']],
     ['MESERO', ['/catalogo']],
@@ -81,6 +81,7 @@ describe('navFor', () => {
       'Cocina',
       'Caja',
       'Catálogo',
+      'Reportes',
       'Usuarios',
       'Restaurante y plan',
     ]);
