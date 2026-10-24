@@ -72,7 +72,10 @@ import {
   tipoPasoResumen,
 } from './domain/nuevo-pedido-local.rules';
 import { formatMoney, tipoIcon } from './domain/pedidos.rules';
+import { CuentaMesaApi } from '../mesas/data/cuenta-mesa.api';
+import { CuentaMesa } from '../mesas/mesas.types';
 import { ComensalesStepComponent } from './nuevo-pedido/comensales-step.component';
+import { EstadoMesaDetalle, MesaDetalleComponent } from './nuevo-pedido/mesa-detalle.component';
 import { EstadoMesaPicker, MesaPickerComponent } from './nuevo-pedido/mesa-picker.component';
 import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component';
 import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
@@ -116,6 +119,7 @@ interface LineView {
     ButtonComponent,
     ComensalesStepComponent,
     IconComponent,
+    MesaDetalleComponent,
     MesaPickerComponent,
     ModalComponent,
     ProgresoLocalComponent,
@@ -165,6 +169,17 @@ interface LineView {
           (reintentar)="cargarMesas()"
           (cambiarTipo)="cambiarTipo()"
         />
+        @if (detalleMesa(); as mesa) {
+          <app-mesa-detalle
+            [mesa]="mesa"
+            [cuenta]="cuentaDetalle()"
+            [estado]="estadoDetalle()"
+            [mensajeError]="errorDetalle()"
+            (cerrar)="cerrarDetalle()"
+            (reintentar)="cargarCuenta(mesa)"
+            (agregarRonda)="agregarRonda(mesa)"
+          />
+        }
       } @else if (paso() === 'COMENSALES') {
         @if (mesaElegida(); as mesa) {
           <app-comensales-step
@@ -544,6 +559,7 @@ export class NuevoPedidoPage {
   private readonly catalogo = inject(CatalogoApi);
   private readonly pedidos = inject(PedidosApi);
   private readonly mesas = inject(MesasApi);
+  private readonly cuentas = inject(CuentaMesaApi);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -574,6 +590,15 @@ export class NuevoPedidoPage {
   protected readonly filtroMesas = signal<FiltroMesas>('TODAS');
   protected readonly estadoMesas = signal<EstadoMesaPicker>('cargando');
   protected readonly errorMesas = signal('');
+
+  // Bill detail of an OCUPADA table, open over the picker (page state on top of the MESA step).
+  protected readonly detalleMesa = signal<MesaCard | null>(null);
+  protected readonly cuentaDetalle = signal<CuentaMesa | null>(null);
+  protected readonly estadoDetalle = signal<EstadoMesaDetalle>('cargando');
+  protected readonly errorDetalle = signal('');
+
+  /** The bill load in flight, cancelled when the detail closes or another table opens. */
+  private cuentaSub: Subscription | null = null;
 
   /** The table load in flight, cancelled when a newer one starts or the user leaves the MESA step. */
   private mesasSub: Subscription | null = null;
@@ -686,18 +711,71 @@ export class NuevoPedidoPage {
     this.mesasSub = null;
   }
 
-  /** The only way to change step: leaving MESA cancels a table load still in flight. */
+  /** The only way to change step: leaving MESA cancels a table load still in flight and closes the detail. */
   protected irA(paso: PasoNuevoPedido): void {
     if (paso !== 'MESA') {
       this.cancelarCargaMesas();
+      this.cerrarDetalle();
     }
     this.paso.set(paso);
   }
 
   protected elegirMesa(card: MesaCard): void {
+    const siguiente = pasoTrasMesa(card);
+    if (siguiente === null) {
+      // OCUPADA: its bill opens over the picker; the table is only chosen by "Agregar ronda".
+      this.abrirDetalle(card);
+      return;
+    }
     this.mesaElegida.set(card);
     this.comensales.set(1);
-    this.irA(pasoTrasMesa(card));
+    this.irA(siguiente);
+  }
+
+  private abrirDetalle(card: MesaCard): void {
+    this.detalleMesa.set(card);
+    this.cargarCuenta(card);
+  }
+
+  /** Loads the bill of `card`; a late answer of a closed or replaced detail never reaches the state. */
+  protected cargarCuenta(card: MesaCard): void {
+    this.cancelarCargaCuenta();
+    this.cuentaDetalle.set(null);
+    this.errorDetalle.set('');
+    this.estadoDetalle.set('cargando');
+    this.cuentaSub = this.cuentas
+      .obtener(card.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuenta) => {
+          this.cuentaDetalle.set(cuenta);
+          this.estadoDetalle.set('listo');
+        },
+        error: (error: unknown) => {
+          this.errorDetalle.set(
+            error instanceof HttpErrorResponse ? (readApiError(error.error)?.message ?? '') : '',
+          );
+          this.estadoDetalle.set('error');
+        },
+      });
+  }
+
+  private cancelarCargaCuenta(): void {
+    this.cuentaSub?.unsubscribe();
+    this.cuentaSub = null;
+  }
+
+  protected cerrarDetalle(): void {
+    this.cancelarCargaCuenta();
+    this.detalleMesa.set(null);
+    this.cuentaDetalle.set(null);
+  }
+
+  /** Another round for the occupied table: products with the table fixed, no guests step. */
+  protected agregarRonda(card: MesaCard): void {
+    this.mesaElegida.set(card);
+    this.comensales.set(1);
+    this.irA('PRODUCTOS');
   }
 
   protected cambiarComensales(value: number): void {

@@ -2,6 +2,7 @@ import { Page } from '../../../core/http/api.types';
 import { elapsedMinutes } from '../../cocina/domain/cocina.rules';
 import { CuentaMesa, EstadoMesa, Mesa, PedidoCuenta } from '../../mesas/mesas.types';
 import { PedidoListado, TipoPedido } from '../pedidos.types';
+import { formatClock } from './pedidos.rules';
 
 /**
  * Pure rules of the table-first ("Local") flow of the new-order screen. Every function returns new
@@ -49,11 +50,11 @@ export function pasoTrasTipo(tipo: TipoPedido): PasoNuevoPedido {
 }
 
 /**
- * Step after choosing a table: a LIBRE one asks the guests. An OCUPADA one goes to PRODUCTOS for now;
- * L8 will open its bill detail instead.
+ * Step after choosing a table: a LIBRE one asks the guests. An OCUPADA one changes no step (null): its bill
+ * detail opens over the picker, and "Agregar ronda" is what continues to PRODUCTOS.
  */
-export function pasoTrasMesa(mesa: Pick<Mesa, 'estado'>): PasoNuevoPedido {
-  return mesa.estado === 'LIBRE' ? 'COMENSALES' : 'PRODUCTOS';
+export function pasoTrasMesa(mesa: Pick<Mesa, 'estado'>): PasoNuevoPedido | null {
+  return mesa.estado === 'LIBRE' ? 'COMENSALES' : null;
 }
 
 /**
@@ -284,6 +285,27 @@ export function seccionesCuenta(cuenta: CuentaMesa): SeccionesCuenta {
       .map((pedido, index) => ({ numero: index + 1, pedido })),
     paraLlevar: sorted.filter((p) => p.tipoPedido !== 'MESA'),
   };
+}
+
+// ---- Occupied-table detail ----
+
+/** "1 pedido" / "3 pedidos": the count of the "Pedidos abiertos" label. */
+export function pedidosAbiertosLabel(cantidad: number): string {
+  return `${cantidad} ${cantidad === 1 ? 'pedido' : 'pedidos'}`;
+}
+
+/** "3/4 comensales" under the table title; null when the backend has no guests for the table. */
+export function comensalesDetalleLabel(mesa: Pick<MesaCard, 'comensales' | 'ocupacion'>): string | null {
+  return mesa.comensales === null || mesa.ocupacion === null ? null : `${mesa.ocupacion} comensales`;
+}
+
+/**
+ * HH:mm of an order. `createdAt` has no zone (Lima local time), so it is read as written, never with `Z`;
+ * an unreadable value shows an em dash.
+ */
+export function horaPedido(createdAt: string): string {
+  const created = new Date(createdAt);
+  return Number.isNaN(created.getTime()) ? '—' : formatClock(created).slice(0, 5);
 }
 
 // ---- Step 0: tipo de pedido ----

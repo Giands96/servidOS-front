@@ -18,6 +18,9 @@ import {
   pasoAnteriorDisponible,
   pasoTrasMesa,
   pasoTrasTipo,
+  pedidosAbiertosLabel,
+  comensalesDetalleLabel,
+  horaPedido,
   pasosDisponibles,
   pasosDe,
   paginasRestantes,
@@ -97,8 +100,41 @@ describe('pasoTrasMesa', () => {
     expect(pasoTrasMesa({ estado: 'LIBRE' })).toBe('COMENSALES');
   });
 
-  it('an occupied table skips the guests', () => {
-    expect(pasoTrasMesa({ estado: 'OCUPADA' })).toBe('PRODUCTOS');
+  it('an occupied table changes no step: its bill detail opens over the picker', () => {
+    expect(pasoTrasMesa({ estado: 'OCUPADA' })).toBeNull();
+  });
+});
+
+describe('pedidosAbiertosLabel', () => {
+  it('uses the singular for one order', () => {
+    expect(pedidosAbiertosLabel(1)).toBe('1 pedido');
+  });
+
+  it('uses the plural otherwise', () => {
+    expect(pedidosAbiertosLabel(3)).toBe('3 pedidos');
+    expect(pedidosAbiertosLabel(0)).toBe('0 pedidos');
+  });
+});
+
+describe('comensalesDetalleLabel', () => {
+  it('reads the occupation of the table', () => {
+    expect(comensalesDetalleLabel({ comensales: 3, ocupacion: '3/4' })).toBe('3/4 comensales');
+  });
+
+  it('is null when the guests are unknown', () => {
+    expect(comensalesDetalleLabel({ comensales: null, ocupacion: '–/4' })).toBeNull();
+    expect(comensalesDetalleLabel({ comensales: null, ocupacion: null })).toBeNull();
+  });
+});
+
+describe('horaPedido', () => {
+  it('shows HH:mm of the zoneless Lima time as written', () => {
+    expect(horaPedido('2026-10-24T09:05:33')).toBe('09:05');
+    expect(horaPedido('2026-10-24T21:40:00.123')).toBe('21:40');
+  });
+
+  it('shows an em dash for an unreadable value', () => {
+    expect(horaPedido('no es fecha')).toBe('—');
   });
 });
 
