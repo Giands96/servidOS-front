@@ -120,6 +120,21 @@ export function resumenMesa(mesa: MesaCard, comensales: number): string {
     : `Mesa ${mesa.numero} · ${mesa.ocupacion} comensales`;
 }
 
+/**
+ * What "Crear pedido" must occupy first: a local order on a LIBRE table records its guests with
+ * `POST /mesas/{id}/ocupar`. An OCUPADA table gets another round without touching it; other types never occupy.
+ */
+export function ocupacionAlCrear(
+  tipo: TipoPedido,
+  mesa: MesaCard | null,
+  comensales: number,
+): { mesaId: number; comensales: number } | null {
+  if (tipo !== 'MESA' || mesa === null || mesa.estado !== 'LIBRE') {
+    return null;
+  }
+  return { mesaId: mesa.mesaId, comensales: clampComensales(comensales, mesa.capacidad) };
+}
+
 // ---- Time alert ----
 
 /** Legend "< 30 min · 30-60 min · > 60 min" of the design. Single source for the mesa cards. */

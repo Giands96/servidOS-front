@@ -10,7 +10,19 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription, forkJoin, map, of, switchMap } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  Subscription,
+  catchError,
+  concat,
+  forkJoin,
+  ignoreElements,
+  map,
+  of,
+  switchMap,
+  throwError,
+} from 'rxjs';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
@@ -49,6 +61,7 @@ import {
   PasoNuevoPedido,
   clampComensales,
   mesaCards,
+  ocupacionAlCrear,
   paginasRestantes,
   pasoAnteriorDisponible,
   pasoTrasMesa,
@@ -63,7 +76,14 @@ import { ComensalesStepComponent } from './nuevo-pedido/comensales-step.componen
 import { EstadoMesaPicker, MesaPickerComponent } from './nuevo-pedido/mesa-picker.component';
 import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component';
 import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
-import { TipoPedido } from './pedidos.types';
+import { Pedido, TipoPedido } from './pedidos.types';
+
+/** `ocupar` failed (usually: the table was taken meanwhile); `cause` is the original HTTP error. */
+class MesaNoDisponible extends Error {
+  constructor(override readonly cause: unknown) {
+    super('Mesa no disponible');
+  }
+}
 
 interface Menu {
   categorias: Categoria[];
@@ -798,8 +818,7 @@ export class NuevoPedidoPage {
       return;
     }
     this.submitting.set(true);
-    this.pedidos
-      .crear(toRequest(draft))
+    this.crearPedido(draft)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (pedido) => {
@@ -811,9 +830,45 @@ export class NuevoPedidoPage {
         error: (error: unknown) => {
           // The draft stays as typed so the user can fix it and try again.
           this.submitting.set(false);
+          if (error instanceof MesaNoDisponible) {
+            // Someone took the table meanwhile: back to a fresh picker, keeping the cart lines.
+            this.fail(error.cause);
+            this.mesaElegida.set(null);
+            this.irA('MESA');
+            this.cargarMesas();
+            return;
+          }
           this.fail(error);
         },
       });
+  }
+
+  /**
+   * A local order on a free table first records its guests (`ocupar`), then creates the order. If the order
+   * fails, the table is freed again (best effort) so it is not left occupied without orders.
+   */
+  private crearPedido(draft: BorradorPedido): Observable<Pedido> {
+    const request = toRequest(draft);
+    const ocupacion = ocupacionAlCrear(draft.tipoPedido, this.mesaElegida(), this.comensales());
+    if (ocupacion === null) {
+      return this.pedidos.crear(request);
+    }
+    return this.mesas.ocupar(ocupacion.mesaId, ocupacion.comensales).pipe(
+      catchError((error: unknown) => throwError(() => new MesaNoDisponible(error))),
+      switchMap(() =>
+        this.pedidos.crear(request).pipe(
+          catchError((error: unknown) =>
+            concat(
+              this.mesas.liberar(ocupacion.mesaId).pipe(
+                ignoreElements(),
+                catchError(() => EMPTY),
+              ),
+              throwError(() => error),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   protected askDiscard(): void {

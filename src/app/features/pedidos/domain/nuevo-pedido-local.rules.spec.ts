@@ -21,6 +21,7 @@ import {
   pasosDisponibles,
   pasosDe,
   paginasRestantes,
+  ocupacionAlCrear,
   progresoLocal,
   resumenMesa,
   puedeRestarComensal,
@@ -144,6 +145,41 @@ describe('pasosDisponibles', () => {
     const pasos = pasosDisponibles({ estado: 'LIBRE' });
     expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', pasos)).toBe('COMENSALES');
     expect(pasoAnteriorDisponible('COMENSALES', 'MESA', pasos)).toBe('MESA');
+  });
+});
+
+describe('ocupacionAlCrear', () => {
+  const card = (overrides: Partial<MesaCard> = {}): MesaCard => ({
+    mesaId: 805,
+    numero: 5,
+    estado: 'LIBRE',
+    capacidad: 4,
+    comensales: null,
+    ocupacion: null,
+    consumido: null,
+    minutosAbierta: null,
+    alerta: null,
+    ...overrides,
+  });
+
+  it('a local order on a free table occupies it with the chosen guests', () => {
+    expect(ocupacionAlCrear('MESA', card(), 3)).toEqual({ mesaId: 805, comensales: 3 });
+  });
+
+  it('clamps the guests to the table capacity', () => {
+    expect(ocupacionAlCrear('MESA', card(), 9)).toEqual({ mesaId: 805, comensales: 4 });
+    expect(ocupacionAlCrear('MESA', card(), 0)).toEqual({ mesaId: 805, comensales: 1 });
+  });
+
+  it('an occupied table is not occupied again (another round)', () => {
+    const ocupada = card({ estado: 'OCUPADA', comensales: 3, ocupacion: '3/4' });
+    expect(ocupacionAlCrear('MESA', ocupada, 2)).toBeNull();
+  });
+
+  it('delivery, pickup and a missing table never occupy', () => {
+    expect(ocupacionAlCrear('DELIVERY', card(), 2)).toBeNull();
+    expect(ocupacionAlCrear('RECOJO', card(), 2)).toBeNull();
+    expect(ocupacionAlCrear('MESA', null, 2)).toBeNull();
   });
 });
 
