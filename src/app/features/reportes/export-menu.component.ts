@@ -75,7 +75,8 @@ import { FormatoExport } from './reportes.types';
 export class ExportMenuComponent {
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
+  // `read` is needed: the trigger carries the appButton component, which a plain template ref would return instead.
+  private readonly trigger = viewChild.required('trigger', { read: ElementRef<HTMLElement> });
   private readonly firstItem = viewChild<ElementRef<HTMLElement>>('firstItem');
 
   /** What the file will contain, "Ventas · 19 – 25 oct 2026". */
