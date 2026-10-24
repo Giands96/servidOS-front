@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { expectApi } from '../../../../testing/mock-api';
 import { ReporteArchivo, ReporteProductos, ReporteVentas } from '../reportes.types';
@@ -133,44 +133,16 @@ describe('ReportesApi', () => {
 
     it('falls back to the rule-built name when the header is missing', () => {
       let result: ReporteArchivo | undefined;
-      api
-        .exportar('ventas', 'XLSX', { periodo: 'SEMANAL', fecha: '2026-10-23', desde: '2026-10-19' })
-        .subscribe((r) => (result = r));
-      const req = expectApi(ctrl, 'GET', '/reportes/ventas/export');
-      expect(req.request.params.has('desde')).toBe(false);
-      req.flush(blob());
-      expect(result?.filename).toBe('reporte-ventas-semanal-2026-10-19.xlsx');
+      api.exportar('ventas', 'XLSX', { periodo: 'SEMANAL', fecha: '2026-10-23' }).subscribe((r) => (result = r));
+      expectApi(ctrl, 'GET', '/reportes/ventas/export').flush(blob());
+      expect(result?.filename).toBe('reporte-ventas-semanal-2026-10-23.xlsx');
     });
 
-    it('falls back to a name without date when no desde is known and the header is missing', () => {
+    it('falls back to a name without date when no fecha was asked and the header is missing', () => {
       let result: ReporteArchivo | undefined;
       api.exportar('productos', 'PDF', { periodo: 'DIARIO' }).subscribe((r) => (result = r));
       expectApi(ctrl, 'GET', '/reportes/productos/export').flush(blob());
       expect(result?.filename).toBe('reporte-productos-diario.pdf');
-    });
-    it('turns a Blob error body into a parsed JSON body so the caller can read the backend message', async () => {
-      let error: unknown;
-      api.exportar('ventas', 'PDF', { periodo: 'DIARIO' }).subscribe({ error: (e) => (error = e) });
-      expectApi(ctrl, 'GET', '/reportes/ventas/export').flush(
-        new Blob([JSON.stringify({ status: '400', message: 'Fecha inválida' })], { type: 'application/json' }),
-        { status: 400, statusText: 'Bad Request' },
-      );
-      await vi.waitFor(() => expect(error).toBeInstanceOf(HttpErrorResponse));
-      const failure = error as HttpErrorResponse;
-      expect(failure.status).toBe(400);
-      expect(failure.error).toMatchObject({ message: 'Fecha inválida' });
-    });
-
-    it('keeps the error as it came when the Blob body is not JSON', async () => {
-      let error: unknown;
-      api.exportar('ventas', 'PDF', { periodo: 'DIARIO' }).subscribe({ error: (e) => (error = e) });
-      expectApi(ctrl, 'GET', '/reportes/ventas/export').flush(new Blob(['<html>boom</html>']), {
-        status: 502,
-        statusText: 'Bad Gateway',
-      });
-      await vi.waitFor(() => expect(error).toBeInstanceOf(HttpErrorResponse));
-      expect((error as HttpErrorResponse).status).toBe(502);
-      expect((error as HttpErrorResponse).error).toBeNull();
     });
   });
 });

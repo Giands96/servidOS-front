@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, from, map, switchMap, throwError } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { API_BASE } from '../../../core/http/api.config';
 import { fallbackFilename } from '../domain/reportes.rules';
 import {
@@ -69,41 +69,9 @@ export class ReportesApi {
           blob: res.body as Blob,
           filename:
             filenameFrom(res.headers.get('Content-Disposition')) ??
-            fallbackFilename(reporte, query.periodo, query.desde, formato),
+            fallbackFilename(reporte, query.periodo, query.fecha, formato),
         })),
-        catchError((error: unknown) => this.readableError(error)),
       );
-  }
-
-  /**
-   * With `responseType: 'blob'` an error body arrives as a Blob too. Re-throws the same error with the JSON parsed
-   * (or `null` when it is not JSON) so callers read `error.error.message` like on every other endpoint.
-   */
-  private readableError(error: unknown): Observable<never> {
-    if (!(error instanceof HttpErrorResponse) || !(error.error instanceof Blob)) {
-      return throwError(() => error);
-    }
-    return from(error.error.text()).pipe(
-      map((text): unknown => {
-        try {
-          return JSON.parse(text);
-        } catch {
-          return null;
-        }
-      }),
-      switchMap((body) =>
-        throwError(
-          () =>
-            new HttpErrorResponse({
-              error: body,
-              headers: error.headers,
-              status: error.status,
-              statusText: error.statusText,
-              url: error.url ?? undefined,
-            }),
-        ),
-      ),
-    );
   }
 
   /** `fecha` is left out when undefined: the backend then uses today in Lima. */

@@ -68,8 +68,6 @@ export interface VentasQuery extends PeriodoQuery {
 /** Query of an export: the ventas report also takes the sort order, the productos report does not. */
 export interface ExportQuery extends PeriodoQuery {
   orden?: OrdenVentas;
-  /** Start of the period shown (`desde` of the loaded report): only names the file when the backend sends no name. Never sent. */
-  desde?: string;
 }
 
 /** A downloaded report: the bytes and the file name the backend chose. */
