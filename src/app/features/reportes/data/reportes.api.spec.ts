@@ -133,12 +133,16 @@ describe('ReportesApi', () => {
 
     it('falls back to the rule-built name when the header is missing', () => {
       let result: ReporteArchivo | undefined;
-      api.exportar('ventas', 'XLSX', { periodo: 'SEMANAL', fecha: '2026-10-23' }).subscribe((r) => (result = r));
-      expectApi(ctrl, 'GET', '/reportes/ventas/export').flush(blob());
-      expect(result?.filename).toBe('reporte-ventas-semanal-2026-10-23.xlsx');
+      api
+        .exportar('ventas', 'XLSX', { periodo: 'SEMANAL', fecha: '2026-10-23', desde: '2026-10-19' })
+        .subscribe((r) => (result = r));
+      const req = expectApi(ctrl, 'GET', '/reportes/ventas/export');
+      expect(req.request.params.has('desde')).toBe(false);
+      req.flush(blob());
+      expect(result?.filename).toBe('reporte-ventas-semanal-2026-10-19.xlsx');
     });
 
-    it('falls back to a name without date when no fecha was asked and the header is missing', () => {
+    it('falls back to a name without date when no desde is known and the header is missing', () => {
       let result: ReporteArchivo | undefined;
       api.exportar('productos', 'PDF', { periodo: 'DIARIO' }).subscribe((r) => (result = r));
       expectApi(ctrl, 'GET', '/reportes/productos/export').flush(blob());

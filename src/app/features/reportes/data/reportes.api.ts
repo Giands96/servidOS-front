@@ -69,7 +69,7 @@ export class ReportesApi {
           blob: res.body as Blob,
           filename:
             filenameFrom(res.headers.get('Content-Disposition')) ??
-            fallbackFilename(reporte, query.periodo, query.fecha, formato),
+            fallbackFilename(reporte, query.periodo, query.desde, formato),
         })),
       );
   }
