@@ -141,6 +141,29 @@ const ICONS = {
   sort: ['m21 16-4 4-4-4', 'M17 20V4', 'm3 8 4-4 4 4', 'M7 4v16'],
   chevronLeft: ['m15 18-6-6 6-6'],
   chevronRight: ['m9 18 6-6-6-6'],
+  chevronDown: ['m6 9 6 6 6-6'],
+  download: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5', 'M12 15V3'],
+  calendar: [
+    'M8 2v4',
+    'M16 2v4',
+    'M3 10h18',
+    'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+  ],
+  fileSpreadsheet: [
+    'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z',
+    'M14 2v4a2 2 0 0 0 2 2h4',
+    'M8 13h2',
+    'M14 13h2',
+    'M8 17h2',
+    'M14 17h2',
+  ],
+  fileText: [
+    'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z',
+    'M14 2v4a2 2 0 0 0 2 2h4',
+    'M10 9H8',
+    'M16 13H8',
+    'M16 17H8',
+  ],
 } as const;
 
 export type IconName = keyof typeof ICONS;
