@@ -112,5 +112,14 @@ Volver: [[00 - MOC]] · Ver [[Arquitectura]] · [[Seguridad]] · [[Fase 0 - Infr
 - **Desventajas**: la fila de píldoras desborda con muchos módulos y obliga a desplazar (mitigado con el degradado y el auto-scroll de la activa); la barra siempre ocupa 108 px de alto; la marca queda duplicada entre la barra y el sidebar; los degradados no tienen test y no se recalculan si cambian los ítems; un solo quiebre (`lg`) significa que una tableta apaisada de 1024 px ya recibe el sidebar.
 - **Estado**: slice 1 publicada (`origin/feat/responsive-01-shell`, PR por abrir); slice 2 lista en `feat/responsive-02-pages`. Ver [[Styles y Diseño]] (sección Responsive) y [[Estado Actual]].
 
+## ADR-22 Montos con separador de miles en toda la app
+- **Contexto**: el diseño de Reportes muestra `S/ 18,452.50`, pero `formatMoney` imprimía `S/ 18452.50` (sin separador).
+- **Decisión del usuario (2026-10-24)**: mostrar los montos con separador de miles en toda la app. `formatAmount` vive en `pedidos.rules` y lo usan `formatMoney` y `formatPrecio` de Plataforma. Commit `cfd535e` en `feat/reportes-02-page`.
+- **Alcance**: los inputs de formulario (precio del producto, monto entregado de Caja) conservan `toFixed` sin separador, porque su valor se reparsea.
+- **Evidencia**: RED con 7 pruebas fallando (`S/ 1000.00` frente a `S/ 1,000.00`), luego GREEN; suite 32 archivos / 1296; build OK.
+- **Ventajas**: lectura uniforme de montos grandes; una sola función de formato.
+- **Desventajas**: el cambio toca pantallas ya mergeadas (Pedidos, Caja, Plataforma, Catálogo) dentro de la rama de Reportes; los inputs muestran un formato distinto al de las etiquetas.
+- **Estado**: en `feat/reportes-02-page`, sin publicar. Ver [[Reportes]].
+
 > [!note] Decisión de proceso
 > Flujo ODD v3 con revisiones nativas (RDD) por commit/slice. Ver [[Infraestructura]].
