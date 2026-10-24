@@ -3,10 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
@@ -128,6 +132,7 @@ interface LineView {
     TipoPedidoStepComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'onEscape()' },
   template: `
     <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
@@ -365,13 +370,37 @@ interface LineView {
             }
           </div>
 
+          @if (pedidoAbierto()) {
+            <div class="fixed inset-0 z-40 bg-ink/40 lg:hidden" aria-hidden="true" (click)="cerrarPedido()"></div>
+          }
+          <!-- One form: the sticky column on lg, a bottom sheet below it (closed by default). -->
           <form
-            #cart
-            class="scroll-mt-32 rounded-card border lg:scroll-mt-4 border-line bg-card lg:sticky lg:top-6"
-            aria-label="Pedido en curso"
+            class="rounded-card border border-line bg-card lg:sticky lg:top-6 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-50 max-lg:flex max-lg:max-h-[90dvh] max-lg:flex-col max-lg:rounded-b-none max-lg:border-x-0 max-lg:border-b-0 max-lg:shadow-xl"
+            [class.max-lg:hidden]="!pedidoAbierto()"
+            [attr.role]="sheetActivo() ? 'dialog' : null"
+            [attr.aria-modal]="sheetActivo() ? 'true' : null"
+            [attr.aria-label]="sheetActivo() ? null : 'Pedido en curso'"
+            [attr.aria-labelledby]="sheetActivo() ? 'nuevo-pedido-titulo' : null"
             novalidate
             (submit)="submit($event)"
           >
+            <div class="shrink-0 lg:hidden">
+              <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-line" aria-hidden="true"></div>
+              <div class="flex items-center justify-between gap-3 border-b border-line px-5 pb-3 pt-2">
+                <h2 id="nuevo-pedido-titulo" class="text-lg font-bold">Pedido</h2>
+                <button
+                  #cerrarBtn
+                  type="button"
+                  class="rounded-control p-1.5 text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  aria-label="Cerrar pedido"
+                  (click)="cerrarPedido()"
+                >
+                  <app-icon name="chevronDown" [size]="22" />
+                </button>
+              </div>
+            </div>
+
+            <div class="max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto">
             <div class="min-w-0 p-5">
               <div class="flex items-center gap-3">
                 @if (paraLlevarMesa(); as mesa) {
@@ -421,10 +450,8 @@ interface LineView {
             <section class="border-t border-line p-5" aria-labelledby="nuevo-pedido-items">
               <div class="flex items-baseline justify-between gap-3">
                 <h2
-                  #cartHeading
                   id="nuevo-pedido-items"
-                  tabindex="-1"
-                  class="text-sm font-medium outline-none"
+                  class="text-sm font-medium"
                 >
                   Ítems
                 </h2>
@@ -516,8 +543,11 @@ interface LineView {
                 (input)="observacion.set(valueOf($event))"
               ></textarea>
             </div>
+            </div>
 
-            <div class="border-t border-line p-5">
+            <div
+              class="border-t border-line p-5 max-lg:shrink-0 max-lg:pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+            >
               <div class="flex items-end justify-between gap-4">
                 <div>
                   <p class="text-sm text-muted">Total referencial</p>
@@ -554,7 +584,7 @@ interface LineView {
         </div>
 
         @if (hasItems()) {
-          <!-- Spacer so the fixed bar never covers the cart buttons. -->
+          <!-- Spacer so the fixed bar never covers the last products. -->
           <div class="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true"></div>
           <div
             class="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-line bg-card px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 lg:hidden"
@@ -563,8 +593,15 @@ interface LineView {
               <p class="text-xs text-muted">{{ resumen() }}</p>
               <p class="font-mono text-lg font-bold">{{ total() }}</p>
             </div>
-            <button appButton type="button" variant="primary" (click)="verPedido(cart, cartHeading)">
-              Ver pedido
+            <button
+              appButton
+              type="button"
+              variant="primary"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="pedidoAbierto()"
+              (click)="verPedido()"
+            >
+              Ver pedido<app-icon name="chevronUp" [size]="18" />
             </button>
           </div>
         }
@@ -593,6 +630,7 @@ export class NuevoPedidoPage {
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   protected readonly skeletonTabs = [1, 2, 3, 4] as const;
   protected readonly skeletonCards = [1, 2, 3, 4, 5, 6] as const;
@@ -676,6 +714,13 @@ export class NuevoPedidoPage {
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
   protected readonly hasItems = computed(() => this.lineas().length > 0);
 
+  /** The order bottom sheet is open (only meaningful below `lg`, where the cart is a sheet). */
+  protected readonly pedidoAbierto = signal(false);
+  private readonly esDesktop = signal(false);
+  /** The open sheet is actually acting as a modal dialog (open and below `lg`). */
+  protected readonly sheetActivo = computed(() => this.pedidoAbierto() && !this.esDesktop());
+  private readonly cerrarBtn = viewChild<ElementRef<HTMLButtonElement>>('cerrarBtn');
+
   protected readonly tabs = computed(() => categoryTabs(this.menu()?.categorias ?? []));
 
   protected readonly cards = computed<ProductCard[]>(() => {
@@ -704,6 +749,16 @@ export class NuevoPedidoPage {
 
   constructor() {
     this.loadMenu();
+    this.watchDesktop();
+    // Lock the page behind the open sheet; the cleanup restores it on close and on destroy.
+    effect((onCleanup) => {
+      if (!this.sheetActivo() || typeof document === 'undefined') {
+        return;
+      }
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      onCleanup(() => (document.body.style.overflow = previous));
+    });
     // Every step is a "new screen": start at the top instead of keeping the previous scroll position.
     effect(() => {
       this.paso();
@@ -711,6 +766,18 @@ export class NuevoPedidoPage {
         window.scrollTo({ top: 0 });
       }
     });
+  }
+
+  /** Tracks the `lg` breakpoint (64rem) to know whether the cart is a column or a sheet. */
+  private watchDesktop(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const query = window.matchMedia('(min-width: 64rem)');
+    const update = () => this.esDesktop.set(query.matches);
+    update();
+    query.addEventListener('change', update);
+    this.destroyRef.onDestroy(() => query.removeEventListener('change', update));
   }
 
   /** Tables and every page of the unpaid orders in parallel; any failure shows the picker's error state. */
@@ -756,6 +823,7 @@ export class NuevoPedidoPage {
 
   /** The only way to change step: leaving MESA cancels a table load still in flight and closes the detail. */
   protected irA(paso: PasoNuevoPedido): void {
+    this.pedidoAbierto.set(false);
     if (paso !== 'MESA') {
       this.cancelarCargaMesas();
       this.cerrarDetalle();
@@ -872,12 +940,21 @@ export class NuevoPedidoPage {
       });
   }
 
-  /** Phones and tablets: brings the order into view and moves focus to its heading. */
-  protected verPedido(cart: HTMLElement, heading: HTMLElement): void {
-    if (typeof cart.scrollIntoView === 'function') {
-      cart.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /** Below `lg`: opens the order bottom sheet and moves focus to its close button. */
+  protected verPedido(): void {
+    this.pedidoAbierto.set(true);
+    afterNextRender(() => this.cerrarBtn()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected cerrarPedido(): void {
+    this.pedidoAbierto.set(false);
+  }
+
+  /** Escape closes the sheet, unless the discard confirmation is on top of it (that one owns Escape). */
+  protected onEscape(): void {
+    if (this.sheetActivo() && !this.confirmingDiscard()) {
+      this.cerrarPedido();
     }
-    heading.focus({ preventScroll: true });
   }
 
   protected selectCategoria(categoriaId: number | null): void {
@@ -1048,6 +1125,7 @@ export class NuevoPedidoPage {
     this.lineas.set(blank.lineas);
     this.openNotes.set(new Set());
     this.submitAttempted.set(false);
+    this.pedidoAbierto.set(false);
   }
 
   /** Shows the backend `message` as-is (400 comes in Spanish, 422 as "campo: mensaje"). */
