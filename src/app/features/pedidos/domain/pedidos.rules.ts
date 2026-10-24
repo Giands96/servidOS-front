@@ -209,9 +209,17 @@ export function formatCreatedAt(createdAt: string, now: Date): string {
   return sameDay ? time : `${two(created.getDate())}/${two(created.getMonth() + 1)} ${time}`;
 }
 
-/** Peruvian soles with two decimals ("S/ 86.00"); an em dash when the amount is not a finite number. */
+/** Two decimals with comma thousands separators ("18,452.50"); rounds like `toFixed`. Expects a finite number. */
+export function formatAmount(amount: number): string {
+  const fixed = amount.toFixed(2);
+  const sign = fixed.startsWith('-') ? '-' : '';
+  const [integer, decimals] = fixed.slice(sign.length).split('.');
+  return `${sign}${integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${decimals}`;
+}
+
+/** Peruvian soles with two decimals ("S/ 18,452.50"); an em dash when the amount is not a finite number. */
 export function formatMoney(amount: number): string {
-  return Number.isFinite(amount) ? `S/ ${amount.toFixed(2)}` : EM_DASH;
+  return Number.isFinite(amount) ? `S/ ${formatAmount(amount)}` : EM_DASH;
 }
 
 /**

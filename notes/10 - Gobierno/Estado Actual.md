@@ -42,6 +42,8 @@ Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[
 | Pedidos: tablero kanban con drag & drop, menú "Mover a…" y zonas Entregado / Cancelado (corte 2, `feat/tablero-02-tablero`) | **mergeada en `main`** (PR #27, `6a6a4a7`, 2026-10-23); review aprobada; probado en navegador contra el backend real el 2026-10-22 y revisado en la prueba responsive del 2026-10-23, sin touch | [[Pedidos]] · `docs/progress/10-tablero-pedidos.md` |
 | UI responsive para teléfonos y tabletas, slice 1: barra superior con píldoras bajo `lg`, `min-h-dvh`, inputs de 16 px y padding `p-4 sm:p-6` (`feat/responsive-01-shell`, `42e6a10`, `f8e2cf3`, `a49b62e`) | **publicada** (`origin/feat/responsive-01-shell`); **PR pendiente** (lo abre el usuario); review de riesgo alto aprobada (`review-af39a8ca79b7ef9d`) | [[Styles y Diseño]] · ADR-21 en [[Decisiones (ADR)]] · `docs/progress/12-responsive-ui.md` |
 | UI responsive, slice 2: tablero, Nuevo pedido, Caja, Cocina y Plataforma (`feat/responsive-02-pages`, `5db3ac0` a `f236db9`) | **lista en su rama, sin publicar**; review aprobada (`review-bafd76275f80cf31`); probada en navegador a 375 / 768 / 1024 px contra el backend local, sin touch real | [[Styles y Diseño]] · [[Pedidos]] · `docs/progress/12-responsive-ui.md` |
+| Reportes, slice 1: tipos, `ReportesApi`, reglas, ruta `/reportes` y permiso `reportes.ver` (`feat/reportes-01-data`, `69b37e4`, `be0211e`, `3692018`) | **lista en su rama, sin publicar**; review de riesgo alto aprobada (`review-953d26b3e0c03b91`) | [[Reportes]] · `docs/progress/13-reportes.md` |
+| Reportes, slice 2: página, menú de exportación, listas y separador de miles en toda la app (`feat/reportes-02-page`, `5b6b2f8` a `dabcf9f`) | **lista en su rama, sin publicar**; review pendiente (`under_budget`); probada en navegador a 375 / 768 / 1280 px contra el backend local | [[Reportes]] · ADR-22 en [[Decisiones (ADR)]] |
 
 ## Pendiente de cierre de Cocina
 Prueba manual en navegador con backend, verificación del payload contra Swagger y zona horaria de `createdAt`.
@@ -61,6 +63,9 @@ Prueba táctil del arrastre (la interfaz del tablero ya está en `main`: PR #27,
 ## Pendiente de la UI responsive
 Abrir el PR de la slice 1 y publicar la slice 2 (stacked-to-main); prueba táctil real del arrastre del tablero y de las columnas con deslizamiento; avisos de las dos reviews como deuda de baja prioridad; decidir qué hacer con el toast sobre la barra de Nuevo pedido. Reportes queda fuera (feature aparte). Detalle en [[Pendientes y Deuda Técnica]] y [[Styles y Diseño]].
 
+## Pendiente de Reportes
+Publicar las tres ramas (`feat/reportes-01-data`, `feat/reportes-02-page` y `fix/page-height-regression`, decisión del usuario); solicitud al backend de número de mesa opcional en `/reportes/ventas` y `categoria` en `/reportes/productos`; el diseño dice "Jue 23 oct" pero el 2026-10-23 es viernes; revisar cómo muestra el login un 429. Detalle en [[Pendientes y Deuda Técnica]] y [[Reportes]].
+
 ## Pendiente de alineación con el backend
 Verificación contra el backend (`c32dcba`) incorporada el 2026-10-17. Quedan diferencias reales entre sus `@PreAuthorize` y la matriz del front: `GET /pedidos` para CAJERO; ver restaurantes, renovar, cambiar plan, suspender y reactivar para ADMIN y MODERADOR (hoy solo SUPERADMIN); alta de usuarios de plataforma. Cobrar ya quedó alineado con Caja. Tabla en [[Modelo de Negocio]] y detalle en [[Pendientes y Deuda Técnica]].
 
@@ -72,6 +77,7 @@ Agregar el chip "Cobrar S/ …" al tablero tras mergear su interfaz (T8.4b); pru
 - **Punta de la cadena de Catálogo antes de mergear (`98c7d10`)**: 26 archivos / 985 tests en verde; `npx ng build` OK.
 - **Interfaz del tablero**: mergeada en `main` (PR #27, `6a6a4a7`); las reglas y `@angular/cdk` entraron antes por el PR #24. La punta de la UI responsive, medida sobre ese `main`, está en la línea siguiente.
 - **Punta de la UI responsive (`feat/responsive-02-pages`, `f236db9`)**: 30 archivos / 1213 tests en verde; `npx ng build` OK (medido el 2026-10-23, sobre `main` `6a6a4a7`).
+- **Punta de Reportes (`feat/reportes-02-page`, `dabcf9f`)**: 32 archivos / 1296 tests en verde; `npx ng build` OK (medido el 2026-10-23).
 - En el merge de Pedidos se resolvió un conflicto en `src/testing/builders.ts`: `aMe` asigna ahora cada campo de forma explícita en lugar de `...overrides`, con los mismos valores por defecto (restaurante `ACTIVO`, suscripción `ACTIVA` con `fechaFin` 2099-12-31).
 
 ## Decisiones recientes
@@ -82,6 +88,7 @@ Agregar el chip "Cobrar S/ …" al tablero tras mergear su interfaz (T8.4b); pru
 - **ADMINISTRADOR del tenant**: resuelto en T5.7 (`c6085d9`): el alta del restaurante crea también la cuenta del dueño, en un asistente de dos pasos.
 - **Tablero de Pedidos (decisión del usuario, 2026-10-16):** implementar el tablero con drag & drop y aprobar la dependencia `@angular/cdk` (ADR-20 en [[Decisiones (ADR)]]). Defaults del orquestador (a revisar): tablero como vista por defecto con `?vista=lista`; minutos desde la creación sin umbrales; sin movimientos hacia atrás (manda el contrato); sin sincronización en vivo. Detalle en [[Fase 4 - Pedidos]].
 - **UI responsive (decisión del usuario, 2026-10-23, revisada el mismo día):** bajo `lg` una barra superior con píldoras de navegación según una imagen de diseño que compartió en el chat; desde `lg`, el sidebar. Descartado el cajón con riel de iconos. Sin contadores en las píldoras ni tablas a tarjetas (sin diseño). Detalle en ADR-21 de [[Decisiones (ADR)]].
+- **Reportes (decisión del usuario, 2026-10-23):** pantalla `/reportes` para ADMINISTRADOR con ventas por día, semana y mes, productos más vendidos y exportación a Excel y PDF, según cuatro imágenes de diseño. **Montos con separador de miles en toda la app (2026-10-24)**: ADR-22 en [[Decisiones (ADR)]]. Detalle en [[Reportes]].
 
 ## Qué sigue
 1. **Probar en navegador** las pantallas de [[Plataforma]] (crear un restaurante con su dueño) y luego las del tenant (Cocina, Pedidos y Catálogo) con ese restaurante.

@@ -133,7 +133,18 @@ Origen: `docs/progress/12-responsive-ui.md` y `odd/tasks/responsive-ui.md`. Ver 
 - [ ] Avisos de la review de la slice 2 (SUGGESTION, baja prioridad): `tablero.component.ts` 662-671, `caja.page.ts` 453-469 y `nuevo-pedido.page.ts` 569-576.
 - [ ] Las tablas conservan el desplazamiento horizontal y no hay versión de tarjetas ni bottom sheets: necesitan un diseño del usuario.
 - [ ] Plataforma entre 1024 y 1279 px: el cajón del detalle cubre parte de la tabla; aceptado, revisar con el usuario.
-- [ ] Reportes responsive: fuera de alcance, depende de la feature de Reportes (necesita un endpoint del backend).
+- [x] Reportes responsive: hecho con la feature de Reportes (ver la sección siguiente); revisado a 375 / 768 / 1280 px.
+
+## Reportes (implementado en dos ramas apiladas, sin publicar)
+Origen: `docs/progress/13-reportes.md` y `odd/tasks/reportes.md`. Ver [[Reportes]] y ADR-22 en [[Decisiones (ADR)]].
+- [ ] **Publicar las tres ramas** (decisión del usuario): `feat/reportes-01-data` (`69b37e4`, `be0211e`, `3692018`; review de riesgo alto aprobada, `review-953d26b3e0c03b91`), `feat/reportes-02-page` (`5b6b2f8` a `dabcf9f`; evaluada medio, `under_budget`, sin review ejecutada) y `fix/page-height-regression` (`dbf9a02`).
+- [ ] **Backend:** solicitud abierta de un número de mesa opcional en las filas de `/reportes/ventas` (hoy se muestra "Mesa") y de `categoria` en `/reportes/productos` (hoy oculta).
+- [ ] El diseño muestra "Jue 23 oct" pero el 2026-10-23 es viernes; las reglas calculan "Vie". Confirmar que el diseño era solo un ejemplo.
+- [ ] **Límite de tasa de autenticación:** el backend responde 429 en `/auth/refresh` y `/auth/login` tras muchas recargas completas en poco tiempo, y entonces el login se queda en su lugar. Revisar cómo lo muestra la pantalla de login (no se investigó).
+- [ ] Sugerencias de la review de la slice 1: ejemplos de día de la semana en la documentación de `reportes.rules.ts:68` y mes de `ventaDateTime` sin validar (`reportes.rules.ts:134`). El WARNING del nombre de archivo de respaldo ya se corrigió en `5b6b2f8`.
+- [ ] Confirmar la etiqueta de método de pago: se reutilizan "Tarjeta crédito" / "Tarjeta débito" de Caja en lugar de "Tarjeta" del diseño.
+- [ ] Sin prueba de la descarga real a disco (se interceptó en la página), de la paginación con más de una página de ventas ni táctil.
+- [ ] Sin specs de la página ni de los componentes por decisión (AGENTS §6); las reglas y la API sí tienen tests (reportes 64).
 
 ## Deuda técnica y advisories de las reviews
 - Ruta/permiso duplicado entre `app.routes.ts` y `navigation.rules.ts`: **resuelto** por `02bca02` (menú derivado); queda el test de consistencia como guardia.

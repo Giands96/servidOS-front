@@ -337,10 +337,12 @@ describe('price formatting', () => {
   it('formats soles with the S/ symbol', () => {
     expect(formatPrecio(34.9, 'PEN')).toBe('S/ 34.90');
     expect(formatPrecio(0, 'PEN')).toBe('S/ 0.00');
+    expect(formatPrecio(1234.5, 'PEN')).toBe('S/ 1,234.50');
   });
 
   it('prefixes another currency with its code', () => {
     expect(formatPrecio(34.9, 'USD')).toBe('USD 34.90');
+    expect(formatPrecio(1234.5, 'USD')).toBe('USD 1,234.50');
   });
 
   it('shows an em dash for a non-finite amount', () => {

@@ -42,6 +42,9 @@ aliases:
 > [!info] Estado de la UI responsive
 > La UI para teléfonos y tabletas (barra superior con píldoras bajo `lg`, sidebar desde `lg`) tiene su slice 1 publicada (PR pendiente) y la slice 2 lista en `feat/responsive-02-pages`. Ver [[Styles y Diseño]], ADR-21 en [[Decisiones (ADR)]] y [[Estado Actual]].
 
+> [!info] Estado del módulo Reportes
+> La pantalla `/reportes` (ventas por día, semana y mes, productos más vendidos y exportación a Excel y PDF, solo ADMINISTRADOR) está implementada en `feat/reportes-01-data` y `feat/reportes-02-page`, sin publicar; probada en navegador a 375 / 768 / 1280 px. Ver [[Reportes]], ADR-22 en [[Decisiones (ADR)]] y [[Estado Actual]].
+
 ## Navegación
 
 ### 01 - Contexto
@@ -68,7 +71,7 @@ aliases:
 - [[Fase 0 - Infra]] · [[Fase 1 - Core Auth]] · [[Fase 2 - Login y Shell]] · [[Fase 3 - Cocina]] · [[Fase 4 - Pedidos]] (incluye la Fase 4b, tablero) · [[Fase 5 - Plataforma]] · [[Fase 6 - Catálogo]] · [[Fase 7 - Caja]] · [[Fases 4-9 - Planificadas]]
 
 ### 09 - Módulos
-- [[Core]] · [[Shared]] · [[Auth]] · [[Cocina]] · [[Restaurante]] · [[Pedidos]] · [[Pagos]] · [[Catálogo]] · [[Usuarios]] · [[Plataforma]]
+- [[Core]] · [[Shared]] · [[Auth]] · [[Cocina]] · [[Restaurante]] · [[Pedidos]] · [[Pagos]] · [[Catálogo]] · [[Usuarios]] · [[Plataforma]] · [[Reportes]]
 
 ### 10 - Gobierno
 - [[Estado Actual]] — qué está hecho, rama, siguiente paso
