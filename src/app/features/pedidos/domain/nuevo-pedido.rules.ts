@@ -18,10 +18,14 @@ export interface LineaPedido {
   observacion: string;
 }
 
-/** The form state of the screen. `mesaId` is the table picked in the MESA step (null until then). */
+/**
+ * The form state of the screen. `mesaId` is the table picked in the MESA step (null until then).
+ * `paraLlevarDeMesa` marks a RECOJO taken from that table: billed with the table's account.
+ */
 export interface BorradorPedido {
   tipoPedido: TipoPedido;
   mesaId: number | null;
+  paraLlevarDeMesa: boolean;
   observacion: string;
   lineas: readonly LineaPedido[];
 }
@@ -122,10 +126,15 @@ export function validateDraft(draft: BorradorPedido): ErroresBorrador {
   } else if (!draft.lineas.every(hasValidCantidad)) {
     errors.items = ITEMS_INVALID_CANTIDAD;
   }
-  if (draft.tipoPedido === 'MESA' && draft.mesaId === null) {
+  if ((draft.tipoPedido === 'MESA' || draft.paraLlevarDeMesa) && draft.mesaId === null) {
     errors.mesaId = MESA_REQUIRED;
   }
   return errors;
+}
+
+/** A takeaway of a table: RECOJO that carries the table's id (DELIVERY never does). */
+function isParaLlevarDeMesa(draft: BorradorPedido): boolean {
+  return draft.tipoPedido === 'RECOJO' && draft.paraLlevarDeMesa;
 }
 
 export function isValidDraft(draft: BorradorPedido): boolean {
@@ -134,8 +143,8 @@ export function isValidDraft(draft: BorradorPedido): boolean {
 
 /**
  * Builds the POST /pedidos body. Only ids, quantities and observations travel: never a price, total or
- * name. `mesaId` is sent only for MESA (the backend validates any `mesaId` it receives), and blank
- * observations are omitted.
+ * name. `mesaId` is sent only for MESA and for a RECOJO taken from a table (the backend validates any
+ * `mesaId` it receives), and blank observations are omitted.
  *
  * Throws for an invalid draft rather than building a body the backend would reject; the page calls
  * `validateDraft` first and shows its errors, so reaching the throw is a programming error.
@@ -153,8 +162,7 @@ export function toRequest(draft: BorradorPedido): CrearPedidoRequest {
     };
   });
   const observacion = draft.observacion.trim();
-  // L9 will also send `mesaId` for a RECOJO taken from a table; until then only MESA carries it.
-  const mesaId = draft.tipoPedido === 'MESA' ? draft.mesaId : null;
+  const mesaId = draft.tipoPedido === 'MESA' || isParaLlevarDeMesa(draft) ? draft.mesaId : null;
   return {
     tipoPedido: draft.tipoPedido,
     ...(mesaId !== null && { mesaId }),
@@ -165,13 +173,16 @@ export function toRequest(draft: BorradorPedido): CrearPedidoRequest {
 
 /** A blank form: MESA is the default of the design. Fresh objects on every call. */
 export function emptyDraft(): BorradorPedido {
-  return { tipoPedido: 'MESA', mesaId: null, observacion: '', lineas: [] };
+  return { tipoPedido: 'MESA', mesaId: null, paraLlevarDeMesa: false, observacion: '', lineas: [] };
 }
 
 /** True when the user has typed or added nothing worth a "discard" confirmation (the tipo alone does not count). */
 export function isDraftEmpty(draft: BorradorPedido): boolean {
   return (
-    draft.lineas.length === 0 && draft.mesaId === null && draft.observacion.trim() === ''
+    draft.lineas.length === 0 &&
+    draft.mesaId === null &&
+    !draft.paraLlevarDeMesa &&
+    draft.observacion.trim() === ''
   );
 }
 

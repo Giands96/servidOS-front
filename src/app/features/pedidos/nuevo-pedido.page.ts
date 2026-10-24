@@ -68,6 +68,7 @@ import {
   pasoTrasTipo,
   pasosDisponibles,
   resumenMesa,
+  resumenParaLlevar,
   tipoPasoLabel,
   tipoPasoResumen,
 } from './domain/nuevo-pedido-local.rules';
@@ -139,10 +140,25 @@ interface LineView {
             } @else {
               <span>Nuevo pedido</span>
               <span aria-hidden="true">›</span>
-              <span class="text-ink" aria-current="page">{{ tipoLabel() }}</span>
+              @if (paraLlevarMesa(); as mesa) {
+                <span>Local</span>
+                <span aria-hidden="true">›</span>
+                <span class="text-ink" aria-current="page">Mesa {{ mesa.numero }}</span>
+              } @else {
+                <span class="text-ink" aria-current="page">{{ tipoLabel() }}</span>
+              }
             }
           </nav>
-          <h1 class="mt-2 text-3xl font-bold tracking-tight">Nuevo pedido</h1>
+          <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 class="text-3xl font-bold tracking-tight">Nuevo pedido</h1>
+            @if (paraLlevarMesa(); as mesa) {
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full bg-flow-soft px-3 py-1 text-sm font-semibold text-flow"
+              >
+                <app-icon name="bag" [size]="14" />{{ resumenLlevar(mesa) }}
+              </span>
+            }
+          </div>
         </div>
         @if (paso() !== 'TIPO') {
           <div class="flex flex-wrap items-center gap-4">
@@ -178,6 +194,7 @@ interface LineView {
             (cerrar)="cerrarDetalle()"
             (reintentar)="cargarCuenta(mesa)"
             (agregarRonda)="agregarRonda(mesa)"
+            (nuevoParaLlevar)="paraLlevar(mesa)"
           />
         }
       } @else if (paso() === 'COMENSALES') {
@@ -357,21 +374,34 @@ interface LineView {
           >
             <div class="min-w-0 p-5">
               <div class="flex items-center gap-3">
-                <span
-                  class="flex size-10 shrink-0 items-center justify-center rounded-card bg-brand-soft text-brand"
-                >
-                  @if (tipoIconName(); as icon) {
-                    <app-icon [name]="icon" [size]="20" />
-                  }
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">
-                    {{ tipoLabel() }}
-                  </p>
-                  @if (tipoResumen(); as resumenTipo) {
-                    <p class="text-sm">{{ resumenTipo }}</p>
-                  }
-                </div>
+                @if (paraLlevarMesa(); as mesa) {
+                  <span
+                    class="flex size-10 shrink-0 items-center justify-center rounded-card bg-flow-soft text-flow"
+                  >
+                    <app-icon name="bag" [size]="20" />
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-flow">Para llevar</p>
+                    <p class="text-sm font-bold">Mesa {{ mesa.numero }}</p>
+                    <p class="text-xs text-muted">se cobra con la cuenta de la mesa</p>
+                  </div>
+                } @else {
+                  <span
+                    class="flex size-10 shrink-0 items-center justify-center rounded-card bg-brand-soft text-brand"
+                  >
+                    @if (tipoIconName(); as icon) {
+                      <app-icon [name]="icon" [size]="20" />
+                    }
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                      {{ tipoLabel() }}
+                    </p>
+                    @if (tipoResumen(); as resumenTipo) {
+                      <p class="text-sm">{{ resumenTipo }}</p>
+                    }
+                  </div>
+                }
                 <button
                   type="button"
                   class="text-sm font-semibold text-brand hover:text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
@@ -480,7 +510,7 @@ interface LineView {
                 id="nuevo-pedido-observacion"
                 name="observacion"
                 rows="3"
-                placeholder="Ej. alergias, preferencias de la mesa…"
+                [placeholder]="observacionPlaceholder()"
                 class="mt-2 w-full resize-y rounded-control border border-line bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none placeholder:text-subtle focus:border-ink"
                 [value]="observacion()"
                 (input)="observacion.set(valueOf($event))"
@@ -603,6 +633,9 @@ export class NuevoPedidoPage {
   /** The table load in flight, cancelled when a newer one starts or the user leaves the MESA step. */
   private mesasSub: Subscription | null = null;
 
+  /** The draft is a RECOJO taken from `mesaElegida`, billed with that table's account. */
+  protected readonly paraLlevarDeMesa = signal(false);
+
   private readonly submitAttempted = signal(false);
   protected readonly submitting = signal(false);
   protected readonly confirmingDiscard = signal(false);
@@ -610,6 +643,7 @@ export class NuevoPedidoPage {
   private readonly draft = computed<BorradorPedido>(() => ({
     tipoPedido: this.tipoPedido(),
     mesaId: this.mesaElegida()?.mesaId ?? null,
+    paraLlevarDeMesa: this.paraLlevarDeMesa(),
     observacion: this.observacion(),
     lineas: this.lineas(),
   }));
@@ -628,6 +662,15 @@ export class NuevoPedidoPage {
         : resumenMesa(mesa, this.comensales())
       : tipoPasoResumen(this.tipoPedido());
   });
+  /** The table of a takeaway-of-table draft; null in every other mode. */
+  protected readonly paraLlevarMesa = computed(() =>
+    this.paraLlevarDeMesa() ? this.mesaElegida() : null,
+  );
+  protected readonly observacionPlaceholder = computed(() =>
+    this.paraLlevarDeMesa()
+      ? 'Ej. empaque, cubiertos, salsas aparte…'
+      : 'Ej. alergias, preferencias de la mesa…',
+  );
   protected readonly tipoIconName = computed(() => tipoIcon(this.tipoPedido()));
   protected readonly total = computed(() => formatMoney(totalReferencial(this.lineas())));
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
@@ -778,6 +821,29 @@ export class NuevoPedidoPage {
     this.irA('PRODUCTOS');
   }
 
+  /** Takeaway billed with the occupied table: RECOJO + the table, straight to the products. */
+  protected paraLlevar(card: MesaCard): void {
+    this.tipoPedido.set('RECOJO');
+    this.paraLlevarDeMesa.set(true);
+    this.mesaElegida.set(card);
+    this.comensales.set(1);
+    this.irA('PRODUCTOS');
+  }
+
+  protected resumenLlevar(card: MesaCard): string {
+    return resumenParaLlevar(card);
+  }
+
+  /** Back to the table picker as a Local draft; the cart lines stay, the table must be chosen again. */
+  private volverAMesas(): void {
+    this.tipoPedido.set('MESA');
+    this.paraLlevarDeMesa.set(false);
+    this.mesaElegida.set(null);
+    this.comensales.set(1);
+    this.cargarMesas();
+    this.irA('MESA');
+  }
+
   protected cambiarComensales(value: number): void {
     const mesa = this.mesaElegida();
     if (mesa !== null) {
@@ -824,6 +890,7 @@ export class NuevoPedidoPage {
 
   protected elegirTipo(tipo: TipoPedido): void {
     this.tipoPedido.set(tipo);
+    this.paraLlevarDeMesa.set(false);
     this.mesaElegida.set(null);
     this.comensales.set(1);
     const paso = pasoTrasTipo(tipo);
@@ -835,6 +902,10 @@ export class NuevoPedidoPage {
 
   /** "Atrás" keeps the cart lines and the guests; an OCUPADA table has no COMENSALES step to return to. */
   protected atras(): void {
+    if (this.paraLlevarDeMesa()) {
+      this.volverAMesas();
+      return;
+    }
     const paso =
       pasoAnteriorDisponible(
         this.paso(),
@@ -853,7 +924,9 @@ export class NuevoPedidoPage {
 
   /** "Cambiar" of the cart summary: Local returns to the table picker, the others to the type step. Lines stay. */
   protected cambiarResumen(): void {
-    if (this.tipoPedido() === 'MESA') {
+    if (this.paraLlevarDeMesa()) {
+      this.volverAMesas();
+    } else if (this.tipoPedido() === 'MESA') {
       this.cargarMesas();
       this.irA('MESA');
     } else {
@@ -968,6 +1041,7 @@ export class NuevoPedidoPage {
   private resetDraft(): void {
     const blank = emptyDraft();
     this.tipoPedido.set(blank.tipoPedido);
+    this.paraLlevarDeMesa.set(blank.paraLlevarDeMesa);
     this.mesaElegida.set(null);
     this.comensales.set(1);
     this.observacion.set(blank.observacion);

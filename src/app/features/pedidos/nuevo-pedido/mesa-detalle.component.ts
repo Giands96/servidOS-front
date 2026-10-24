@@ -167,13 +167,16 @@ const CHIP_CLASS: Record<AlertaTiempo, string> = {
             {{ totalCuenta() }}
           </p>
         </div>
-        <!-- L9 adds the secondary actions ("Para llevar", "Cobrar cuenta") in this row. -->
-        <div class="mt-4 flex flex-col gap-3">
+        <!-- "Cobrar cuenta" stays hidden by product decision: charging a table bill belongs to Caja. -->
+        <div class="mt-4 flex gap-3">
+          <button appButton type="button" variant="secondary" (click)="nuevoParaLlevar.emit()">
+            <app-icon name="bag" [size]="18" />Para llevar
+          </button>
           <button
             appButton
             type="button"
             variant="primary"
-            [block]="true"
+            class="flex-1"
             (click)="agregarRonda.emit()"
           >
             <app-icon name="plus" [size]="18" />Agregar ronda
@@ -222,6 +225,8 @@ export class MesaDetalleComponent implements OnDestroy {
   readonly cerrar = output<void>();
   readonly reintentar = output<void>();
   readonly agregarRonda = output<void>();
+  /** Starts a takeaway billed with this table's account. */
+  readonly nuevoParaLlevar = output<void>();
 
   protected readonly skeletons = [1, 2] as const;
 

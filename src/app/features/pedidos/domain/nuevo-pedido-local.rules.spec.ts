@@ -27,6 +27,7 @@ import {
   ocupacionAlCrear,
   progresoLocal,
   resumenMesa,
+  resumenParaLlevar,
   puedeRestarComensal,
   puedeSumarComensal,
   tipoPasoLabel,
@@ -215,6 +216,7 @@ describe('ocupacionAlCrear', () => {
   it('delivery, pickup and a missing table never occupy', () => {
     expect(ocupacionAlCrear('DELIVERY', card(), 2)).toBeNull();
     expect(ocupacionAlCrear('RECOJO', card(), 2)).toBeNull();
+    expect(ocupacionAlCrear('RECOJO', card({ estado: 'OCUPADA' }), 2)).toBeNull();
     expect(ocupacionAlCrear('MESA', null, 2)).toBeNull();
   });
 });
@@ -246,6 +248,12 @@ describe('resumenMesa', () => {
   it('an occupied table without known guests shows only the number', () => {
     const ocupada = card({ estado: 'OCUPADA', comensales: null, ocupacion: '–/4' });
     expect(resumenMesa(ocupada, 1)).toBe('Mesa 5');
+  });
+});
+
+describe('resumenParaLlevar', () => {
+  it('names the table the takeaway belongs to', () => {
+    expect(resumenParaLlevar({ numero: 4 })).toBe('Para llevar · Mesa 4');
   });
 });
 

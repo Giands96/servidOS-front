@@ -121,9 +121,15 @@ export function resumenMesa(mesa: MesaCard, comensales: number): string {
     : `Mesa ${mesa.numero} · ${mesa.ocupacion} comensales`;
 }
 
+/** Line of the cart summary for a takeaway of a seated table: "Para llevar · Mesa 4". */
+export function resumenParaLlevar(mesa: Pick<MesaCard, 'numero'>): string {
+  return `Para llevar · Mesa ${mesa.numero}`;
+}
+
 /**
  * What "Crear pedido" must occupy first: a local order on a LIBRE table records its guests with
- * `POST /mesas/{id}/ocupar`. An OCUPADA table gets another round without touching it; other types never occupy.
+ * `POST /mesas/{id}/ocupar`. An OCUPADA table gets another round without touching it; other types (a table
+ * takeaway is RECOJO) never occupy.
  */
 export function ocupacionAlCrear(
   tipo: TipoPedido,
