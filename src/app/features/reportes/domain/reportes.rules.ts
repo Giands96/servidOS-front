@@ -292,3 +292,9 @@ export function exportMenuLine(tab: ReportesTab, range: string | null): string {
   const name = tab === 'ventas' ? 'Ventas' : 'Productos más vendidos';
   return range === null ? name : `${name} · ${range}`;
 }
+
+/** Reference date as shown in the date button: "23/10/2026". */
+export function formatFechaButton(fecha: string): string {
+  const { y, m, d } = parseYmd(fecha);
+  return `${two(d)}/${two(m)}/${y}`;
+}

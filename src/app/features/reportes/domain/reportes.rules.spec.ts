@@ -5,6 +5,7 @@ import {
   canGoNext,
   exportMenuLine,
   fallbackFilename,
+  formatFechaButton,
   pageIndicator,
   pagerItems,
   pageSummary,
@@ -341,5 +342,12 @@ describe('exportMenuLine', () => {
 
   it('shows only the tab while the period is unknown', () => {
     expect(exportMenuLine('ventas', null)).toBe('Ventas');
+  });
+});
+
+describe('formatFechaButton', () => {
+  it('writes the reference date as dd/mm/yyyy', () => {
+    expect(formatFechaButton('2026-10-23')).toBe('23/10/2026');
+    expect(formatFechaButton('2026-01-05')).toBe('05/01/2026');
   });
 });
