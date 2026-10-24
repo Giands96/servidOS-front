@@ -18,10 +18,10 @@ export interface LineaPedido {
   observacion: string;
 }
 
-/** The form state of the screen. `mesaId` is the raw text of the input. */
+/** The form state of the screen. `mesaId` is the table picked in the MESA step (null until then). */
 export interface BorradorPedido {
   tipoPedido: TipoPedido;
-  mesaId: string;
+  mesaId: number | null;
   observacion: string;
   lineas: readonly LineaPedido[];
 }
@@ -43,7 +43,7 @@ export const TIPOS_PEDIDO: readonly TipoPedidoOption[] = (
 
 const ITEMS_REQUIRED = 'Agrega al menos un producto al pedido';
 const ITEMS_INVALID_CANTIDAD = 'Revisa las cantidades: deben ser números enteros desde 1';
-const MESA_REQUIRED = 'La mesa es obligatoria: ingresa un número entero mayor a 0';
+const MESA_REQUIRED = 'Elige una mesa para el pedido';
 
 type ProductoAgregable = Pick<Producto, 'productoId' | 'nombre' | 'precio' | 'estado'>;
 
@@ -111,16 +111,6 @@ export function totalReferencial(lineas: readonly LineaPedido[]): number {
   return cents / 100;
 }
 
-/** A positive safe integer from a trimmed string of digits; decimals, signs, exponents and blanks give null. */
-export function parseMesaId(raw: string): number | null {
-  const text = raw.trim();
-  if (!/^\d+$/.test(text)) {
-    return null;
-  }
-  const value = Number(text);
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
-}
-
 const hasValidCantidad = (l: LineaPedido): boolean =>
   Number.isInteger(l.cantidad) && l.cantidad >= 1;
 
@@ -132,7 +122,7 @@ export function validateDraft(draft: BorradorPedido): ErroresBorrador {
   } else if (!draft.lineas.every(hasValidCantidad)) {
     errors.items = ITEMS_INVALID_CANTIDAD;
   }
-  if (draft.tipoPedido === 'MESA' && parseMesaId(draft.mesaId) === null) {
+  if (draft.tipoPedido === 'MESA' && draft.mesaId === null) {
     errors.mesaId = MESA_REQUIRED;
   }
   return errors;
@@ -163,7 +153,8 @@ export function toRequest(draft: BorradorPedido): CrearPedidoRequest {
     };
   });
   const observacion = draft.observacion.trim();
-  const mesaId = draft.tipoPedido === 'MESA' ? parseMesaId(draft.mesaId) : null;
+  // L9 will also send `mesaId` for a RECOJO taken from a table; until then only MESA carries it.
+  const mesaId = draft.tipoPedido === 'MESA' ? draft.mesaId : null;
   return {
     tipoPedido: draft.tipoPedido,
     ...(mesaId !== null && { mesaId }),
@@ -174,13 +165,13 @@ export function toRequest(draft: BorradorPedido): CrearPedidoRequest {
 
 /** A blank form: MESA is the default of the design. Fresh objects on every call. */
 export function emptyDraft(): BorradorPedido {
-  return { tipoPedido: 'MESA', mesaId: '', observacion: '', lineas: [] };
+  return { tipoPedido: 'MESA', mesaId: null, observacion: '', lineas: [] };
 }
 
 /** True when the user has typed or added nothing worth a "discard" confirmation (the tipo alone does not count). */
 export function isDraftEmpty(draft: BorradorPedido): boolean {
   return (
-    draft.lineas.length === 0 && draft.mesaId.trim() === '' && draft.observacion.trim() === ''
+    draft.lineas.length === 0 && draft.mesaId === null && draft.observacion.trim() === ''
   );
 }
 

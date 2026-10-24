@@ -13,14 +13,25 @@ import {
   conteoFiltros,
   filtrarMesas,
   mesaCards,
+  PasoNuevoPedido,
   pasoAnterior,
+  pasoAnteriorDisponible,
+  pasoTrasMesa,
+  pasoTrasTipo,
+  pasosDisponibles,
   pasosDe,
   paginasRestantes,
+  ocupacionAlCrear,
   progresoLocal,
+  resumenMesa,
   puedeRestarComensal,
   puedeSumarComensal,
+  tipoPasoLabel,
+  tipoPasoResumen,
+  OPCIONES_TIPO,
   seccionesCuenta,
 } from './nuevo-pedido-local.rules';
+import type { MesaCard } from './nuevo-pedido-local.rules';
 
 /** Freezes recursively: any in-place mutation throws (ES modules run in strict mode). */
 function deepFreeze<T>(value: T): T {
@@ -67,6 +78,138 @@ describe('pasosDe / pasoAnterior', () => {
 
   it('a step outside the flow of the tipo has no previous step', () => {
     expect(pasoAnterior('COMENSALES', 'DELIVERY')).toBeNull();
+  });
+});
+
+describe('pasoTrasTipo', () => {
+  it('Local asks for the table first', () => {
+    expect(pasoTrasTipo('MESA')).toBe('MESA');
+  });
+
+  it('Delivery and Recojo go straight to the products', () => {
+    expect(pasoTrasTipo('DELIVERY')).toBe('PRODUCTOS');
+    expect(pasoTrasTipo('RECOJO')).toBe('PRODUCTOS');
+  });
+});
+
+describe('pasoTrasMesa', () => {
+  it('a free table asks the guests', () => {
+    expect(pasoTrasMesa({ estado: 'LIBRE' })).toBe('COMENSALES');
+  });
+
+  it('an occupied table skips the guests', () => {
+    expect(pasoTrasMesa({ estado: 'OCUPADA' })).toBe('PRODUCTOS');
+  });
+});
+
+describe('pasoAnteriorDisponible', () => {
+  const sinComensales: readonly PasoNuevoPedido[] = ['TIPO', 'MESA', 'PRODUCTOS'];
+
+  it('skips a step the page cannot render yet', () => {
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', sinComensales)).toBe('MESA');
+  });
+
+  it('behaves like pasoAnterior when every step is available', () => {
+    const todos = pasosDe('MESA');
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', todos)).toBe('COMENSALES');
+    expect(pasoAnteriorDisponible('MESA', 'MESA', todos)).toBe('TIPO');
+  });
+
+  it('goes back to TIPO for Delivery and Recojo', () => {
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'DELIVERY', sinComensales)).toBe('TIPO');
+  });
+
+  it('has nothing before TIPO or outside the flow', () => {
+    expect(pasoAnteriorDisponible('TIPO', 'MESA', sinComensales)).toBeNull();
+    expect(pasoAnteriorDisponible('COMENSALES', 'DELIVERY', sinComensales)).toBeNull();
+  });
+
+  it('returns null when no earlier step is available', () => {
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', ['PRODUCTOS'])).toBeNull();
+  });
+});
+
+describe('pasosDisponibles', () => {
+  it('a free table (or none yet) keeps the guests step', () => {
+    expect(pasosDisponibles({ estado: 'LIBRE' })).toEqual(['TIPO', 'MESA', 'COMENSALES', 'PRODUCTOS']);
+    expect(pasosDisponibles(null)).toEqual(['TIPO', 'MESA', 'COMENSALES', 'PRODUCTOS']);
+  });
+
+  it('an occupied table has no guests step, so Atrás from PRODUCTOS lands on MESA', () => {
+    const pasos = pasosDisponibles({ estado: 'OCUPADA' });
+    expect(pasos).toEqual(['TIPO', 'MESA', 'PRODUCTOS']);
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', pasos)).toBe('MESA');
+  });
+
+  it('a free table goes back from PRODUCTOS to COMENSALES and from COMENSALES to MESA', () => {
+    const pasos = pasosDisponibles({ estado: 'LIBRE' });
+    expect(pasoAnteriorDisponible('PRODUCTOS', 'MESA', pasos)).toBe('COMENSALES');
+    expect(pasoAnteriorDisponible('COMENSALES', 'MESA', pasos)).toBe('MESA');
+  });
+});
+
+describe('ocupacionAlCrear', () => {
+  const card = (overrides: Partial<MesaCard> = {}): MesaCard => ({
+    mesaId: 805,
+    numero: 5,
+    estado: 'LIBRE',
+    capacidad: 4,
+    comensales: null,
+    ocupacion: null,
+    consumido: null,
+    minutosAbierta: null,
+    alerta: null,
+    ...overrides,
+  });
+
+  it('a local order on a free table occupies it with the chosen guests', () => {
+    expect(ocupacionAlCrear('MESA', card(), 3)).toEqual({ mesaId: 805, comensales: 3 });
+  });
+
+  it('clamps the guests to the table capacity', () => {
+    expect(ocupacionAlCrear('MESA', card(), 9)).toEqual({ mesaId: 805, comensales: 4 });
+    expect(ocupacionAlCrear('MESA', card(), 0)).toEqual({ mesaId: 805, comensales: 1 });
+  });
+
+  it('an occupied table is not occupied again (another round)', () => {
+    const ocupada = card({ estado: 'OCUPADA', comensales: 3, ocupacion: '3/4' });
+    expect(ocupacionAlCrear('MESA', ocupada, 2)).toBeNull();
+  });
+
+  it('delivery, pickup and a missing table never occupy', () => {
+    expect(ocupacionAlCrear('DELIVERY', card(), 2)).toBeNull();
+    expect(ocupacionAlCrear('RECOJO', card(), 2)).toBeNull();
+    expect(ocupacionAlCrear('MESA', null, 2)).toBeNull();
+  });
+});
+
+describe('resumenMesa', () => {
+  const card = (overrides: Partial<MesaCard> = {}): MesaCard => ({
+    mesaId: 805,
+    numero: 5,
+    estado: 'LIBRE',
+    capacidad: 4,
+    comensales: null,
+    ocupacion: null,
+    consumido: null,
+    minutosAbierta: null,
+    alerta: null,
+    ...overrides,
+  });
+
+  it('a free table shows the chosen guests, singular for one', () => {
+    expect(resumenMesa(card(), 2)).toBe('Mesa 5 · 2 comensales');
+    expect(resumenMesa(card(), 1)).toBe('Mesa 5 · 1 comensal');
+  });
+
+  it('an occupied table shows its current occupation and ignores the guests of the step', () => {
+    const ocupada = card({ estado: 'OCUPADA', comensales: 3, ocupacion: '3/4' });
+    expect(resumenMesa(ocupada, 1)).toBe('Mesa 5 · 3/4 comensales');
+  });
+
+  it('an occupied table without known guests shows only the number', () => {
+    const ocupada = card({ estado: 'OCUPADA', comensales: null, ocupacion: '–/4' });
+    expect(resumenMesa(ocupada, 1)).toBe('Mesa 5');
   });
 });
 
@@ -355,5 +498,37 @@ describe('seccionesCuenta', () => {
       }),
     );
     expect(seccionesCuenta(cuenta).rondas.map((r) => r.pedido.pedidoId)).toEqual([8, 9]);
+  });
+});
+
+describe('tipo de pedido options', () => {
+  it('offers Local (MESA), Delivery and Recojo in that order', () => {
+    expect(OPCIONES_TIPO.map((o) => o.tipoPedido)).toEqual(['MESA', 'DELIVERY', 'RECOJO']);
+    expect(OPCIONES_TIPO.map((o) => o.label)).toEqual(['Local', 'Delivery', 'Recojo']);
+  });
+
+  it('describes each option and where it leads', () => {
+    expect(OPCIONES_TIPO.map((o) => o.descripcion)).toEqual([
+      'Pedido para una mesa del salón',
+      'Envío a domicilio',
+      'El cliente recoge en el local',
+    ]);
+    expect(OPCIONES_TIPO.map((o) => o.pie)).toEqual([
+      'Mesa · Comensales · Productos',
+      'Directo a productos',
+      'Directo a productos',
+    ]);
+  });
+
+  it('labels MESA as "Local" for the step and summaries', () => {
+    expect(tipoPasoLabel('MESA')).toBe('Local');
+    expect(tipoPasoLabel('DELIVERY')).toBe('Delivery');
+    expect(tipoPasoLabel('RECOJO')).toBe('Recojo');
+  });
+
+  it('summarizes Delivery and Recojo; Local has no fixed line', () => {
+    expect(tipoPasoResumen('DELIVERY')).toBe('Envío a domicilio');
+    expect(tipoPasoResumen('RECOJO')).toBe('El cliente recoge en el local');
+    expect(tipoPasoResumen('MESA')).toBeNull();
   });
 });

@@ -27,6 +27,45 @@ export function pasoAnterior(paso: PasoNuevoPedido, tipo: TipoPedido | null): Pa
   return index > 0 ? pasos[index - 1] : null;
 }
 
+/**
+ * Walks back from `paso` to the closest earlier step the page can render (`disponibles`), so "Atrás"
+ * never lands on a step that is not built yet; null at TIPO, outside the flow, or with no such step.
+ */
+export function pasoAnteriorDisponible(
+  paso: PasoNuevoPedido,
+  tipo: TipoPedido | null,
+  disponibles: readonly PasoNuevoPedido[],
+): PasoNuevoPedido | null {
+  let anterior = pasoAnterior(paso, tipo);
+  while (anterior !== null && !disponibles.includes(anterior)) {
+    anterior = pasoAnterior(anterior, tipo);
+  }
+  return anterior;
+}
+
+/** First step after choosing the tipo: Local asks the table, Delivery/Recojo go to the products. */
+export function pasoTrasTipo(tipo: TipoPedido): PasoNuevoPedido {
+  return tipo === 'MESA' ? 'MESA' : 'PRODUCTOS';
+}
+
+/**
+ * Step after choosing a table: a LIBRE one asks the guests. An OCUPADA one goes to PRODUCTOS for now;
+ * L8 will open its bill detail instead.
+ */
+export function pasoTrasMesa(mesa: Pick<Mesa, 'estado'>): PasoNuevoPedido {
+  return mesa.estado === 'LIBRE' ? 'COMENSALES' : 'PRODUCTOS';
+}
+
+/**
+ * Steps the page walks through once the table is known: an OCUPADA table never asks the guests, so
+ * "Atrás" from PRODUCTOS skips COMENSALES for it. No table yet (or LIBRE) keeps every step.
+ */
+export function pasosDisponibles(mesa: Pick<Mesa, 'estado'> | null): PasoNuevoPedido[] {
+  return mesa?.estado === 'OCUPADA'
+    ? ['TIPO', 'MESA', 'PRODUCTOS']
+    : ['TIPO', 'MESA', 'COMENSALES', 'PRODUCTOS'];
+}
+
 export type EstadoProgreso = 'done' | 'current' | 'todo';
 
 export interface ItemProgreso {
@@ -66,6 +105,34 @@ export function puedeSumarComensal(comensales: number, capacidad: number): boole
 
 export function puedeRestarComensal(comensales: number): boolean {
   return comensales > 1;
+}
+
+/**
+ * Line shown in the products summary: "Mesa 5 · 2 comensales" (singular for 1) for a LIBRE table with the
+ * guests just chosen; "Mesa 5 · 3/4 comensales" for an OCUPADA one; just "Mesa 5" when its guests are unknown.
+ */
+export function resumenMesa(mesa: MesaCard, comensales: number): string {
+  if (mesa.estado === 'LIBRE') {
+    return `Mesa ${mesa.numero} · ${comensales} ${comensales === 1 ? 'comensal' : 'comensales'}`;
+  }
+  return mesa.comensales === null || mesa.ocupacion === null
+    ? `Mesa ${mesa.numero}`
+    : `Mesa ${mesa.numero} · ${mesa.ocupacion} comensales`;
+}
+
+/**
+ * What "Crear pedido" must occupy first: a local order on a LIBRE table records its guests with
+ * `POST /mesas/{id}/ocupar`. An OCUPADA table gets another round without touching it; other types never occupy.
+ */
+export function ocupacionAlCrear(
+  tipo: TipoPedido,
+  mesa: MesaCard | null,
+  comensales: number,
+): { mesaId: number; comensales: number } | null {
+  if (tipo !== 'MESA' || mesa === null || mesa.estado !== 'LIBRE') {
+    return null;
+  }
+  return { mesaId: mesa.mesaId, comensales: clampComensales(comensales, mesa.capacidad) };
 }
 
 // ---- Time alert ----
@@ -217,4 +284,48 @@ export function seccionesCuenta(cuenta: CuentaMesa): SeccionesCuenta {
       .map((pedido, index) => ({ numero: index + 1, pedido })),
     paraLlevar: sorted.filter((p) => p.tipoPedido !== 'MESA'),
   };
+}
+
+// ---- Step 0: tipo de pedido ----
+
+export interface OpcionTipo {
+  tipoPedido: TipoPedido;
+  /** "Local" for MESA: the API value stays `MESA`. */
+  label: string;
+  descripcion: string;
+  /** Footer of the card: where the flow goes next. */
+  pie: string;
+}
+
+export const OPCIONES_TIPO: readonly OpcionTipo[] = [
+  {
+    tipoPedido: 'MESA',
+    label: 'Local',
+    descripcion: 'Pedido para una mesa del salón',
+    pie: 'Mesa · Comensales · Productos',
+  },
+  {
+    tipoPedido: 'DELIVERY',
+    label: 'Delivery',
+    descripcion: 'Envío a domicilio',
+    pie: 'Directo a productos',
+  },
+  {
+    tipoPedido: 'RECOJO',
+    label: 'Recojo',
+    descripcion: 'El cliente recoge en el local',
+    pie: 'Directo a productos',
+  },
+];
+
+/** Label of a tipo in the new-order flow (MESA reads "Local"). */
+export function tipoPasoLabel(tipo: TipoPedido): string {
+  return OPCIONES_TIPO.find((opcion) => opcion.tipoPedido === tipo)?.label ?? tipo;
+}
+
+/** One-line description for the cart summary; null for MESA, whose line is the table itself. */
+export function tipoPasoResumen(tipo: TipoPedido): string | null {
+  return tipo === 'MESA'
+    ? null
+    : (OPCIONES_TIPO.find((opcion) => opcion.tipoPedido === tipo)?.descripcion ?? null);
 }

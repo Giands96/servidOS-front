@@ -13,7 +13,6 @@ import {
   increment,
   isDraftEmpty,
   isValidDraft,
-  parseMesaId,
   pedidoCreadoMessage,
   productosDeCategoria,
   resumenItems,
@@ -45,7 +44,7 @@ const linea = (overrides: Partial<LineaPedido> = {}): LineaPedido => ({
 
 const draft = (overrides: Partial<BorradorPedido> = {}): BorradorPedido => ({
   tipoPedido: 'MESA',
-  mesaId: '7',
+  mesaId: 7,
   observacion: '',
   lineas: [linea()],
   ...overrides,
@@ -227,39 +226,6 @@ describe('totalReferencial', () => {
   });
 });
 
-describe('parseMesaId', () => {
-  it.each<[string, number]>([
-    ['7', 7],
-    ['  12  ', 12],
-    ['007', 7],
-    ['9007199254740991', Number.MAX_SAFE_INTEGER],
-  ])('accepts %j as %i', (raw, expected) => {
-    expect(parseMesaId(raw)).toBe(expected);
-  });
-
-  it.each([
-    '',
-    '   ',
-    '0',
-    '000',
-    '-3',
-    '+3',
-    '3.5',
-    '3.0',
-    '1e3',
-    '1E3',
-    '0x10',
-    'abc',
-    '7a',
-    '1 2',
-    '١٢',
-    '9007199254740992',
-    '99999999999999999999',
-  ])('rejects %j', (raw) => {
-    expect(parseMesaId(raw)).toBeNull();
-  });
-});
-
 describe('validateDraft', () => {
   it('has no errors for a valid MESA draft', () => {
     expect(validateDraft(draft())).toEqual({});
@@ -273,24 +239,22 @@ describe('validateDraft', () => {
     expect(isValidDraft(draft({ lineas: [] }))).toBe(false);
   });
 
-  it('asks for a valid mesa when the type is MESA and the input is blank or invalid', () => {
-    for (const mesaId of ['', '  ', '0', '-1', '2.5', 'abc', '1e2']) {
-      const errors = validateDraft(draft({ mesaId }));
-      expect(errors.mesaId).toBe('La mesa es obligatoria: ingresa un número entero mayor a 0');
-      expect(errors.items).toBeUndefined();
-    }
+  it('asks to pick a mesa when the type is MESA and none is chosen', () => {
+    const errors = validateDraft(draft({ mesaId: null }));
+    expect(errors.mesaId).toBe('Elige una mesa para el pedido');
+    expect(errors.items).toBeUndefined();
   });
 
   it('reports both errors at once', () => {
-    const errors = validateDraft(draft({ lineas: [], mesaId: '' }));
+    const errors = validateDraft(draft({ lineas: [], mesaId: null }));
     expect(Object.keys(errors).sort()).toEqual(['items', 'mesaId']);
   });
 
   it.each(['DELIVERY', 'RECOJO'] as const)(
     'does not ask for a mesa when the type is %s',
     (tipoPedido) => {
-      expect(validateDraft(draft({ tipoPedido, mesaId: '' }))).toEqual({});
-      expect(validateDraft(draft({ tipoPedido, mesaId: 'garbage' }))).toEqual({});
+      expect(validateDraft(draft({ tipoPedido, mesaId: null }))).toEqual({});
+      expect(validateDraft(draft({ tipoPedido, mesaId: 7 }))).toEqual({});
     },
   );
 
@@ -310,7 +274,7 @@ describe('toRequest', () => {
   it('builds the MESA request with the parsed mesaId and every line', () => {
     const result = toRequest(
       draft({
-        mesaId: ' 7 ',
+        mesaId: 7,
         lineas: [
           linea({ productoId: 1, cantidad: 2 }),
           linea({ productoId: 2, cantidad: 1, observacion: 'Sin ají' }),
@@ -328,9 +292,9 @@ describe('toRequest', () => {
   });
 
   it.each(['DELIVERY', 'RECOJO'] as const)(
-    'never sends mesaId for %s, even when the user typed one',
+    'never sends mesaId for %s, even when the draft still holds a table',
     (tipoPedido) => {
-      const result = toRequest(draft({ tipoPedido, mesaId: '7' }));
+      const result = toRequest(draft({ tipoPedido, mesaId: 7 }));
       expect(result.tipoPedido).toBe(tipoPedido);
       expect('mesaId' in result).toBe(false);
       expect(JSON.stringify(result)).not.toContain('mesaId');
@@ -399,12 +363,12 @@ describe('toRequest', () => {
 
   it('throws for an invalid draft instead of building a request the backend would reject', () => {
     expect(() => toRequest(draft({ lineas: [] }))).toThrow(/inválido/);
-    expect(() => toRequest(draft({ mesaId: '' }))).toThrow(/inválido/);
+    expect(() => toRequest(draft({ mesaId: null }))).toThrow(/inválido/);
     expect(() => toRequest(draft({ lineas: [linea({ cantidad: 0 })] }))).toThrow(/inválido/);
   });
 
-  it('builds a DELIVERY request even when the typed mesa would have been invalid', () => {
-    expect(() => toRequest(draft({ tipoPedido: 'DELIVERY', mesaId: 'abc' }))).not.toThrow();
+  it('builds a DELIVERY request without any mesa chosen', () => {
+    expect(() => toRequest(draft({ tipoPedido: 'DELIVERY', mesaId: null }))).not.toThrow();
   });
 
   it('does not mutate its input and does not alias its lines', () => {
@@ -420,7 +384,7 @@ describe('toRequest', () => {
 
 describe('emptyDraft', () => {
   it('starts as a MESA order with no mesa, no observation and no lines (the default of the design)', () => {
-    expect(emptyDraft()).toEqual({ tipoPedido: 'MESA', mesaId: '', observacion: '', lineas: [] });
+    expect(emptyDraft()).toEqual({ tipoPedido: 'MESA', mesaId: null, observacion: '', lineas: [] });
   });
 
   it('returns a fresh object every time', () => {
@@ -439,13 +403,13 @@ describe('isDraftEmpty', () => {
     expect(isDraftEmpty({ ...emptyDraft(), lineas: [linea()] })).toBe(false);
   });
 
-  it('is false when the mesa or the order observation has text', () => {
-    expect(isDraftEmpty({ ...emptyDraft(), mesaId: '4' })).toBe(false);
+  it('is false when a mesa is chosen or the order observation has text', () => {
+    expect(isDraftEmpty({ ...emptyDraft(), mesaId: 4 })).toBe(false);
     expect(isDraftEmpty({ ...emptyDraft(), observacion: 'Sin ají' })).toBe(false);
   });
 
-  it('treats whitespace-only text as empty', () => {
-    expect(isDraftEmpty({ ...emptyDraft(), mesaId: '  ', observacion: ' \n ' })).toBe(true);
+  it('treats a whitespace-only observation as empty', () => {
+    expect(isDraftEmpty({ ...emptyDraft(), observacion: ' \n ' })).toBe(true);
   });
 });
 
@@ -536,7 +500,7 @@ describe('resumenItems', () => {
 });
 
 describe('visibleErrors', () => {
-  const invalid = draft({ lineas: [], mesaId: '' });
+  const invalid = draft({ lineas: [], mesaId: null });
 
   it('shows nothing before the first submit attempt, even for an invalid draft', () => {
     expect(visibleErrors(invalid, false)).toEqual({});
@@ -549,7 +513,7 @@ describe('visibleErrors', () => {
 
   it('follows the draft once the attempt was made (an error disappears when it is fixed)', () => {
     expect(visibleErrors(draft(), true)).toEqual({});
-    expect(Object.keys(visibleErrors(draft({ mesaId: 'x' }), true))).toEqual(['mesaId']);
+    expect(Object.keys(visibleErrors(draft({ mesaId: null }), true))).toEqual(['mesaId']);
   });
 });
 
