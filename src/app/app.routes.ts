@@ -60,8 +60,13 @@ export const routes: Routes = [
           import('./features/pedidos/nuevo-pedido.page').then((m) => m.NuevoPedidoPage),
         ),
       },
-      // Placeholder until the Mesas page lands (slice 4 of odd/tasks/mesas.md).
-      { path: 'mesas', ...moduleRoute('mesas.ver', 'Mesas', 'grid') },
+      // No subscriptionGuard: reading the tables works while the tenant is blocked; the page disables the writes (402).
+      {
+        path: 'mesas',
+        ...moduleRoute('mesas.ver', 'Mesas', 'grid', [], () =>
+          import('./features/mesas/mesas.page').then((m) => m.MesasPage),
+        ),
+      },
       // No subscriptionGuard: marking LISTO is allowed while the subscription is blocked (402 does not apply).
       {
         path: 'cocina',

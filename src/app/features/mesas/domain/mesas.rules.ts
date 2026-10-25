@@ -1,3 +1,5 @@
+import { MeResponse } from '../../../core/auth/auth.types';
+import { can, isTenantWriteBlocked } from '../../../core/auth/domain/permissions.rules';
 import { GuardarMesaRequest, Mesa } from '../mesas.types';
 
 /** Form state of the Nueva / Editar mesa modal; the inputs keep their raw text. */
@@ -94,6 +96,35 @@ export function ocupacionLabel(m: Pick<Mesa, 'comensales' | 'capacidad'>): strin
 export interface PermisosMesa {
   operar: boolean;
   gestionar: boolean;
+}
+
+/** Page-level permissions: card actions plus the inactive tab, the blocked notice and the "Solo lectura" chip. */
+export interface PermisosPaginaMesas extends PermisosMesa {
+  /** "Dadas de baja" tab; reading still works while the tenant is blocked. */
+  verInactivas: boolean;
+  /** The user could write but the tenant is blocked: the page shows `mesasBlockedNotice`. */
+  bloqueado: boolean;
+  /** The role can never write here (cajero): the header shows "Solo lectura". */
+  soloLectura: boolean;
+}
+
+export const mesasBlockedNotice =
+  'La suscripción del restaurante no está vigente: las mesas están en solo lectura.';
+
+type MesasActor = Pick<MeResponse, 'rol' | 'restauranteId' | 'restauranteEstado' | 'suscripcion'>;
+
+/** UI shortcut only: the backend (403/402) stays authoritative. Every mesas write answers 402 while blocked. */
+export function mesasPermisos(user: MesasActor | null): PermisosPaginaMesas {
+  const mayOperate = can(user, 'mesas.operar');
+  const mayManage = can(user, 'mesas.gestionar');
+  const blocked = isTenantWriteBlocked(user);
+  return {
+    operar: mayOperate && !blocked,
+    gestionar: mayManage && !blocked,
+    verInactivas: mayManage,
+    bloqueado: blocked && (mayOperate || mayManage),
+    soloLectura: !mayOperate && !mayManage,
+  };
 }
 
 export interface AccionesMesa {
