@@ -9,23 +9,43 @@ import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { MesaCard, mesaCards } from '../pedidos/domain/nuevo-pedido-local.rules';
+import { EstadoMesaDetalle, MesaDetalleComponent } from '../pedidos/nuevo-pedido/mesa-detalle.component';
 import { RestauranteApi } from '../restaurante/data/restaurante.api';
+import { CuentaMesaApi } from './data/cuenta-mesa.api';
 import { MesasApi } from './data/mesas.api';
 import {
   FiltroEstadoMesa,
+  accionesMesa,
   actualizadoHace,
   conteoMesas,
+  falloLiberar,
   filtrarPorEstado,
   mesasBlockedNotice,
   mesaGuardadaMessage,
+  mesaLiberadaMessage,
+  mesaOcupadaMessage,
   mesasPermisos,
+  ocupacionLabel,
   upsertMesa,
 } from './domain/mesas.rules';
 import { MesaCardComponent } from './mesa-card.component';
 import { MesaFormComponent } from './mesa-form.component';
-import { Mesa } from './mesas.types';
+import { OcuparMesaComponent } from './ocupar-mesa.component';
+import { CuentaMesa, Mesa } from './mesas.types';
 
 const DEFAULT_ERROR = 'Revisa tu conexión e inténtalo de nuevo.';
+
+/** "Ver cuenta" (decision 3): the read-only bill of a table, reusing the Nuevo pedido detail panel. */
+interface DetalleCuenta {
+  mesa: Mesa;
+  card: MesaCard;
+  estado: EstadoMesaDetalle;
+  cuenta: CuentaMesa | null;
+  error: string;
+}
+
+type Liberar = { mesa: Mesa; fase: 'confirmar' } | { mesa: Mesa; fase: 'abiertos'; mensaje: string };
 
 const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconName }[] = [
   { filtro: 'TODAS', label: 'Todas', icon: 'grid' },
@@ -36,7 +56,16 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
 /** The restaurant tables: active grid with filters and manual refresh, Orchestration only: the logic lives in mesas.rules. */
 @Component({
   selector: 'app-mesas',
-  imports: [ButtonComponent, IconComponent, MesaCardComponent, MesaFormComponent, ModalComponent, StatePanelComponent],
+  imports: [
+    ButtonComponent,
+    IconComponent,
+    MesaCardComponent,
+    MesaDetalleComponent,
+    MesaFormComponent,
+    ModalComponent,
+    OcuparMesaComponent,
+    StatePanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
@@ -137,11 +166,28 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
           </p>
         } @else {
           <ul class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" aria-label="Mesas">
-            @for (mesa of visibles(); track mesa.mesaId) {
+            @for (vista of visibles(); track vista.mesa.mesaId) {
+              @let mesa = vista.mesa;
               <li>
                 <app-mesa-card [mesa]="mesa" class="h-full">
-                  <div actions class="mt-4 flex justify-end empty:hidden">
-                    @if (permisos().gestionar) {
+                  <div actions class="mt-4 flex items-center gap-2 empty:hidden">
+                    @if (vista.acciones.ocupar) {
+                      <button appButton type="button" variant="primary" class="flex-1" (click)="ocupar.set(mesa)">
+                        <app-icon name="users" [size]="16" />Ocupar
+                      </button>
+                    }
+                    @if (vista.acciones.liberar) {
+                      <button
+                        appButton
+                        type="button"
+                        variant="secondary"
+                        class="flex-1"
+                        (click)="liberar.set({ mesa, fase: 'confirmar' })"
+                      >
+                        <app-icon name="logout" [size]="16" />Liberar
+                      </button>
+                    }
+                    @if (vista.acciones.editar) {
                       <button
                         type="button"
                         class="inline-flex size-9 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
@@ -159,6 +205,77 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
           </ul>
         }
       }
+      @if (ocupar(); as mesa) {
+        <app-ocupar-mesa
+          [mesa]="mesa"
+          (ocupada)="onOcupada($event.mesa, $event.comensales)"
+          (fallo)="onFalloOcupar($event)"
+          (cancelled)="ocupar.set(null)"
+        />
+      }
+      @if (liberar(); as state) {
+        @if (state.fase === 'confirmar') {
+          <app-modal [heading]="'¿Liberar la mesa ' + state.mesa.numero + '?'">
+            <app-icon icon name="logout" [size]="22" />
+            La mesa pasará a LIBRE y quedará disponible para nuevos comensales.
+            <dl class="mt-4 space-y-2 rounded-control border border-line bg-surface px-4 py-3 text-ink">
+              <div class="flex justify-between gap-3">
+                <dt class="text-muted">Estado actual</dt>
+                <dd class="font-semibold">Ocupada</dd>
+              </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-muted">Comensales</dt>
+                <dd class="font-mono font-semibold">{{ ocupacion(state.mesa) }}</dd>
+              </div>
+            </dl>
+            <div footer class="ml-auto flex gap-3">
+              <button appButton type="button" variant="secondary" [disabled]="liberando()" (click)="liberar.set(null)">
+                Cancelar
+              </button>
+              <button appButton type="button" variant="primary" [disabled]="liberando()" (click)="confirmarLiberar(state.mesa)">
+                <app-icon [name]="liberando() ? 'spinner' : 'logout'" [size]="18" [class.animate-spin]="liberando()" />Liberar mesa
+              </button>
+            </div>
+          </app-modal>
+        } @else {
+          <app-modal [heading]="'No se pudo liberar la mesa ' + state.mesa.numero">
+            <app-icon icon name="banknote" [size]="22" />
+            La mesa sigue OCUPADA.
+            <p
+              class="mt-4 flex items-start gap-2 rounded-control border border-danger/25 bg-danger-soft px-3.5 py-3 text-danger"
+              role="alert"
+            >
+              <app-icon name="alert" [size]="16" class="mt-0.5" />{{ state.mensaje }}
+            </p>
+            <div class="mt-3 flex items-start gap-2 rounded-control bg-neutral-soft px-3.5 py-3 text-ink">
+              <app-icon name="clock" [size]="16" class="mt-0.5" />
+              <div>
+                <p class="font-semibold">¿Qué pasa ahora?</p>
+                <p class="text-muted">
+                  La mesa se libera sola cuando se cobra y se entrega su último pedido. No hace falta liberarla a mano.
+                </p>
+              </div>
+            </div>
+            <div footer class="ml-auto flex gap-3">
+              <button appButton type="button" variant="secondary" (click)="verCuenta(state.mesa)">
+                <app-icon name="receipt" [size]="18" />Ver cuenta
+              </button>
+              <button appButton type="button" variant="primary" (click)="liberar.set(null)">Entendido</button>
+            </div>
+          </app-modal>
+        }
+      }
+      @if (cuenta(); as detalle) {
+        <app-mesa-detalle
+          [mesa]="detalle.card"
+          [cuenta]="detalle.cuenta"
+          [estado]="detalle.estado"
+          [mensajeError]="detalle.error"
+          [soloLectura]="true"
+          (cerrar)="cuenta.set(null)"
+          (reintentar)="verCuenta(detalle.mesa)"
+        />
+      }
       @if (form(); as state) {
         <app-modal
           [form]="true"
@@ -175,6 +292,7 @@ export class MesasPage {
   private readonly api = inject(MesasApi);
   private readonly session = inject(SessionStore);
   private readonly toasts = inject(ToastService);
+  private readonly cuentaApi = inject(CuentaMesaApi);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly blockedNotice = mesasBlockedNotice;
@@ -184,6 +302,13 @@ export class MesasPage {
   protected readonly filtro = signal<FiltroEstadoMesa>('TODAS');
   /** Nueva / Editar mesa modal: open while not null; `mesa: null` creates. */
   protected readonly form = signal<{ mesa: Mesa | null } | null>(null);
+  /** Ocupar modal for this table while not null. */
+  protected readonly ocupar = signal<Mesa | null>(null);
+  /** Liberar: the confirmation, then the "No se pudo liberar" dialog when the table still has open orders. */
+  protected readonly liberar = signal<Liberar | null>(null);
+  protected readonly liberando = signal(false);
+  protected readonly cuenta = signal<DetalleCuenta | null>(null);
+  protected readonly ocupacion = ocupacionLabel;
 
   protected readonly activas = signal<Mesa[] | null>(null);
   protected readonly failed = signal(false);
@@ -201,7 +326,13 @@ export class MesasPage {
     const at = this.loadedAt();
     return at === null ? null : actualizadoHace(at, this.now());
   });
-  protected readonly visibles = computed(() => filtrarPorEstado(this.activas() ?? [], this.filtro()));
+  protected readonly visibles = computed(() => {
+    const permisos = this.permisos();
+    return filtrarPorEstado(this.activas() ?? [], this.filtro()).map((mesa) => ({
+      mesa,
+      acciones: accionesMesa(mesa, permisos),
+    }));
+  });
   protected readonly filtros = computed(() => {
     const activas = this.activas();
     const conteo = activas === null ? null : conteoMesas(activas);
@@ -230,6 +361,62 @@ export class MesasPage {
     this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
     this.form.set(null);
     this.toasts.show('OK', mesaGuardadaMessage(mesa, mode), 'success');
+  }
+
+  protected onOcupada(mesa: Mesa, comensales: number): void {
+    this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
+    this.ocupar.set(null);
+    this.toasts.show('OK', mesaOcupadaMessage(mesa, comensales), 'success');
+  }
+
+  /** A rejected occupy (e.g. taken meanwhile): close, show the backend message and reload the grid. */
+  protected onFalloOcupar(message: string): void {
+    this.ocupar.set(null);
+    this.toasts.show('Error', message);
+    this.refresh();
+  }
+
+  protected confirmarLiberar(mesa: Mesa): void {
+    if (this.liberando()) {
+      return;
+    }
+    this.liberando.set(true);
+    this.api
+      .liberar(mesa.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (libre) => {
+          this.liberando.set(false);
+          this.activas.update((mesas) => upsertMesa(mesas ?? [], libre));
+          this.liberar.set(null);
+          this.toasts.show('OK', mesaLiberadaMessage(libre), 'success');
+        },
+        error: (err: unknown) => {
+          this.liberando.set(false);
+          const status = err instanceof HttpErrorResponse ? err.status : 0;
+          const message = err instanceof HttpErrorResponse ? (readApiError(err.error)?.message ?? null) : null;
+          if (falloLiberar(status, message) === 'pedidos-abiertos') {
+            this.liberar.set({ mesa, fase: 'abiertos', mensaje: message ?? '' });
+            return;
+          }
+          this.liberar.set(null);
+          this.toasts.show(status || 'Error', message ?? DEFAULT_ERROR);
+          this.refresh();
+        },
+      });
+  }
+
+  protected verCuenta(mesa: Mesa): void {
+    this.liberar.set(null);
+    this.cuenta.set({ mesa, card: mesaCards([mesa], [], new Date())[0], estado: 'cargando', cuenta: null, error: '' });
+    this.cuentaApi
+      .obtener(mesa.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuenta) => this.cuenta.update((d) => (d === null ? d : { ...d, estado: 'listo', cuenta })),
+        error: (err: unknown) =>
+          this.cuenta.update((d) => (d === null ? d : { ...d, estado: 'error', error: messageOf(err) })),
+      });
   }
 
   /** "Actualizar" (decision 4, manual only): keeps the grid on screen while it reloads. */
