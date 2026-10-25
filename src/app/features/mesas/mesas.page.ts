@@ -172,7 +172,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
                 <app-mesa-card [mesa]="mesa" class="h-full">
                   <div actions class="mt-4 flex items-center gap-2 empty:hidden">
                     @if (vista.acciones.ocupar) {
-                      <button appButton type="button" variant="primary" class="flex-1" (click)="ocupar.set(mesa)">
+                      <button appButton type="button" variant="primary" class="min-w-0 flex-1" (click)="ocupar.set(mesa)">
                         <app-icon name="users" [size]="16" />Ocupar
                       </button>
                     }
@@ -181,7 +181,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
                         appButton
                         type="button"
                         variant="secondary"
-                        class="flex-1"
+                        class="min-w-0 flex-1"
                         (click)="liberar.set({ mesa, fase: 'confirmar' })"
                       >
                         <app-icon name="logout" [size]="16" />Liberar
@@ -190,7 +190,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
                     @if (vista.acciones.editar) {
                       <button
                         type="button"
-                        class="inline-flex size-9 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                        class="inline-flex size-9 shrink-0 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                         [class]="mesa.estado === 'LIBRE' ? 'border-line text-ink hover:bg-surface' : 'border-ink-line text-white hover:bg-white/10'"
                         [attr.aria-label]="'Editar mesa ' + mesa.numero"
                         (click)="form.set({ mesa })"
