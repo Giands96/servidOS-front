@@ -261,7 +261,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
                     @if (vista.acciones.darDeBaja.visible) {
                       <button
                         type="button"
-                        class="inline-flex size-9 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                        class="inline-flex size-9 shrink-0 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                         [class]="mesa.estado === 'LIBRE' ? 'border-line text-ink hover:bg-surface' : 'border-ink-line text-white'"
                         [attr.aria-label]="'Dar de baja la mesa ' + mesa.numero"
                         [attr.aria-disabled]="vista.acciones.darDeBaja.habilitada ? null : 'true'"
