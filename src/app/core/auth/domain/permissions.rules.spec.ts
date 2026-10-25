@@ -38,6 +38,9 @@ const ACTIONS: Action[] = [
   'reportes.ver',
   'cocina.ver',
   'cocina.listo',
+  'mesas.ver',
+  'mesas.operar',
+  'mesas.gestionar',
 ];
 
 /** Allowed roles per action (FRONTEND_CONTEXT sections 3, 7, 9 and 'Flujo - Recepcion Cocina' role matrix). */
@@ -58,6 +61,9 @@ const ALLOWED: Record<Action, Rol[]> = {
   'reportes.ver': ['ADMINISTRADOR'],
   'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
   'cocina.listo': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
+  'mesas.ver': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO', 'MESERO'],
+  'mesas.operar': ['ADMINISTRADOR', 'RECEPCION', 'MESERO'],
+  'mesas.gestionar': ['ADMINISTRADOR'],
 };
 
 const userFor = (rol: Rol): Pick<MeResponse, 'rol' | 'restauranteId'> => ({
@@ -126,7 +132,7 @@ describe('homeFor', () => {
     ['ADMINISTRADOR', '/pedidos'],
     ['RECEPCION', '/pedidos'],
     ['COCINERO', '/cocina'],
-    ['MESERO', '/sin-modulos'],
+    ['MESERO', '/mesas'],
     ['CAJERO', '/caja'],
     ['REPARTIDOR', '/sin-modulos'],
   ] as const)('%s -> %s', (rol, expected) => {

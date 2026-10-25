@@ -99,6 +99,26 @@ describe('routes', () => {
     expect(url()).toBe('/sin-permiso');
   });
 
+  it.each(['ADMINISTRADOR', 'RECEPCION', 'CAJERO', 'MESERO'] as const)('lets %s open Mesas', async (rol) => {
+    signIn({ rol });
+    await RouterTestingHarness.create('/mesas');
+    expect(url()).toBe('/mesas');
+  });
+
+  it.each(['COCINERO', 'REPARTIDOR'] as const)('keeps %s out of Mesas', async (rol) => {
+    signIn({ rol });
+    await RouterTestingHarness.create('/mesas');
+    expect(url()).toBe('/sin-permiso');
+  });
+
+  it('declares /mesas with its permission and a grid entry right after Pedidos', () => {
+    const mesas = shellChild('mesas');
+    expect(mesas.canActivate).toEqual([routeActionGuard]);
+    expect(mesas.data).toMatchObject({ action: 'mesas.ver', nav: { label: 'Mesas', icon: 'grid' } });
+    const labels = navEntriesFrom(routes).map((e) => e.label);
+    expect(labels.indexOf('Mesas')).toBe(labels.indexOf('Pedidos') + 1);
+  });
+
   it('declares /reportes with its permission and a chart entry between Catálogo and Usuarios', () => {
     const reportes = shellChild('reportes');
     expect(reportes.canActivate).toEqual([routeActionGuard]);

@@ -2,7 +2,17 @@ import type { Routes } from '@angular/router';
 import { MeResponse, Rol } from '../auth.types';
 import { Action, can, homeFor } from './permissions.rules';
 
-export type NavIcon = 'receipt' | 'flame' | 'wallet' | 'book' | 'users' | 'store' | 'building' | 'plus' | 'chart';
+export type NavIcon =
+  | 'receipt'
+  | 'grid'
+  | 'flame'
+  | 'wallet'
+  | 'book'
+  | 'users'
+  | 'store'
+  | 'building'
+  | 'plus'
+  | 'chart';
 
 export interface NavItem {
   label: string;
