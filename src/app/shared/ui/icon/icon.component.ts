@@ -148,6 +148,7 @@ const ICONS = {
   chevronLeft: ['m15 18-6-6 6-6'],
   chevronRight: ['m9 18 6-6-6-6'],
   chevronDown: ['m6 9 6 6 6-6'],
+  chevronUp: ['m18 15-6-6-6 6'],
   download: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5', 'M12 15V3'],
   calendar: [
     'M8 2v4',

@@ -45,6 +45,7 @@ const linea = (overrides: Partial<LineaPedido> = {}): LineaPedido => ({
 const draft = (overrides: Partial<BorradorPedido> = {}): BorradorPedido => ({
   tipoPedido: 'MESA',
   mesaId: 7,
+  paraLlevarDeMesa: false,
   observacion: '',
   lineas: [linea()],
   ...overrides,
@@ -258,6 +259,16 @@ describe('validateDraft', () => {
     },
   );
 
+  it('asks to pick a mesa for a takeaway of a table that has none', () => {
+    const errors = validateDraft(
+      draft({ tipoPedido: 'RECOJO', paraLlevarDeMesa: true, mesaId: null }),
+    );
+    expect(errors.mesaId).toBe('Elige una mesa para el pedido');
+    expect(
+      validateDraft(draft({ tipoPedido: 'RECOJO', paraLlevarDeMesa: true, mesaId: 7 })),
+    ).toEqual({});
+  });
+
   it('flags a line whose cantidad is not an integer >= 1', () => {
     for (const cantidad of [0, -1, 1.5, Number.NaN]) {
       const errors = validateDraft(draft({ lineas: [linea({ cantidad })] }));
@@ -300,6 +311,25 @@ describe('toRequest', () => {
       expect(JSON.stringify(result)).not.toContain('mesaId');
     },
   );
+
+  it('sends mesaId with RECOJO for a takeaway of a table', () => {
+    const result = toRequest(draft({ tipoPedido: 'RECOJO', paraLlevarDeMesa: true, mesaId: 7 }));
+    expect(result).toEqual({
+      tipoPedido: 'RECOJO',
+      mesaId: 7,
+      items: [{ productoId: 1, cantidad: 1 }],
+    });
+  });
+
+  it('never sends mesaId for a plain RECOJO, even with a table left in the draft', () => {
+    const result = toRequest(draft({ tipoPedido: 'RECOJO', paraLlevarDeMesa: false, mesaId: 7 }));
+    expect('mesaId' in result).toBe(false);
+  });
+
+  it('never sends mesaId for DELIVERY, even if the takeaway flag is set', () => {
+    const result = toRequest(draft({ tipoPedido: 'DELIVERY', paraLlevarDeMesa: true, mesaId: 7 }));
+    expect('mesaId' in result).toBe(false);
+  });
 
   it('trims the order observation and omits it when blank', () => {
     expect(toRequest(draft({ observacion: '  Cumpleaños  ' })).observacion).toBe('Cumpleaños');
@@ -384,7 +414,13 @@ describe('toRequest', () => {
 
 describe('emptyDraft', () => {
   it('starts as a MESA order with no mesa, no observation and no lines (the default of the design)', () => {
-    expect(emptyDraft()).toEqual({ tipoPedido: 'MESA', mesaId: null, observacion: '', lineas: [] });
+    expect(emptyDraft()).toEqual({
+      tipoPedido: 'MESA',
+      mesaId: null,
+      paraLlevarDeMesa: false,
+      observacion: '',
+      lineas: [],
+    });
   });
 
   it('returns a fresh object every time', () => {
@@ -405,6 +441,9 @@ describe('isDraftEmpty', () => {
 
   it('is false when a mesa is chosen or the order observation has text', () => {
     expect(isDraftEmpty({ ...emptyDraft(), mesaId: 4 })).toBe(false);
+    expect(
+      isDraftEmpty({ ...emptyDraft(), tipoPedido: 'RECOJO', paraLlevarDeMesa: true }),
+    ).toBe(false);
     expect(isDraftEmpty({ ...emptyDraft(), observacion: 'Sin ají' })).toBe(false);
   });
 

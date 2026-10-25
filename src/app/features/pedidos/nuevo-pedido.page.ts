@@ -3,10 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
@@ -68,11 +72,15 @@ import {
   pasoTrasTipo,
   pasosDisponibles,
   resumenMesa,
+  resumenParaLlevar,
   tipoPasoLabel,
   tipoPasoResumen,
 } from './domain/nuevo-pedido-local.rules';
 import { formatMoney, tipoIcon } from './domain/pedidos.rules';
+import { CuentaMesaApi } from '../mesas/data/cuenta-mesa.api';
+import { CuentaMesa } from '../mesas/mesas.types';
 import { ComensalesStepComponent } from './nuevo-pedido/comensales-step.component';
+import { EstadoMesaDetalle, MesaDetalleComponent } from './nuevo-pedido/mesa-detalle.component';
 import { EstadoMesaPicker, MesaPickerComponent } from './nuevo-pedido/mesa-picker.component';
 import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component';
 import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
@@ -116,6 +124,7 @@ interface LineView {
     ButtonComponent,
     ComensalesStepComponent,
     IconComponent,
+    MesaDetalleComponent,
     MesaPickerComponent,
     ModalComponent,
     ProgresoLocalComponent,
@@ -123,6 +132,7 @@ interface LineView {
     TipoPedidoStepComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'onEscape()' },
   template: `
     <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
       <header class="flex flex-wrap items-start justify-between gap-4">
@@ -135,10 +145,25 @@ interface LineView {
             } @else {
               <span>Nuevo pedido</span>
               <span aria-hidden="true">›</span>
-              <span class="text-ink" aria-current="page">{{ tipoLabel() }}</span>
+              @if (paraLlevarMesa(); as mesa) {
+                <span>Local</span>
+                <span aria-hidden="true">›</span>
+                <span class="text-ink" aria-current="page">Mesa {{ mesa.numero }}</span>
+              } @else {
+                <span class="text-ink" aria-current="page">{{ tipoLabel() }}</span>
+              }
             }
           </nav>
-          <h1 class="mt-2 text-3xl font-bold tracking-tight">Nuevo pedido</h1>
+          <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 class="text-3xl font-bold tracking-tight">Nuevo pedido</h1>
+            @if (paraLlevarMesa(); as mesa) {
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full bg-flow-soft px-3 py-1 text-sm font-semibold text-flow"
+              >
+                <app-icon name="bag" [size]="14" />{{ resumenLlevar(mesa) }}
+              </span>
+            }
+          </div>
         </div>
         @if (paso() !== 'TIPO') {
           <div class="flex flex-wrap items-center gap-4">
@@ -165,6 +190,18 @@ interface LineView {
           (reintentar)="cargarMesas()"
           (cambiarTipo)="cambiarTipo()"
         />
+        @if (detalleMesa(); as mesa) {
+          <app-mesa-detalle
+            [mesa]="mesa"
+            [cuenta]="cuentaDetalle()"
+            [estado]="estadoDetalle()"
+            [mensajeError]="errorDetalle()"
+            (cerrar)="cerrarDetalle()"
+            (reintentar)="cargarCuenta(mesa)"
+            (agregarRonda)="agregarRonda(mesa)"
+            (nuevoParaLlevar)="paraLlevar(mesa)"
+          />
+        }
       } @else if (paso() === 'COMENSALES') {
         @if (mesaElegida(); as mesa) {
           <app-comensales-step
@@ -333,30 +370,67 @@ interface LineView {
             }
           </div>
 
+          @if (pedidoAbierto()) {
+            <div class="fixed inset-0 z-40 bg-ink/40 lg:hidden" aria-hidden="true" (click)="cerrarPedido()"></div>
+          }
+          <!-- One form: the sticky column on lg, a bottom sheet below it (closed by default). -->
           <form
-            #cart
-            class="scroll-mt-32 rounded-card border lg:scroll-mt-4 border-line bg-card lg:sticky lg:top-6"
-            aria-label="Pedido en curso"
+            class="rounded-card border border-line bg-card lg:sticky lg:top-6 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-50 max-lg:flex max-lg:max-h-[90dvh] max-lg:flex-col max-lg:rounded-b-none max-lg:border-x-0 max-lg:border-b-0 max-lg:shadow-xl"
+            [class.max-lg:hidden]="!pedidoAbierto()"
+            [attr.role]="sheetActivo() ? 'dialog' : null"
+            [attr.aria-modal]="sheetActivo() ? 'true' : null"
+            [attr.aria-label]="sheetActivo() ? null : 'Pedido en curso'"
+            [attr.aria-labelledby]="sheetActivo() ? 'nuevo-pedido-titulo' : null"
             novalidate
             (submit)="submit($event)"
           >
+            <div class="shrink-0 lg:hidden">
+              <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-line" aria-hidden="true"></div>
+              <div class="flex items-center justify-between gap-3 border-b border-line px-5 pb-3 pt-2">
+                <h2 id="nuevo-pedido-titulo" class="text-lg font-bold">Pedido</h2>
+                <button
+                  #cerrarBtn
+                  type="button"
+                  class="rounded-control p-1.5 text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  aria-label="Cerrar pedido"
+                  (click)="cerrarPedido()"
+                >
+                  <app-icon name="chevronDown" [size]="22" />
+                </button>
+              </div>
+            </div>
+
+            <div class="max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto">
             <div class="min-w-0 p-5">
               <div class="flex items-center gap-3">
-                <span
-                  class="flex size-10 shrink-0 items-center justify-center rounded-card bg-brand-soft text-brand"
-                >
-                  @if (tipoIconName(); as icon) {
-                    <app-icon [name]="icon" [size]="20" />
-                  }
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">
-                    {{ tipoLabel() }}
-                  </p>
-                  @if (tipoResumen(); as resumenTipo) {
-                    <p class="text-sm">{{ resumenTipo }}</p>
-                  }
-                </div>
+                @if (paraLlevarMesa(); as mesa) {
+                  <span
+                    class="flex size-10 shrink-0 items-center justify-center rounded-card bg-flow-soft text-flow"
+                  >
+                    <app-icon name="bag" [size]="20" />
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-flow">Para llevar</p>
+                    <p class="text-sm font-bold">Mesa {{ mesa.numero }}</p>
+                    <p class="text-xs text-muted">se cobra con la cuenta de la mesa</p>
+                  </div>
+                } @else {
+                  <span
+                    class="flex size-10 shrink-0 items-center justify-center rounded-card bg-brand-soft text-brand"
+                  >
+                    @if (tipoIconName(); as icon) {
+                      <app-icon [name]="icon" [size]="20" />
+                    }
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                      {{ tipoLabel() }}
+                    </p>
+                    @if (tipoResumen(); as resumenTipo) {
+                      <p class="text-sm">{{ resumenTipo }}</p>
+                    }
+                  </div>
+                }
                 <button
                   type="button"
                   class="text-sm font-semibold text-brand hover:text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
@@ -376,10 +450,8 @@ interface LineView {
             <section class="border-t border-line p-5" aria-labelledby="nuevo-pedido-items">
               <div class="flex items-baseline justify-between gap-3">
                 <h2
-                  #cartHeading
                   id="nuevo-pedido-items"
-                  tabindex="-1"
-                  class="text-sm font-medium outline-none"
+                  class="text-sm font-medium"
                 >
                   Ítems
                 </h2>
@@ -465,14 +537,17 @@ interface LineView {
                 id="nuevo-pedido-observacion"
                 name="observacion"
                 rows="3"
-                placeholder="Ej. alergias, preferencias de la mesa…"
+                [placeholder]="observacionPlaceholder()"
                 class="mt-2 w-full resize-y rounded-control border border-line bg-card px-3.5 py-3 text-base text-ink sm:text-sm outline-none placeholder:text-subtle focus:border-ink"
                 [value]="observacion()"
                 (input)="observacion.set(valueOf($event))"
               ></textarea>
             </div>
+            </div>
 
-            <div class="border-t border-line p-5">
+            <div
+              class="border-t border-line p-5 max-lg:shrink-0 max-lg:pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+            >
               <div class="flex items-end justify-between gap-4">
                 <div>
                   <p class="text-sm text-muted">Total referencial</p>
@@ -509,7 +584,7 @@ interface LineView {
         </div>
 
         @if (hasItems()) {
-          <!-- Spacer so the fixed bar never covers the cart buttons. -->
+          <!-- Spacer so the fixed bar never covers the last products. -->
           <div class="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true"></div>
           <div
             class="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-line bg-card px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 lg:hidden"
@@ -518,8 +593,15 @@ interface LineView {
               <p class="text-xs text-muted">{{ resumen() }}</p>
               <p class="font-mono text-lg font-bold">{{ total() }}</p>
             </div>
-            <button appButton type="button" variant="primary" (click)="verPedido(cart, cartHeading)">
-              Ver pedido
+            <button
+              appButton
+              type="button"
+              variant="primary"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="pedidoAbierto()"
+              (click)="verPedido()"
+            >
+              Ver pedido<app-icon name="chevronUp" [size]="18" />
             </button>
           </div>
         }
@@ -544,9 +626,11 @@ export class NuevoPedidoPage {
   private readonly catalogo = inject(CatalogoApi);
   private readonly pedidos = inject(PedidosApi);
   private readonly mesas = inject(MesasApi);
+  private readonly cuentas = inject(CuentaMesaApi);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   protected readonly skeletonTabs = [1, 2, 3, 4] as const;
   protected readonly skeletonCards = [1, 2, 3, 4, 5, 6] as const;
@@ -575,8 +659,20 @@ export class NuevoPedidoPage {
   protected readonly estadoMesas = signal<EstadoMesaPicker>('cargando');
   protected readonly errorMesas = signal('');
 
+  // Bill detail of an OCUPADA table, open over the picker (page state on top of the MESA step).
+  protected readonly detalleMesa = signal<MesaCard | null>(null);
+  protected readonly cuentaDetalle = signal<CuentaMesa | null>(null);
+  protected readonly estadoDetalle = signal<EstadoMesaDetalle>('cargando');
+  protected readonly errorDetalle = signal('');
+
+  /** The bill load in flight, cancelled when the detail closes or another table opens. */
+  private cuentaSub: Subscription | null = null;
+
   /** The table load in flight, cancelled when a newer one starts or the user leaves the MESA step. */
   private mesasSub: Subscription | null = null;
+
+  /** The draft is a RECOJO taken from `mesaElegida`, billed with that table's account. */
+  protected readonly paraLlevarDeMesa = signal(false);
 
   private readonly submitAttempted = signal(false);
   protected readonly submitting = signal(false);
@@ -585,6 +681,7 @@ export class NuevoPedidoPage {
   private readonly draft = computed<BorradorPedido>(() => ({
     tipoPedido: this.tipoPedido(),
     mesaId: this.mesaElegida()?.mesaId ?? null,
+    paraLlevarDeMesa: this.paraLlevarDeMesa(),
     observacion: this.observacion(),
     lineas: this.lineas(),
   }));
@@ -603,10 +700,26 @@ export class NuevoPedidoPage {
         : resumenMesa(mesa, this.comensales())
       : tipoPasoResumen(this.tipoPedido());
   });
+  /** The table of a takeaway-of-table draft; null in every other mode. */
+  protected readonly paraLlevarMesa = computed(() =>
+    this.paraLlevarDeMesa() ? this.mesaElegida() : null,
+  );
+  protected readonly observacionPlaceholder = computed(() =>
+    this.paraLlevarDeMesa()
+      ? 'Ej. empaque, cubiertos, salsas aparte…'
+      : 'Ej. alergias, preferencias de la mesa…',
+  );
   protected readonly tipoIconName = computed(() => tipoIcon(this.tipoPedido()));
   protected readonly total = computed(() => formatMoney(totalReferencial(this.lineas())));
   protected readonly resumen = computed(() => resumenItems(this.lineas()));
   protected readonly hasItems = computed(() => this.lineas().length > 0);
+
+  /** The order bottom sheet is open (only meaningful below `lg`, where the cart is a sheet). */
+  protected readonly pedidoAbierto = signal(false);
+  private readonly esDesktop = signal(false);
+  /** The open sheet is actually acting as a modal dialog (open and below `lg`). */
+  protected readonly sheetActivo = computed(() => this.pedidoAbierto() && !this.esDesktop());
+  private readonly cerrarBtn = viewChild<ElementRef<HTMLButtonElement>>('cerrarBtn');
 
   protected readonly tabs = computed(() => categoryTabs(this.menu()?.categorias ?? []));
 
@@ -636,6 +749,16 @@ export class NuevoPedidoPage {
 
   constructor() {
     this.loadMenu();
+    this.watchDesktop();
+    // Lock the page behind the open sheet; the cleanup restores it on close and on destroy.
+    effect((onCleanup) => {
+      if (!this.sheetActivo() || typeof document === 'undefined') {
+        return;
+      }
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      onCleanup(() => (document.body.style.overflow = previous));
+    });
     // Every step is a "new screen": start at the top instead of keeping the previous scroll position.
     effect(() => {
       this.paso();
@@ -643,6 +766,18 @@ export class NuevoPedidoPage {
         window.scrollTo({ top: 0 });
       }
     });
+  }
+
+  /** Tracks the `lg` breakpoint (64rem) to know whether the cart is a column or a sheet. */
+  private watchDesktop(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const query = window.matchMedia('(min-width: 64rem)');
+    const update = () => this.esDesktop.set(query.matches);
+    update();
+    query.addEventListener('change', update);
+    this.destroyRef.onDestroy(() => query.removeEventListener('change', update));
   }
 
   /** Tables and every page of the unpaid orders in parallel; any failure shows the picker's error state. */
@@ -686,18 +821,95 @@ export class NuevoPedidoPage {
     this.mesasSub = null;
   }
 
-  /** The only way to change step: leaving MESA cancels a table load still in flight. */
+  /** The only way to change step: leaving MESA cancels a table load still in flight and closes the detail. */
   protected irA(paso: PasoNuevoPedido): void {
+    this.pedidoAbierto.set(false);
     if (paso !== 'MESA') {
       this.cancelarCargaMesas();
+      this.cerrarDetalle();
     }
     this.paso.set(paso);
   }
 
   protected elegirMesa(card: MesaCard): void {
+    const siguiente = pasoTrasMesa(card);
+    if (siguiente === null) {
+      // OCUPADA: its bill opens over the picker; the table is only chosen by "Agregar ronda".
+      this.abrirDetalle(card);
+      return;
+    }
     this.mesaElegida.set(card);
     this.comensales.set(1);
-    this.irA(pasoTrasMesa(card));
+    this.irA(siguiente);
+  }
+
+  private abrirDetalle(card: MesaCard): void {
+    this.detalleMesa.set(card);
+    this.cargarCuenta(card);
+  }
+
+  /** Loads the bill of `card`; a late answer of a closed or replaced detail never reaches the state. */
+  protected cargarCuenta(card: MesaCard): void {
+    this.cancelarCargaCuenta();
+    this.cuentaDetalle.set(null);
+    this.errorDetalle.set('');
+    this.estadoDetalle.set('cargando');
+    this.cuentaSub = this.cuentas
+      .obtener(card.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuenta) => {
+          this.cuentaDetalle.set(cuenta);
+          this.estadoDetalle.set('listo');
+        },
+        error: (error: unknown) => {
+          this.errorDetalle.set(
+            error instanceof HttpErrorResponse ? (readApiError(error.error)?.message ?? '') : '',
+          );
+          this.estadoDetalle.set('error');
+        },
+      });
+  }
+
+  private cancelarCargaCuenta(): void {
+    this.cuentaSub?.unsubscribe();
+    this.cuentaSub = null;
+  }
+
+  protected cerrarDetalle(): void {
+    this.cancelarCargaCuenta();
+    this.detalleMesa.set(null);
+    this.cuentaDetalle.set(null);
+  }
+
+  /** Another round for the occupied table: products with the table fixed, no guests step. */
+  protected agregarRonda(card: MesaCard): void {
+    this.mesaElegida.set(card);
+    this.comensales.set(1);
+    this.irA('PRODUCTOS');
+  }
+
+  /** Takeaway billed with the occupied table: RECOJO + the table, straight to the products. */
+  protected paraLlevar(card: MesaCard): void {
+    this.tipoPedido.set('RECOJO');
+    this.paraLlevarDeMesa.set(true);
+    this.mesaElegida.set(card);
+    this.comensales.set(1);
+    this.irA('PRODUCTOS');
+  }
+
+  protected resumenLlevar(card: MesaCard): string {
+    return resumenParaLlevar(card);
+  }
+
+  /** Back to the table picker as a Local draft; the cart lines stay, the table must be chosen again. */
+  private volverAMesas(): void {
+    this.tipoPedido.set('MESA');
+    this.paraLlevarDeMesa.set(false);
+    this.mesaElegida.set(null);
+    this.comensales.set(1);
+    this.cargarMesas();
+    this.irA('MESA');
   }
 
   protected cambiarComensales(value: number): void {
@@ -728,12 +940,21 @@ export class NuevoPedidoPage {
       });
   }
 
-  /** Phones and tablets: brings the order into view and moves focus to its heading. */
-  protected verPedido(cart: HTMLElement, heading: HTMLElement): void {
-    if (typeof cart.scrollIntoView === 'function') {
-      cart.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /** Below `lg`: opens the order bottom sheet and moves focus to its close button. */
+  protected verPedido(): void {
+    this.pedidoAbierto.set(true);
+    afterNextRender(() => this.cerrarBtn()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected cerrarPedido(): void {
+    this.pedidoAbierto.set(false);
+  }
+
+  /** Escape closes the sheet, unless the discard confirmation is on top of it (that one owns Escape). */
+  protected onEscape(): void {
+    if (this.sheetActivo() && !this.confirmingDiscard()) {
+      this.cerrarPedido();
     }
-    heading.focus({ preventScroll: true });
   }
 
   protected selectCategoria(categoriaId: number | null): void {
@@ -746,6 +967,7 @@ export class NuevoPedidoPage {
 
   protected elegirTipo(tipo: TipoPedido): void {
     this.tipoPedido.set(tipo);
+    this.paraLlevarDeMesa.set(false);
     this.mesaElegida.set(null);
     this.comensales.set(1);
     const paso = pasoTrasTipo(tipo);
@@ -757,6 +979,10 @@ export class NuevoPedidoPage {
 
   /** "Atrás" keeps the cart lines and the guests; an OCUPADA table has no COMENSALES step to return to. */
   protected atras(): void {
+    if (this.paraLlevarDeMesa()) {
+      this.volverAMesas();
+      return;
+    }
     const paso =
       pasoAnteriorDisponible(
         this.paso(),
@@ -775,7 +1001,9 @@ export class NuevoPedidoPage {
 
   /** "Cambiar" of the cart summary: Local returns to the table picker, the others to the type step. Lines stay. */
   protected cambiarResumen(): void {
-    if (this.tipoPedido() === 'MESA') {
+    if (this.paraLlevarDeMesa()) {
+      this.volverAMesas();
+    } else if (this.tipoPedido() === 'MESA') {
       this.cargarMesas();
       this.irA('MESA');
     } else {
@@ -890,12 +1118,14 @@ export class NuevoPedidoPage {
   private resetDraft(): void {
     const blank = emptyDraft();
     this.tipoPedido.set(blank.tipoPedido);
+    this.paraLlevarDeMesa.set(blank.paraLlevarDeMesa);
     this.mesaElegida.set(null);
     this.comensales.set(1);
     this.observacion.set(blank.observacion);
     this.lineas.set(blank.lineas);
     this.openNotes.set(new Set());
     this.submitAttempted.set(false);
+    this.pedidoAbierto.set(false);
   }
 
   /** Shows the backend `message` as-is (400 comes in Spanish, 422 as "campo: mensaje"). */

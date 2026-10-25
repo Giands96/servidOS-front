@@ -121,5 +121,27 @@ Volver: [[00 - MOC]] · Ver [[Arquitectura]] · [[Seguridad]] · [[Fase 0 - Infr
 - **Desventajas**: el cambio toca pantallas ya mergeadas (Pedidos, Caja, Plataforma, Catálogo) dentro de la rama de Reportes; los inputs muestran un formato distinto al de las etiquetas.
 - **Estado**: en `feat/reportes-02-page`, sin publicar. Ver [[Reportes]].
 
+## ADR-23 Nuevo pedido Local con la mesa primero y sin selector de tipo en el carrito
+- **Contexto**: el tipo de pedido vivía en el carrito, después de los productos, y Local pedía un `mesaId` numérico en un input; el personal no veía qué mesas estaban libres.
+- **Decisión del usuario (2026-10-24)**: flujo Tipo de pedido → (Local) Mesa → Comensales → Productos; el selector Mesa / Delivery / Recojo del carrito se quita para todos los tipos y se reemplaza por un resumen con "Cambiar" que vuelve al paso 0. Una mesa OCUPADA abre su cuenta y "Agregar ronda" no pide comensales. Comensales de 1 a `capacidad`.
+- **Alternativa descartada**: mantener el selector en el carrito además del paso 0 (dos lugares para elegir el tipo y una forma de saltarse la mesa).
+- **Ventajas**: un solo lugar para elegir el tipo; no se puede crear un pedido Local sin mesa; las tarjetas muestran ocupación, tiempo abierto y consumido.
+- **Desventajas**: un paso más para Delivery y Recojo; la página orquesta más estado (paso, mesa, comensales, detalle).
+- **Estado**: slice 1 en `main`, slices 2 y 3 sin mergear. Ver [[Pedidos]].
+
+## ADR-24 Ocupar la mesa justo antes de crear el pedido, con `liberar` como compensación
+- **Contexto**: se podía ocupar la mesa al confirmar los comensales o al crear el pedido.
+- **Decisión (default del orquestador, 2026-10-24)**: `POST /mesas/{id}/ocupar` se llama al pulsar "Crear pedido", justo antes de `POST /pedidos`; solo para mesas LIBRE. Si `ocupar` falla, se muestra el mensaje del backend y se vuelve a un selector recargado conservando el carrito. Si `crear` falla después de `ocupar`, se llama a `liberar` (mejor esfuerzo) y el borrador queda intacto.
+- **Ventajas**: descartar nunca deja una mesa ocupada sin pedidos.
+- **Desventajas**: no es atómico. Cualquier error de `ocupar` se trata como "mesa tomada"; un fallo de `liberar` o un `crear` ambiguo (timeout con el pedido ya creado) puede dejar una mesa huérfana; `crearPedido` no tiene tests. Queda como seguimiento en [[Pendientes y Deuda Técnica]].
+- **Alternativa**: un endpoint atómico del backend que ocupe y cree.
+- **Evidencia**: probado en navegador (pedido #2354; conflicto "La mesa ya está ocupada"; fallo forzado de `POST /pedidos` con `liberar`). Ver [[Mesas]].
+
+## ADR-25 Para llevar de una mesa como RECOJO con `mesaId`, cobrado con la mesa, y "Cobrar cuenta" oculto
+- **Decisión del usuario (2026-10-24)**: un para llevar pedido desde una mesa es un `RECOJO` con el `mesaId` de la mesa y se cobra junto con su cuenta (sección "Para llevar" separada, nunca numerada como ronda). "Cobrar cuenta" no se muestra: cobrar la cuenta de la mesa en Caja (`POST /mesas/{id}/cuenta/pagar`) es una feature aparte.
+- **Ventajas**: el para llevar aparece en la cuenta de la mesa sin ocupar la mesa de nuevo.
+- **Desventajas**: hasta que Caja soporte la cuenta de mesa, el cobro del conjunto no tiene pantalla; la cuenta se ve pero no se cobra desde ahí.
+- **Estado**: pedido #2357 verificado en la cuenta de la mesa 4. Ver [[Pedidos]] y [[Pagos]].
+
 > [!note] Decisión de proceso
 > Flujo ODD v3 con revisiones nativas (RDD) por commit/slice. Ver [[Infraestructura]].

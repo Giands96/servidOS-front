@@ -44,6 +44,9 @@ Volver: [[00 - MOC]] · Pendientes: [[Pendientes y Deuda Técnica]] · Fases: [[
 | UI responsive, slice 2: tablero, Nuevo pedido, Caja, Cocina y Plataforma (`feat/responsive-02-pages`, `5db3ac0` a `f236db9`) | **lista en su rama, sin publicar**; review aprobada (`review-bafd76275f80cf31`); probada en navegador a 375 / 768 / 1024 px contra el backend local, sin touch real | [[Styles y Diseño]] · [[Pedidos]] · `docs/progress/12-responsive-ui.md` |
 | Reportes, slice 1: tipos, `ReportesApi`, reglas, ruta `/reportes` y permiso `reportes.ver` (`feat/reportes-01-data`, `69b37e4`, `be0211e`, `3692018`) | **lista en su rama, sin publicar**; review de riesgo alto aprobada (`review-953d26b3e0c03b91`) | [[Reportes]] · `docs/progress/13-reportes.md` |
 | Reportes, slice 2: página, menú de exportación, listas y separador de miles en toda la app (`feat/reportes-02-page`, `5b6b2f8` a `dabcf9f`) | **lista en su rama, sin publicar**; review pendiente (`under_budget`); probada en navegador a 375 / 768 / 1280 px contra el backend local | [[Reportes]] · ADR-22 en [[Decisiones (ADR)]] |
+| Nuevo pedido · Local, slice 1: `MesasApi`, `CuentaMesaApi` y `nuevo-pedido-local.rules` (`feat/nuevo-pedido-local-01-data`, `c31d641`, `d0a2f1c`, `285406b`) | en `main` (PR #33, `75edfa6`); reviews aprobadas | [[Mesas]] · [[Pedidos]] · `docs/progress/15-nuevo-pedido-local.md` |
+| Nuevo pedido · Local, slice 2: tipo, selector de mesa, comensales y envío con `ocupar` / `liberar` (`feat/nuevo-pedido-local-02-steps`, `8c4a485` a `0e9b05d`) | PR #35 abierto; review de la slice aprobada (`review-9da98013b0a561ae`); probado en navegador | [[Pedidos]] · ADR-23 y ADR-24 en [[Decisiones (ADR)]] |
+| Nuevo pedido · Local, slice 3: cuenta de la mesa ocupada, Para llevar y hoja del pedido en teléfono (`feat/nuevo-pedido-local-03-mesa-ocupada`, `f8c24ba`, `40e7372`, `aba1de8`) | **en su rama, sin publicar**; review L4–L9 declinada por el usuario y L4–L10 aprobada; probada en navegador a 375 / 768 / 1024 px; suite 35 archivos / 1362, build OK | [[Pedidos]] · ADR-25 en [[Decisiones (ADR)]] |
 
 ## Pendiente de cierre de Cocina
 Prueba manual en navegador con backend, verificación del payload contra Swagger y zona horaria de `createdAt`.
@@ -66,6 +69,9 @@ Abrir el PR de la slice 1 y publicar la slice 2 (stacked-to-main); prueba tácti
 ## Pendiente de Reportes
 Publicar las tres ramas (`feat/reportes-01-data`, `feat/reportes-02-page` y `fix/page-height-regression`, decisión del usuario); solicitud al backend de número de mesa opcional en `/reportes/ventas` y `categoria` en `/reportes/productos`; el diseño dice "Jue 23 oct" pero el 2026-10-23 es viernes; revisar cómo muestra el login un 429. Detalle en [[Pendientes y Deuda Técnica]] y [[Reportes]].
 
+## Pendiente de Nuevo pedido · Local
+Publicar la slice 3 y abrir su PR (la slice 2 está en el PR #35); manejo de errores al crear (cualquier error de `ocupar` se trata como mesa tomada, `liberar` fallido o `crear` ambiguo puede dejar una mesa ocupada, `crearPedido` sin tests); cobrar la cuenta de la mesa en Caja (feature aparte, "Cobrar cuenta" oculto); página de administración de mesas y números de mesa en el resto de pantallas (M3 a M5 de `odd/tasks/mesas.md`); foco de la hoja del pedido y del detalle; probar con RECEPCION y con touch real. Detalle en [[Pendientes y Deuda Técnica]] y [[Mesas]].
+
 ## Pendiente de alineación con el backend
 Verificación contra el backend (`c32dcba`) incorporada el 2026-10-17. Quedan diferencias reales entre sus `@PreAuthorize` y la matriz del front: `GET /pedidos` para CAJERO; ver restaurantes, renovar, cambiar plan, suspender y reactivar para ADMIN y MODERADOR (hoy solo SUPERADMIN); alta de usuarios de plataforma. Cobrar ya quedó alineado con Caja. Tabla en [[Modelo de Negocio]] y detalle en [[Pendientes y Deuda Técnica]].
 
@@ -77,6 +83,7 @@ Agregar el chip "Cobrar S/ …" al tablero tras mergear su interfaz (T8.4b); pru
 - **Punta de la cadena de Catálogo antes de mergear (`98c7d10`)**: 26 archivos / 985 tests en verde; `npx ng build` OK.
 - **Interfaz del tablero**: mergeada en `main` (PR #27, `6a6a4a7`); las reglas y `@angular/cdk` entraron antes por el PR #24. La punta de la UI responsive, medida sobre ese `main`, está en la línea siguiente.
 - **Punta de la UI responsive (`feat/responsive-02-pages`, `f236db9`)**: 30 archivos / 1213 tests en verde; `npx ng build` OK (medido el 2026-10-23, sobre `main` `6a6a4a7`).
+- **Punta de Nuevo pedido · Local (`feat/nuevo-pedido-local-03-mesa-ocupada`, `aba1de8`)**: 35 archivos / 1362 tests en verde; `npx ng build` OK (medido el 2026-10-24).
 - **Punta de Reportes (`feat/reportes-02-page`, `dabcf9f`)**: 32 archivos / 1296 tests en verde; `npx ng build` OK (medido el 2026-10-23).
 - En el merge de Pedidos se resolvió un conflicto en `src/testing/builders.ts`: `aMe` asigna ahora cada campo de forma explícita en lugar de `...overrides`, con los mismos valores por defecto (restaurante `ACTIVO`, suscripción `ACTIVA` con `fechaFin` 2099-12-31).
 
@@ -89,6 +96,7 @@ Agregar el chip "Cobrar S/ …" al tablero tras mergear su interfaz (T8.4b); pru
 - **Tablero de Pedidos (decisión del usuario, 2026-10-16):** implementar el tablero con drag & drop y aprobar la dependencia `@angular/cdk` (ADR-20 en [[Decisiones (ADR)]]). Defaults del orquestador (a revisar): tablero como vista por defecto con `?vista=lista`; minutos desde la creación sin umbrales; sin movimientos hacia atrás (manda el contrato); sin sincronización en vivo. Detalle en [[Fase 4 - Pedidos]].
 - **UI responsive (decisión del usuario, 2026-10-23, revisada el mismo día):** bajo `lg` una barra superior con píldoras de navegación según una imagen de diseño que compartió en el chat; desde `lg`, el sidebar. Descartado el cajón con riel de iconos. Sin contadores en las píldoras ni tablas a tarjetas (sin diseño). Detalle en ADR-21 de [[Decisiones (ADR)]].
 - **Reportes (decisión del usuario, 2026-10-23):** pantalla `/reportes` para ADMINISTRADOR con ventas por día, semana y mes, productos más vendidos y exportación a Excel y PDF, según cuatro imágenes de diseño. **Montos con separador de miles en toda la app (2026-10-24)**: ADR-22 en [[Decisiones (ADR)]]. Detalle en [[Reportes]].
+- **Nuevo pedido · Local (decisiones del usuario, 2026-10-24):** flujo con la mesa primero, mesa ocupada = otra ronda sin comensales, para llevar = RECOJO con `mesaId` cobrado con la mesa, "Cobrar cuenta" oculto. ADR-23 a ADR-25 en [[Decisiones (ADR)]]; detalle en [[Pedidos]] y [[Mesas]].
 
 ## Qué sigue
 1. **Probar en navegador** las pantallas de [[Plataforma]] (crear un restaurante con su dueño) y luego las del tenant (Cocina, Pedidos y Catálogo) con ese restaurante.

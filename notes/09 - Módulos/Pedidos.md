@@ -12,7 +12,7 @@ aliases:
 
 # Pedidos
 
-Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] · [[Flujo del Sistema]] · [[API]] · [[Fases 4-9 - Planificadas]]
+Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Mesas]] · [[Modelo de Negocio]] · [[Flujo del Sistema]] · [[API]] · [[Fases 4-9 - Planificadas]]
 
 > [!abstract] Responsabilidad
 > Listar pedidos, crear (MESA, DELIVERY, RECOJO), confirmarlos ("Enviar a cocina"), cambiar de estado y cancelar. `/pedidos` (tablero kanban por defecto y lista) es el home de ADMINISTRADOR y RECEPCION.
@@ -30,6 +30,7 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 | `features/pedidos/data/pedidos.api.ts` | `listar`, `confirmar`, `cambiarEstado`, `crear` |
 | `features/pedidos/domain/pedidos.rules.ts` | transiciones, acciones, etiquetas y formato de la lista |
 | `features/pedidos/domain/nuevo-pedido.rules.ts` | borrador, carrito, validación y `toRequest` |
+| `features/pedidos/domain/nuevo-pedido-local.rules.ts` y `features/pedidos/nuevo-pedido/` | flujo Local con la mesa primero (ver la sección más abajo) |
 | `features/pedidos/domain/tablero.rules.ts` | columnas, destinos del arrastre, menú "Mover a…", consultas, conteos de hoy y tarjeta (en `main`, PR #24) |
 | `features/pedidos/pedidos.page.ts` | alternancia Tablero / Lista y lista (solo orquesta) |
 | `features/pedidos/tablero.component.ts` | tablero kanban con arrastre CDK y menú (en `main`, PR #27) |
@@ -58,6 +59,28 @@ Volver: [[00 - MOC]] · Fase: [[Fase 4 - Pedidos]] · Ver [[Modelo de Negocio]] 
 
 > [!important] Dónde va el `subscriptionGuard`
 > Solo `POST /pedidos` devuelve 402. Confirmar y `PATCH estado` pasan con el tenant bloqueado, así que la **lista no lleva `subscriptionGuard`** y solo `/pedidos/nuevo` lo lleva. No se ocultan acciones sobre pedidos existentes. El guard bloquea por `/auth/me`: `INACTIVO`, sin suscripción o `vencida`; `CANCELADA` por sí sola no bloquea (PR #8, necesario para que `/pedidos/nuevo` siga el contrato).
+
+## Nuevo pedido · Local (flujo con la mesa primero, 2026-10-24)
+Origen: `odd/tasks/nuevo-pedido-local.md` y `docs/progress/15-nuevo-pedido-local.md`. Slice 1 (datos y reglas) en `main` (PR #33, `75edfa6`); slice 2 (pasos) en el PR #35, abierto; slice 3 (mesa ocupada, Para llevar y hoja móvil) en `feat/nuevo-pedido-local-03-mesa-ocupada`, sin publicar. Mesas y cuenta: [[Mesas]]. Decisiones: ADR-23 a ADR-25 en [[Decisiones (ADR)]].
+
+**Pasos:** Tipo de pedido → (Local) Mesa → Comensales → Productos. Delivery y Recojo van directo a Productos. El selector de tipo del carrito se quitó; el carrito muestra un resumen con "Cambiar", que vuelve al paso 0. El indicador `1 Mesa · 2 Comensales · 3 Productos` solo aparece en Local y se oculta en Para llevar.
+
+**Mesa libre:** pide comensales (de 1 a `capacidad`, empieza en 1) y `ocupar` se llama al pulsar "Crear pedido", justo antes de `POST /pedidos`; si la creación falla se llama a `liberar`. **Mesa ocupada:** abre su cuenta (panel lateral desde `lg`, bottom sheet debajo) con las rondas, la sección "Para llevar" y el total; "Agregar ronda" crea otro pedido MESA sin pedir comensales.
+
+**Para llevar:** pedido `RECOJO` con el `mesaId` de la mesa; se cobra junto con ella. "Cobrar cuenta" está oculto hasta que Caja soporte la cuenta de mesa. En teléfono, "Ver pedido" abre el pedido como bottom sheet.
+
+**Datos:** `GET /mesas` más `GET /pedidos?porCobrar=true` paginado (`size` 100, sigue `totalPages`), agrupados por `mesaId` en una regla pura; la cuenta abierta usa `GET /mesas/{id}/cuenta`.
+
+| Ruta | Contenido |
+|---|---|
+| `features/pedidos/domain/nuevo-pedido-local.rules.ts` | pasos y progreso, comensales, tarjetas de mesa, filtros, alertas de tiempo (<30 / 30–60 / >60 min), secciones de la cuenta, `ocupacionAlCrear`, `resumenMesa`, `resumenParaLlevar` |
+| `features/pedidos/nuevo-pedido/tipo-pedido-step.component.ts` | paso 0 |
+| `features/pedidos/nuevo-pedido/progreso-local.component.ts` | indicador de progreso |
+| `features/pedidos/nuevo-pedido/mesa-picker.component.ts` | tarjetas de mesa con filtros, esqueleto, vacío y error |
+| `features/pedidos/nuevo-pedido/comensales-step.component.ts` | paso de comensales |
+| `features/pedidos/nuevo-pedido/mesa-detalle.component.ts` | cuenta de la mesa ocupada |
+
+`nuevo-pedido.rules.ts` cambió: `BorradorPedido.mesaId` es `number | null`, existe `paraLlevarDeMesa` y `toRequest` envía `mesaId` para MESA y para RECOJO con esa marca. Las páginas y componentes siguen sin spec (AGENTS §6); la suite quedó en 35 archivos / 1362 tests. Pendientes en [[Pendientes y Deuda Técnica]].
 
 ## Ventajas y desventajas
 | Ventajas | Desventajas |
