@@ -19,7 +19,7 @@ const OCUPAR_ERROR = 'No se pudo ocupar la mesa. Revisa tu conexión e inténtal
   template: `
     <app-modal tone="brand" [heading]="'Ocupar mesa ' + mesa().numero">
       <app-icon icon name="users" [size]="22" />
-      Elegí cuántas personas se sientan. La mesa tiene {{ mesa().capacidad }} asientos.
+      Elige cuántas personas se sientan. La mesa tiene {{ mesa().capacidad }} asientos.
       <div class="mt-5 text-ink">
         <div class="flex items-baseline justify-between gap-3">
           <p id="comensales-label" class="text-sm font-medium">Comensales</p>
