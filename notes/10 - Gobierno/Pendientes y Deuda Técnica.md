@@ -146,6 +146,18 @@ Origen: `docs/progress/13-reportes.md` y `odd/tasks/reportes.md`. Ver [[Reportes
 - [ ] Sin prueba de la descarga real a disco (se interceptó en la página), de la paginación con más de una página de ventas ni táctil.
 - [ ] Sin specs de la página ni de los componentes por decisión (AGENTS §6); las reglas y la API sí tienen tests (reportes 64).
 
+## Nuevo pedido · Local (slice 1 en `main`, slice 2 en el PR #35, slice 3 sin publicar)
+Origen: `docs/progress/15-nuevo-pedido-local.md` y `odd/tasks/nuevo-pedido-local.md`. Ver [[Pedidos]], [[Mesas]] y ADR-23 a ADR-25 en [[Decisiones (ADR)]].
+- [ ] Publicar la slice 3 (`feat/nuevo-pedido-local-03-mesa-ocupada`, `f8c24ba`, `40e7372`, `aba1de8`) y abrir su PR (decisión del usuario). La review de L4–L9 fue declinada; la de L4–L10, que incluye L9 y L10, quedó aprobada.
+- [ ] **Manejo de errores al crear:** cualquier error de `ocupar` se trata como "mesa tomada"; un fallo de `liberar` o un `crear` ambiguo (timeout) puede dejar una mesa ocupada sin pedido; `crearPedido` no tiene tests (avisos `R3-ocupar-error-classification`, `R3-liberar-failure-orphans-table`, `R3-liberar-on-ambiguous-crear-failure`, `R3-untested-create-orchestration`, `R3-untested-ocupar-compensation`, `R3-stale-ocupada-card`).
+- [ ] `byCreatedAt` puede devolver `NaN` con un `createdAt` no parseable (`nuevo-pedido-local.rules.ts:203-206`) y falta su test (`:160-166`).
+- [ ] Test del camino de error de `liberar` en `mesas.api.spec.ts` (`:49-57`, `:58-68`).
+- [ ] Foco de la hoja del pedido (retorno al botón "Ver pedido" y atrapado) y retorno del foco al cerrar el detalle de la mesa.
+- [ ] Los minutos del encabezado del detalle de mesa vienen de la tarjeta y no se refrescan.
+- [ ] **Cobrar la cuenta de la mesa en Caja** (`POST /mesas/{id}/cuenta/pagar`): feature aparte; mientras tanto "Cobrar cuenta" está oculto.
+- [ ] Mesas: M3 a M5 de `odd/tasks/mesas.md` siguen abiertas (página de administración, ruta y permisos; número de mesa en tablero, Cocina, Caja y Reportes). M6 queda reemplazada por esta feature.
+- [ ] Sin prueba con RECEPCION, táctil real, ni con más de 100 pedidos por cobrar.
+
 ## Deuda técnica y advisories de las reviews
 - Ruta/permiso duplicado entre `app.routes.ts` y `navigation.rules.ts`: **resuelto** por `02bca02` (menú derivado); queda el test de consistencia como guardia.
 - `navEntriesFrom` solo recorre `children` síncronos (no `loadChildren`); el shell lee rutas una vez (`resetConfig` no actualiza).
