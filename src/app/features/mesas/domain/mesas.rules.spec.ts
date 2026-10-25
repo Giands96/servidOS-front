@@ -1,4 +1,4 @@
-import { aMesa } from '../../../../testing/builders';
+import { aMe, aMesa } from '../../../../testing/builders';
 import {
   accionesMesa,
   actualizadoHace,
@@ -8,6 +8,7 @@ import {
   filtrarPorEstado,
   mesaFieldErrors,
   mesaOcupadaMessage,
+  mesasPermisos,
   ocupacionLabel,
   opcionesComensales,
   previewOcupar,
@@ -180,5 +181,65 @@ describe('conteoMesas / filtrarPorEstado', () => {
     expect(filtrarPorEstado(mesas, 'TODAS').map((m) => m.mesaId)).toEqual([1, 2, 3]);
     expect(filtrarPorEstado(mesas, 'LIBRES').map((m) => m.mesaId)).toEqual([1]);
     expect(filtrarPorEstado(mesas, 'OCUPADAS').map((m) => m.mesaId)).toEqual([2, 3]);
+  });
+});
+
+describe('mesasPermisos', () => {
+  const blocked = { suscripcion: null };
+
+  it('an admin operates, manages and sees the inactive tables', () => {
+    expect(mesasPermisos(aMe({ rol: 'ADMINISTRADOR' }))).toEqual({
+      operar: true,
+      gestionar: true,
+      verInactivas: true,
+      bloqueado: false,
+      soloLectura: false,
+    });
+  });
+
+  it('recepción and mesero only operate', () => {
+    for (const rol of ['RECEPCION', 'MESERO'] as const) {
+      expect(mesasPermisos(aMe({ rol }))).toEqual({
+        operar: true,
+        gestionar: false,
+        verInactivas: false,
+        bloqueado: false,
+        soloLectura: false,
+      });
+    }
+  });
+
+  it('cajero is read-only (design chip "Solo lectura")', () => {
+    expect(mesasPermisos(aMe({ rol: 'CAJERO' }))).toEqual({
+      operar: false,
+      gestionar: false,
+      verInactivas: false,
+      bloqueado: false,
+      soloLectura: true,
+    });
+  });
+
+  it('a blocked tenant keeps reading (inactive list included) but loses every write', () => {
+    expect(mesasPermisos(aMe({ rol: 'ADMINISTRADOR', ...blocked }))).toEqual({
+      operar: false,
+      gestionar: false,
+      verInactivas: true,
+      bloqueado: true,
+      soloLectura: false,
+    });
+  });
+
+  it('a blocked cajero is not flagged as blocked: it could not write anyway', () => {
+    expect(mesasPermisos(aMe({ rol: 'CAJERO', ...blocked })).bloqueado).toBe(false);
+  });
+
+  it('no session gets nothing', () => {
+    expect(mesasPermisos(null)).toEqual({
+      operar: false,
+      gestionar: false,
+      verInactivas: false,
+      bloqueado: false,
+      soloLectura: true,
+    });
   });
 });
