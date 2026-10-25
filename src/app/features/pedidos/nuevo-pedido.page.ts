@@ -15,13 +15,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import {
-  EMPTY,
   Observable,
   Subscription,
   catchError,
-  concat,
   forkJoin,
-  ignoreElements,
   map,
   of,
   switchMap,
@@ -63,7 +60,10 @@ import {
   MAX_PAGE_SIZE,
   MesaCard,
   PasoNuevoPedido,
+  ResultadoFalloCrear,
   clampComensales,
+  clasificarFalloOcupar,
+  mensajeFalloCrear,
   mesaCards,
   ocupacionAlCrear,
   paginasRestantes,
@@ -71,6 +71,7 @@ import {
   pasoTrasMesa,
   pasoTrasTipo,
   pasosDisponibles,
+  resultadoFalloCrear,
   resumenMesa,
   resumenParaLlevar,
   tipoPasoLabel,
@@ -86,11 +87,27 @@ import { ProgresoLocalComponent } from './nuevo-pedido/progreso-local.component'
 import { TipoPedidoStepComponent } from './nuevo-pedido/tipo-pedido-step.component';
 import { Pedido, TipoPedido } from './pedidos.types';
 
-/** `ocupar` failed (usually: the table was taken meanwhile); `cause` is the original HTTP error. */
-class MesaNoDisponible extends Error {
+/** `ocupar` failed; `cause` is the original HTTP error. Whether the table was taken depends on its status. */
+class OcuparFallido extends Error {
   constructor(override readonly cause: unknown) {
-    super('Mesa no disponible');
+    super('No se pudo ocupar la mesa');
   }
+}
+
+/** `crear` failed after `ocupar`; `resultado` is what the compensating `liberar` left behind. */
+class CrearFallido extends Error {
+  constructor(
+    override readonly cause: unknown,
+    readonly resultado: ResultadoFalloCrear,
+    readonly numeroMesa: number,
+  ) {
+    super('No se pudo crear el pedido');
+  }
+}
+
+/** HTTP status of an error; 0 for anything that is not an HTTP response (network-like). */
+function statusDe(error: unknown): number {
+  return error instanceof HttpErrorResponse ? error.status : 0;
 }
 
 interface Menu {
@@ -1058,12 +1075,35 @@ export class NuevoPedidoPage {
         error: (error: unknown) => {
           // The draft stays as typed so the user can fix it and try again.
           this.submitting.set(false);
-          if (error instanceof MesaNoDisponible) {
+          if (error instanceof OcuparFallido) {
+            if (clasificarFalloOcupar(statusDe(error.cause)) === 'reintentar') {
+              // Nothing says the table was taken (network, server, auth): stay here with everything kept.
+              this.toasts.show(
+                statusDe(error.cause) || 'Error',
+                this.mensajeBackend(error.cause) ?? 'No se pudo ocupar la mesa. Inténtalo de nuevo.',
+              );
+              return;
+            }
             // Someone took the table meanwhile: back to a fresh picker, keeping the cart lines.
             this.fail(error.cause);
             this.mesaElegida.set(null);
             this.irA('MESA');
             this.cargarMesas();
+            return;
+          }
+          if (error instanceof CrearFallido) {
+            const mensaje = mensajeFalloCrear(error.resultado, error.numeroMesa);
+            if (mensaje === null) {
+              this.fail(error.cause);
+              return;
+            }
+            this.toasts.show(statusDe(error.cause) || 'Error', mensaje);
+            if (error.resultado === 'mesa-ocupada') {
+              // The table is occupied without orders: pick it again (another round, no `ocupar`).
+              this.mesaElegida.set(null);
+              this.irA('MESA');
+              this.cargarMesas();
+            }
             return;
           }
           this.fail(error);
@@ -1073,7 +1113,9 @@ export class NuevoPedidoPage {
 
   /**
    * A local order on a free table first records its guests (`ocupar`), then creates the order. If the order
-   * fails, the table is freed again (best effort) so it is not left occupied without orders.
+   * fails, the table is freed again so it is not left occupied without orders. `liberar` is safe even when
+   * `crear` timed out: the backend rejects it (400) while the table has pending orders. Its outcome is kept
+   * so the user learns about an orphaned table or a possibly created order.
    */
   private crearPedido(draft: BorradorPedido): Observable<Pedido> {
     const request = toRequest(draft);
@@ -1082,16 +1124,23 @@ export class NuevoPedidoPage {
       return this.pedidos.crear(request);
     }
     return this.mesas.ocupar(ocupacion.mesaId, ocupacion.comensales).pipe(
-      catchError((error: unknown) => throwError(() => new MesaNoDisponible(error))),
+      catchError((error: unknown) => throwError(() => new OcuparFallido(error))),
       switchMap(() =>
         this.pedidos.crear(request).pipe(
           catchError((error: unknown) =>
-            concat(
-              this.mesas.liberar(ocupacion.mesaId).pipe(
-                ignoreElements(),
-                catchError(() => EMPTY),
+            this.mesas.liberar(ocupacion.mesaId).pipe(
+              map(() => 'liberada' as const),
+              catchError((liberarError: unknown) => of({ status: statusDe(liberarError) })),
+              switchMap((liberada) =>
+                throwError(
+                  () =>
+                    new CrearFallido(
+                      error,
+                      resultadoFalloCrear(liberada),
+                      this.mesaElegida()?.numero ?? 0,
+                    ),
+                ),
               ),
-              throwError(() => error),
             ),
           ),
         ),
@@ -1126,6 +1175,11 @@ export class NuevoPedidoPage {
     this.openNotes.set(new Set());
     this.submitAttempted.set(false);
     this.pedidoAbierto.set(false);
+  }
+
+  /** Backend `message` of an HTTP error; null when there is none. */
+  private mensajeBackend(error: unknown): string | null {
+    return error instanceof HttpErrorResponse ? (readApiError(error.error)?.message ?? null) : null;
   }
 
   /** Shows the backend `message` as-is (400 comes in Spanish, 422 as "campo: mensaje"). */
