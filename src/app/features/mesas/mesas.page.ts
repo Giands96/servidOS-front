@@ -230,9 +230,9 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
               @let mesa = vista.mesa;
               <li>
                 <app-mesa-card [mesa]="mesa" class="h-full">
-                  <div actions class="mt-4 flex items-center gap-2 empty:hidden">
+                  <div actions class="mt-4 flex flex-wrap items-center gap-2 empty:hidden">
                     @if (vista.acciones.ocupar) {
-                      <button appButton type="button" variant="primary" class="min-w-0 flex-1" (click)="ocupar.set(mesa)">
+                      <button appButton type="button" variant="primary" class="min-w-28 flex-1" (click)="ocupar.set(mesa)">
                         <app-icon name="users" [size]="16" />Ocupar
                       </button>
                     }
@@ -241,7 +241,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
                         appButton
                         type="button"
                         variant="secondary"
-                        class="min-w-0 flex-1"
+                        class="min-w-28 flex-1"
                         (click)="liberar.set({ mesa, fase: 'confirmar' })"
                       >
                         <app-icon name="logout" [size]="16" />Liberar
