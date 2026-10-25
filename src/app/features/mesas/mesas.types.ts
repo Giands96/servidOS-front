@@ -12,6 +12,12 @@ export interface Mesa {
   activa: boolean;
 }
 
+/** Body of POST /mesas and PUT /mesas/{id}: both fields required, integers > 0. */
+export interface GuardarMesaRequest {
+  numero: number;
+  capacidad: number;
+}
+
 /** Body of POST /mesas/{id}/ocupar; `comensales` goes from 1 to the table capacity. */
 export interface OcuparMesaRequest {
   comensales: number;
