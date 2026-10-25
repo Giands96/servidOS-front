@@ -163,7 +163,7 @@ describe('dropTargets', () => {
 
 describe('moveMenu', () => {
   it('puts the primary first, then the disabled ones, Cancelar last', () => {
-    const menu = moveMenu(order({ tipoPedido: 'MESA', mesaId: 9, estado: 'EN_PREPARACION' }));
+    const menu = moveMenu(order({ tipoPedido: 'MESA', mesaId: 809, numeroMesa: 9, estado: 'EN_PREPARACION' }));
     expect(menu.heading).toBe('Mover Mesa 9 a…');
     expect(menu.items).toEqual([
       { estado: 'LISTO', label: 'Listo', allowed: true, reason: null, sublabel: null, next: true, direction: 'forward' },
@@ -319,7 +319,8 @@ describe('cardView', () => {
     const pedido = order({
       pedidoId: 479,
       tipoPedido: 'MESA',
-      mesaId: 9,
+      mesaId: 809,
+      numeroMesa: 9,
       estado: 'EN_PREPARACION',
       total: 118,
       observacion: '  sin ají  ',

@@ -255,7 +255,7 @@ export function porCobrarHeading(total: number): string {
   return `POR COBRAR · ${total}`;
 }
 
-export function cobroHeading(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido' | 'mesaId'>): string {
+export function cobroHeading(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido' | 'numeroMesa'>): string {
   return `Cobrar pedido ${formatOrderNumber(pedido.pedidoId)} · ${tipoLabel(pedido)}`;
 }
 

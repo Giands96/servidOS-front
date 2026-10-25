@@ -280,7 +280,7 @@ describe('display helpers on values outside the unions (unvalidated API data)', 
     [null, '—'],
     [undefined, '—'],
   ])('tipoLabel(%j) falls back to the raw text %j', (value, expected) => {
-    expect(tipoLabel({ tipoPedido: asTipo(value), mesaId: null })).toBe(expected);
+    expect(tipoLabel({ tipoPedido: asTipo(value), numeroMesa: null })).toBe(expected);
   });
 
   it('transitionMessage never throws and uses a generic text for an unknown estado', () => {
@@ -306,12 +306,18 @@ describe('isEstadoPedido', () => {
 
 describe('tipoLabel', () => {
   it.each([
-    [{ tipoPedido: 'MESA', mesaId: 7 }, 'Mesa 7'],
+    [{ tipoPedido: 'MESA', mesaId: 807, numeroMesa: 7 }, 'Mesa 7'],
+    [{ tipoPedido: 'MESA', mesaId: 804, numeroMesa: null }, 'Mesa'],
     [{ tipoPedido: 'MESA', mesaId: null }, 'Mesa'],
     [{ tipoPedido: 'DELIVERY', mesaId: null }, 'Delivery'],
     [{ tipoPedido: 'RECOJO', mesaId: null }, 'Recojo'],
   ] as const)('%j -> %s', (partial, expected) => {
     expect(tipoLabel(aPedidoListado({ ...partial }))).toBe(expected);
+  });
+
+  it('never shows the database id while the backend does not send numeroMesa yet', () => {
+    const { numeroMesa: _omitted, ...withoutNumero } = aPedidoListado({ tipoPedido: 'MESA', mesaId: 804 });
+    expect(tipoLabel(withoutNumero)).toBe('Mesa');
   });
 });
 
@@ -485,7 +491,7 @@ describe('transitionMessage', () => {
 
 describe('cancelCopy', () => {
   it('names the order and its tipo in the confirmation', () => {
-    expect(cancelCopy(aPedidoListado({ pedidoId: 482, tipoPedido: 'MESA', mesaId: 4 }))).toEqual({
+    expect(cancelCopy(aPedidoListado({ pedidoId: 482, tipoPedido: 'MESA', mesaId: 804, numeroMesa: 4 }))).toEqual({
       heading: 'Cancelar pedido #0482',
       message: 'Se cancelará el pedido #0482 (Mesa 4). Esta acción no se puede deshacer.',
     });

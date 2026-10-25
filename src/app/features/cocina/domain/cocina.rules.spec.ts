@@ -84,7 +84,7 @@ describe('sortByArrival', () => {
 
 describe('re-exported order helpers (now owned by pedidos)', () => {
   it('keep the cocina import path working', () => {
-    expect(tipoLabel(aColaPedido({ tipoPedido: 'MESA', mesaId: 7 }))).toBe('Mesa 7');
+    expect(tipoLabel(aColaPedido({ tipoPedido: 'MESA', mesaId: 807, numeroMesa: 7 }))).toBe('Mesa 7');
     expect(formatOrderNumber(476)).toBe('#0476');
   });
 });

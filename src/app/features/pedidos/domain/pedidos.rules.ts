@@ -157,10 +157,11 @@ export const TIPO_LABEL: Readonly<Record<TipoPedido, string>> = {
   RECOJO: 'Recojo',
 };
 
-export function tipoLabel(order: Pick<PedidoListado, 'tipoPedido' | 'mesaId'>): string {
+/** "Mesa 7" from `numeroMesa`; just "Mesa" while the number is unknown (never the `mesaId` database id). */
+export function tipoLabel(order: Pick<PedidoListado, 'tipoPedido' | 'numeroMesa'>): string {
   switch (order.tipoPedido) {
     case 'MESA':
-      return order.mesaId === null ? TIPO_LABEL.MESA : `${TIPO_LABEL.MESA} ${order.mesaId}`;
+      return order.numeroMesa == null ? TIPO_LABEL.MESA : `${TIPO_LABEL.MESA} ${order.numeroMesa}`;
     case 'DELIVERY':
       return TIPO_LABEL.DELIVERY;
     case 'RECOJO':
@@ -297,7 +298,7 @@ export function transitionMessage(pedidoId: number, estado: EstadoPedido): strin
 }
 
 /** Copy of the cancel confirmation; it names the order so the wrong row is not cancelled by mistake. */
-export function cancelCopy(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido' | 'mesaId'>): {
+export function cancelCopy(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido' | 'numeroMesa'>): {
   heading: string;
   message: string;
 } {

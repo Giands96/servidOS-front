@@ -219,7 +219,7 @@ function directionOf(current: EstadoPedido, target: EstadoPedido): MoveDirection
  * disabled ones (with their reason), and Cancelar pedido last. The order's own column is not listed.
  */
 export function moveMenu(
-  pedido: Pick<PedidoListado, 'tipoPedido' | 'mesaId' | 'estado' | 'estadoPago'>,
+  pedido: Pick<PedidoListado, 'tipoPedido' | 'numeroMesa' | 'estado' | 'estadoPago'>,
 ): MoveMenu {
   const primary = primaryAction(pedido)?.estado ?? null;
   const entries = dropTargets(pedido).filter((t) => t.estado !== pedido.estado);
