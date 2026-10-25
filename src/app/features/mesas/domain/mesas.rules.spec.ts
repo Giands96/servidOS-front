@@ -7,12 +7,14 @@ import {
   emptyMesaDraft,
   filtrarPorEstado,
   mesaFieldErrors,
+  mesaGuardadaMessage,
   mesaOcupadaMessage,
   mesasPermisos,
   ocupacionLabel,
   opcionesComensales,
   previewOcupar,
   toGuardarMesaRequest,
+  upsertMesa,
   validateMesaDraft,
 } from './mesas.rules';
 
@@ -241,5 +243,34 @@ describe('mesasPermisos', () => {
       bloqueado: false,
       soloLectura: true,
     });
+  });
+});
+
+describe('mesaGuardadaMessage', () => {
+  it('confirms a created and an edited table by number', () => {
+    expect(mesaGuardadaMessage(aMesa({ numero: 15 }), 'crear')).toBe('Mesa 15 creada');
+    expect(mesaGuardadaMessage(aMesa({ numero: 3 }), 'editar')).toBe('Mesa 3 actualizada');
+  });
+});
+
+describe('upsertMesa', () => {
+  const mesas = [aMesa({ mesaId: 1, numero: 1 }), aMesa({ mesaId: 2, numero: 4 })];
+
+  it('adds a new table in number order', () => {
+    expect(upsertMesa(mesas, aMesa({ mesaId: 9, numero: 2 })).map((m) => m.numero)).toEqual([1, 2, 4]);
+  });
+
+  it('replaces an edited table and re-sorts when its number changed', () => {
+    const result = upsertMesa(mesas, aMesa({ mesaId: 1, numero: 7, capacidad: 6 }));
+    expect(result.map((m) => [m.mesaId, m.numero])).toEqual([
+      [2, 4],
+      [1, 7],
+    ]);
+    expect(result.find((m) => m.mesaId === 1)?.capacidad).toBe(6);
+  });
+
+  it('does not mutate the given list', () => {
+    upsertMesa(mesas, aMesa({ mesaId: 9, numero: 2 }));
+    expect(mesas.map((m) => m.mesaId)).toEqual([1, 2]);
   });
 });

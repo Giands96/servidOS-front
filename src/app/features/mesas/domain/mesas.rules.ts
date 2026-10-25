@@ -190,3 +190,13 @@ export function filtrarPorEstado<T extends Pick<Mesa, 'estado'>>(mesas: readonly
   const estado = filtro === 'LIBRES' ? 'LIBRE' : 'OCUPADA';
   return mesas.filter((m) => m.estado === estado);
 }
+
+/** Toast after saving the Nueva / Editar mesa modal. */
+export function mesaGuardadaMessage(m: Pick<Mesa, 'numero'>, mode: 'crear' | 'editar'): string {
+  return mode === 'crear' ? `Mesa ${m.numero} creada` : `Mesa ${m.numero} actualizada`;
+}
+
+/** Replaces the table with the same id or adds it, keeping the backend order (by number). Never mutates the input. */
+export function upsertMesa<T extends Pick<Mesa, 'mesaId' | 'numero'>>(mesas: readonly T[], mesa: T): T[] {
+  return [...mesas.filter((m) => m.mesaId !== mesa.mesaId), mesa].sort((a, b) => a.numero - b.numero);
+}

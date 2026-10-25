@@ -6,6 +6,7 @@ import { SessionStore } from '../../core/auth/session.store';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
+import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RestauranteApi } from '../restaurante/data/restaurante.api';
@@ -16,9 +17,12 @@ import {
   conteoMesas,
   filtrarPorEstado,
   mesasBlockedNotice,
+  mesaGuardadaMessage,
   mesasPermisos,
+  upsertMesa,
 } from './domain/mesas.rules';
 import { MesaCardComponent } from './mesa-card.component';
+import { MesaFormComponent } from './mesa-form.component';
 import { Mesa } from './mesas.types';
 
 const DEFAULT_ERROR = 'Revisa tu conexión e inténtalo de nuevo.';
@@ -32,7 +36,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
 /** The restaurant tables: active grid with filters and manual refresh, Orchestration only: the logic lives in mesas.rules. */
 @Component({
   selector: 'app-mesas',
-  imports: [ButtonComponent, IconComponent, MesaCardComponent, StatePanelComponent],
+  imports: [ButtonComponent, IconComponent, MesaCardComponent, MesaFormComponent, ModalComponent, StatePanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="flex-1 min-h-dvh bg-surface p-4 sm:p-6">
@@ -47,6 +51,11 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
           >
             <app-icon name="lock" [size]="14" />Solo lectura
           </span>
+        }
+        @if (permisos().gestionar) {
+          <button appButton type="button" variant="primary" (click)="form.set({ mesa: null })">
+            <app-icon name="plus" [size]="18" />Nueva mesa
+          </button>
         }
       </header>
 
@@ -68,7 +77,18 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
         </app-state-panel>
       } @else if (activas()?.length === 0) {
         <app-state-panel class="mt-6 !min-h-[24rem]" icon="armchair" heading="Todavía no hay mesas creadas">
-          Cuando el administrador cree las mesas del salón, aparecerán acá.
+          {{
+            permisos().gestionar
+              ? 'Crea las mesas del salón para ocuparlas y tomar pedidos en Local.'
+              : 'Cuando el administrador cree las mesas del salón, aparecerán acá.'
+          }}
+          <div actions class="empty:hidden">
+            @if (permisos().gestionar) {
+              <button appButton type="button" variant="primary" (click)="form.set({ mesa: null })">
+                <app-icon name="plus" [size]="18" />Nueva mesa
+              </button>
+            }
+          </div>
         </app-state-panel>
       } @else {
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -118,10 +138,35 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
         } @else {
           <ul class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" aria-label="Mesas">
             @for (mesa of visibles(); track mesa.mesaId) {
-              <li><app-mesa-card [mesa]="mesa" class="h-full" /></li>
+              <li>
+                <app-mesa-card [mesa]="mesa" class="h-full">
+                  <div actions class="mt-4 flex justify-end empty:hidden">
+                    @if (permisos().gestionar) {
+                      <button
+                        type="button"
+                        class="inline-flex size-9 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                        [class]="mesa.estado === 'LIBRE' ? 'border-line text-ink hover:bg-surface' : 'border-ink-line text-white hover:bg-white/10'"
+                        [attr.aria-label]="'Editar mesa ' + mesa.numero"
+                        (click)="form.set({ mesa })"
+                      >
+                        <app-icon name="pencil" [size]="16" />
+                      </button>
+                    }
+                  </div>
+                </app-mesa-card>
+              </li>
             }
           </ul>
         }
+      }
+      @if (form(); as state) {
+        <app-modal
+          [form]="true"
+          [heading]="state.mesa ? 'Editar mesa ' + state.mesa.numero : 'Nueva mesa'"
+          (closed)="form.set(null)"
+        >
+          <app-mesa-form [mesa]="state.mesa" (saved)="onSaved($event, state.mesa ? 'editar' : 'crear')" (cancelled)="form.set(null)" />
+        </app-modal>
       }
     </section>
   `,
@@ -137,6 +182,8 @@ export class MesasPage {
 
   protected readonly permisos = computed(() => mesasPermisos(this.session.user()));
   protected readonly filtro = signal<FiltroEstadoMesa>('TODAS');
+  /** Nueva / Editar mesa modal: open while not null; `mesa: null` creates. */
+  protected readonly form = signal<{ mesa: Mesa | null } | null>(null);
 
   protected readonly activas = signal<Mesa[] | null>(null);
   protected readonly failed = signal(false);
@@ -177,6 +224,12 @@ export class MesasPage {
     this.activas.set(null);
     this.failed.set(false);
     this.fetchActivas(false);
+  }
+
+  protected onSaved(mesa: Mesa, mode: 'crear' | 'editar'): void {
+    this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
+    this.form.set(null);
+    this.toasts.show('OK', mesaGuardadaMessage(mesa, mode), 'success');
   }
 
   /** "Actualizar" (decision 4, manual only): keeps the grid on screen while it reloads. */
