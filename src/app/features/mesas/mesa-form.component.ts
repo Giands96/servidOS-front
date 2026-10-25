@@ -50,7 +50,7 @@ interface Rechazo {
     <form novalidate [attr.aria-label]="mesa() ? 'Editar mesa' : 'Nueva mesa'" (submit)="submit($event)">
       <div class="space-y-4 p-6">
         <p class="text-sm text-muted">
-          {{ mesa() ? 'Cambiá el número o la cantidad de asientos.' : 'La mesa se crea LIBRE y aparece en la vista de mesas activas.' }}
+          {{ mesa() ? 'Cambia el número o la cantidad de asientos.' : 'La mesa se crea LIBRE y aparece en la vista de mesas activas.' }}
         </p>
         @if (banner(); as message) {
           <div class="flex items-start gap-2 rounded-control border border-danger/25 bg-danger-soft px-3.5 py-3 text-sm text-danger" role="alert">

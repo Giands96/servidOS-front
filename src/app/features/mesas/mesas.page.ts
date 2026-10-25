@@ -137,7 +137,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
         } @else if (inactivas(); as mesas) {
           @if (mesas.length === 0) {
             <app-state-panel class="mt-6 !min-h-[24rem]" icon="inbox" heading="No hay mesas dadas de baja">
-              Cuando des de baja una mesa libre aparecerá acá y podrás reactivarla.
+              Cuando des de baja una mesa libre aparecerá aquí y podrás reactivarla.
             </app-state-panel>
           } @else {
             <app-mesas-inactivas
@@ -168,7 +168,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
           {{
             permisos().gestionar
               ? 'Crea las mesas del salón para ocuparlas y tomar pedidos en Local.'
-              : 'Cuando el administrador cree las mesas del salón, aparecerán acá.'
+              : 'Cuando el administrador cree las mesas del salón, aparecerán aquí.'
           }}
           <div actions class="empty:hidden">
             @if (permisos().gestionar) {
@@ -286,7 +286,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
             <div>
               <p class="font-semibold">No se borra nada</p>
               <p>
-                El historial de pedidos de esta mesa se conserva. Podés reactivarla cuando quieras desde "Mesas dadas de baja".
+                El historial de pedidos de esta mesa se conserva. Puedes reactivarla cuando quieras desde "Mesas dadas de baja".
               </p>
             </div>
           </div>

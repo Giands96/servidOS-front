@@ -16,7 +16,7 @@ const ENTERO_POSITIVO = /^[1-9]\d*$/;
 
 /** Copy of the design (Modal Nueva mesa · Errores de campo). */
 const ENTERO_MAYOR_A_CERO = 'Debe ser un entero mayor a 0';
-const CAPACIDAD_VACIA = 'Ingresá la cantidad de asientos';
+const CAPACIDAD_VACIA = 'Ingresa la cantidad de asientos';
 
 export function emptyMesaDraft(): MesaDraft {
   return { numero: '', capacidad: '' };
@@ -233,6 +233,6 @@ export function reactivarFalloMensaje(message: string | null): string {
     return 'Revisa tu conexión e inténtalo de nuevo.';
   }
   return /ya existe/i.test(message)
-    ? `${message}. Editá el número de la mesa activa o mantené esta dada de baja.`
+    ? `${message}. Edita el número de la mesa activa o mantén esta dada de baja.`
     : message;
 }

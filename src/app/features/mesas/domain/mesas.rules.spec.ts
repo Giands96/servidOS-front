@@ -42,7 +42,7 @@ describe('validateMesaDraft', () => {
   });
 
   it('asks for the seats when the capacity is empty, and for an integer > 0 otherwise', () => {
-    expect(validateMesaDraft({ numero: '1', capacidad: ' ' }).capacidad).toBe('Ingresá la cantidad de asientos');
+    expect(validateMesaDraft({ numero: '1', capacidad: ' ' }).capacidad).toBe('Ingresa la cantidad de asientos');
     for (const capacidad of ['0', '-1', '3.5', 'x']) {
       expect(validateMesaDraft({ numero: '1', capacidad }).capacidad).toBe('Debe ser un entero mayor a 0');
     }
@@ -51,7 +51,7 @@ describe('validateMesaDraft', () => {
   it('reports both fields at once', () => {
     expect(validateMesaDraft(emptyMesaDraft())).toEqual({
       numero: 'Debe ser un entero mayor a 0',
-      capacidad: 'Ingresá la cantidad de asientos',
+      capacidad: 'Ingresa la cantidad de asientos',
     });
   });
 });
@@ -308,7 +308,7 @@ describe('mesaBajaMessage / mesaReactivadaMessage', () => {
 describe('reactivarFalloMensaje', () => {
   it('adds the design hint when the number is now used by an active table', () => {
     expect(reactivarFalloMensaje('La mesa 3 ya existe para este restaurante')).toBe(
-      'La mesa 3 ya existe para este restaurante. Editá el número de la mesa activa o mantené esta dada de baja.',
+      'La mesa 3 ya existe para este restaurante. Edita el número de la mesa activa o mantén esta dada de baja.',
     );
   });
 
