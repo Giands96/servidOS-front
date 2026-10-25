@@ -53,11 +53,11 @@ describe('navEntriesFrom', () => {
 
 describe('navFor', () => {
   it.each([
-    ['ADMINISTRADOR', ['/pedidos', '/cocina', '/caja', '/catalogo', '/reportes', '/usuarios', '/restaurante']],
-    ['RECEPCION', ['/pedidos', '/cocina', '/caja', '/catalogo']],
+    ['ADMINISTRADOR', ['/pedidos', '/mesas', '/cocina', '/caja', '/catalogo', '/reportes', '/usuarios', '/restaurante']],
+    ['RECEPCION', ['/pedidos', '/mesas', '/cocina', '/caja', '/catalogo']],
     ['COCINERO', ['/cocina', '/catalogo']],
-    ['MESERO', ['/catalogo']],
-    ['CAJERO', ['/caja', '/catalogo']],
+    ['MESERO', ['/mesas', '/catalogo']],
+    ['CAJERO', ['/mesas', '/caja', '/catalogo']],
     ['REPARTIDOR', ['/catalogo']],
   ] as const)('tenant %s sees %j', (rol, expected) => {
     expect(routesOf(tenant(rol))).toEqual(expected);
@@ -78,6 +78,7 @@ describe('navFor', () => {
   it('uses the design labels', () => {
     expect(navFor(tenant('ADMINISTRADOR'), entries).map((i) => i.label)).toEqual([
       'Pedidos',
+      'Mesas',
       'Cocina',
       'Caja',
       'Catálogo',
@@ -129,9 +130,14 @@ describe('homeLabel', () => {
     expect(homeLabel(user, [item('/plataforma/rest', 'Parcial')])).toBeNull();
   });
 
+  it('names Mesas as the waiter home', () => {
+    expect(homeFor(tenant('MESERO'))).toBe('/mesas');
+    expect(homeLabel(tenant('MESERO'), entries)).toBe('Mesas');
+  });
+
   it('is null when the role has no home module', () => {
-    expect(homeFor(tenant('MESERO'))).toBe('/sin-modulos');
-    expect(homeLabel(tenant('MESERO'), entries)).toBeNull();
+    expect(homeFor(tenant('REPARTIDOR'))).toBe('/sin-modulos');
+    expect(homeLabel(tenant('REPARTIDOR'), entries)).toBeNull();
     expect(homeLabel(null, entries)).toBeNull();
   });
 });

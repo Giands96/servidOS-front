@@ -60,6 +60,8 @@ export const routes: Routes = [
           import('./features/pedidos/nuevo-pedido.page').then((m) => m.NuevoPedidoPage),
         ),
       },
+      // Placeholder until the Mesas page lands (slice 4 of odd/tasks/mesas.md).
+      { path: 'mesas', ...moduleRoute('mesas.ver', 'Mesas', 'grid') },
       // No subscriptionGuard: marking LISTO is allowed while the subscription is blocked (402 does not apply).
       {
         path: 'cocina',

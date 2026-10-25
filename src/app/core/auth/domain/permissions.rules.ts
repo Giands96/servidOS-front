@@ -19,7 +19,10 @@ export type Action =
   | 'usuarios.gestionar'
   | 'reportes.ver'
   | 'cocina.ver'
-  | 'cocina.listo';
+  | 'cocina.listo'
+  | 'mesas.ver'
+  | 'mesas.operar'
+  | 'mesas.gestionar';
 
 type Actor = Pick<MeResponse, 'rol' | 'restauranteId'>;
 
@@ -53,6 +56,10 @@ const RESTAURANTE_ACTIONS: Partial<Record<Action, readonly RestauranteRol[]>> = 
   'reportes.ver': ['ADMINISTRADOR'],
   'cocina.ver': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
   'cocina.listo': ['ADMINISTRADOR', 'RECEPCION', 'COCINERO'],
+  // Mirror of MesaController: everyone who works the floor reads, the floor staff seats/frees, the admin manages.
+  'mesas.ver': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO', 'MESERO'],
+  'mesas.operar': ['ADMINISTRADOR', 'RECEPCION', 'MESERO'],
+  'mesas.gestionar': ['ADMINISTRADOR'],
 };
 
 const isPlatformRol = (rol: Rol): rol is PlatformRol => (PLATFORM_ROLES as readonly string[]).includes(rol);
@@ -112,6 +119,10 @@ export function homeFor(user: Actor | null): string {
   }
   if (can(user, 'pagos.registrar')) {
     return '/caja';
+  }
+  // The waiter's floor: only roles without orders, kitchen or till reach this line (MESERO).
+  if (can(user, 'mesas.operar')) {
+    return '/mesas';
   }
   return '/sin-modulos';
 }
