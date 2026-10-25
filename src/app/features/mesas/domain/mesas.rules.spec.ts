@@ -5,9 +5,11 @@ import {
   conteoMesas,
   draftFromMesa,
   emptyMesaDraft,
+  falloLiberar,
   filtrarPorEstado,
   mesaFieldErrors,
   mesaGuardadaMessage,
+  mesaLiberadaMessage,
   mesaOcupadaMessage,
   mesasPermisos,
   ocupacionLabel,
@@ -272,5 +274,23 @@ describe('upsertMesa', () => {
   it('does not mutate the given list', () => {
     upsertMesa(mesas, aMesa({ mesaId: 9, numero: 2 }));
     expect(mesas.map((m) => m.mesaId)).toEqual([1, 2]);
+  });
+});
+
+describe('falloLiberar', () => {
+  it('a 400 about open orders opens the "No se pudo liberar" dialog', () => {
+    expect(falloLiberar(400, 'La mesa tiene pedidos abiertos')).toBe('pedidos-abiertos');
+  });
+
+  it('any other failure is a toast', () => {
+    expect(falloLiberar(400, 'La mesa ya está libre')).toBe('otro');
+    expect(falloLiberar(500, 'La mesa tiene pedidos abiertos')).toBe('otro');
+    expect(falloLiberar(400, null)).toBe('otro');
+  });
+});
+
+describe('mesaLiberadaMessage', () => {
+  it('confirms the freed table by number', () => {
+    expect(mesaLiberadaMessage(aMesa({ numero: 2 }))).toBe('Mesa 2 liberada');
   });
 });

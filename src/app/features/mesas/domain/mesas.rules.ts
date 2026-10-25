@@ -200,3 +200,16 @@ export function mesaGuardadaMessage(m: Pick<Mesa, 'numero'>, mode: 'crear' | 'ed
 export function upsertMesa<T extends Pick<Mesa, 'mesaId' | 'numero'>>(mesas: readonly T[], mesa: T): T[] {
   return [...mesas.filter((m) => m.mesaId !== mesa.mesaId), mesa].sort((a, b) => a.numero - b.numero);
 }
+
+/**
+ * How the page answers a rejected "Liberar": the backend's 400 "La mesa tiene pedidos abiertos" opens the design dialog
+ * "No se pudo liberar la mesa N" (with "Ver cuenta"); anything else is a toast with the backend message.
+ */
+export function falloLiberar(status: number, message: string | null): 'pedidos-abiertos' | 'otro' {
+  return status === 400 && message !== null && /pedidos abiertos/i.test(message) ? 'pedidos-abiertos' : 'otro';
+}
+
+/** Toast after freeing a table. */
+export function mesaLiberadaMessage(m: Pick<Mesa, 'numero'>): string {
+  return `Mesa ${m.numero} liberada`;
+}
