@@ -28,7 +28,6 @@ import {
   mesaOcupadaMessage,
   mesaReactivadaMessage,
   mesasPermisos,
-  ocupacionLabel,
   reactivarFalloMensaje,
   upsertMesa,
 } from './domain/mesas.rules';
@@ -321,7 +320,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-muted">Comensales</dt>
-                <dd class="font-mono font-semibold">{{ ocupacion(state.mesa) }}</dd>
+                <dd class="font-mono font-semibold">{{ state.mesa.comensales ?? '–' }}/{{ state.mesa.capacidad }}</dd>
               </div>
             </dl>
             <div footer class="ml-auto flex gap-3">
@@ -417,7 +416,6 @@ export class MesasPage {
     { id: 'ACTIVAS' as const, label: 'Activas', count: this.activas()?.length ?? null },
     { id: 'INACTIVAS' as const, label: 'Dadas de baja', count: this.inactivas()?.length ?? null },
   ]);
-  protected readonly ocupacion = ocupacionLabel;
 
   protected readonly activas = signal<Mesa[] | null>(null);
   protected readonly failed = signal(false);
