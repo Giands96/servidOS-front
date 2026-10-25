@@ -8,13 +8,16 @@ import {
   falloLiberar,
   filtrarPorEstado,
   mesaFieldErrors,
+  mesaBajaMessage,
   mesaGuardadaMessage,
   mesaLiberadaMessage,
+  mesaReactivadaMessage,
   mesaOcupadaMessage,
   mesasPermisos,
   ocupacionLabel,
   opcionesComensales,
   previewOcupar,
+  reactivarFalloMensaje,
   toGuardarMesaRequest,
   upsertMesa,
   validateMesaDraft,
@@ -292,5 +295,25 @@ describe('falloLiberar', () => {
 describe('mesaLiberadaMessage', () => {
   it('confirms the freed table by number', () => {
     expect(mesaLiberadaMessage(aMesa({ numero: 2 }))).toBe('Mesa 2 liberada');
+  });
+});
+
+describe('mesaBajaMessage / mesaReactivadaMessage', () => {
+  it('confirms by number', () => {
+    expect(mesaBajaMessage(aMesa({ numero: 9 }))).toBe('Mesa 9 dada de baja');
+    expect(mesaReactivadaMessage(aMesa({ numero: 3 }))).toBe('Mesa 3 reactivada');
+  });
+});
+
+describe('reactivarFalloMensaje', () => {
+  it('adds the design hint when the number is now used by an active table', () => {
+    expect(reactivarFalloMensaje('La mesa 3 ya existe para este restaurante')).toBe(
+      'La mesa 3 ya existe para este restaurante. Editá el número de la mesa activa o mantené esta dada de baja.',
+    );
+  });
+
+  it('keeps any other backend message as is, and falls back when there is none', () => {
+    expect(reactivarFalloMensaje('La mesa ya está activa')).toBe('La mesa ya está activa');
+    expect(reactivarFalloMensaje(null)).toBe('Revisa tu conexión e inténtalo de nuevo.');
   });
 });

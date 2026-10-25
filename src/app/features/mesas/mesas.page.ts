@@ -22,15 +22,19 @@ import {
   falloLiberar,
   filtrarPorEstado,
   mesasBlockedNotice,
+  mesaBajaMessage,
   mesaGuardadaMessage,
   mesaLiberadaMessage,
   mesaOcupadaMessage,
+  mesaReactivadaMessage,
   mesasPermisos,
   ocupacionLabel,
+  reactivarFalloMensaje,
   upsertMesa,
 } from './domain/mesas.rules';
 import { MesaCardComponent } from './mesa-card.component';
 import { MesaFormComponent } from './mesa-form.component';
+import { MesasInactivasComponent } from './mesas-inactivas.component';
 import { OcuparMesaComponent } from './ocupar-mesa.component';
 import { CuentaMesa, Mesa } from './mesas.types';
 
@@ -62,6 +66,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
     MesaCardComponent,
     MesaDetalleComponent,
     MesaFormComponent,
+    MesasInactivasComponent,
     ModalComponent,
     OcuparMesaComponent,
     StatePanelComponent,
@@ -97,7 +102,62 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
         </p>
       }
 
-      @if (failed()) {
+      @if (permisos().verInactivas) {
+        <nav class="mt-4 flex gap-6 border-b border-line" aria-label="Vista de mesas">
+          @for (tab of tabs(); track tab.id) {
+            <button
+              type="button"
+              role="tab"
+              class="-mb-px inline-flex items-center gap-2 border-b-2 pb-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              [class]="tab.id === pestana() ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'"
+              [attr.aria-selected]="tab.id === pestana()"
+              (click)="pestana.set(tab.id)"
+            >
+              {{ tab.label }}
+              @if (tab.count !== null) {
+                <span
+                  class="rounded-full px-2 py-0.5 font-mono text-xs"
+                  [class]="tab.id === pestana() ? 'bg-ink text-white' : 'bg-neutral-soft text-muted'"
+                >
+                  {{ tab.count }}
+                </span>
+              }
+            </button>
+          }
+        </nav>
+      }
+
+      @if (pestana() === 'INACTIVAS') {
+        @if (inactivasFailed()) {
+          <app-state-panel class="mt-6 !min-h-[24rem]" icon="alert" heading="No pudimos cargar las mesas dadas de baja">
+            {{ errorMessage() }}
+            <button actions appButton type="button" variant="secondary" (click)="loadInactivas()">
+              <app-icon name="refresh" [size]="18" />Reintentar
+            </button>
+          </app-state-panel>
+        } @else if (inactivas(); as mesas) {
+          @if (mesas.length === 0) {
+            <app-state-panel class="mt-6 !min-h-[24rem]" icon="inbox" heading="No hay mesas dadas de baja">
+              Cuando des de baja una mesa libre aparecerá acá y podrás reactivarla.
+            </app-state-panel>
+          } @else {
+            <app-mesas-inactivas
+              class="mt-4"
+              [mesas]="mesas"
+              [puedeReactivar]="permisos().gestionar"
+              [ocupadoId]="reactivandoId()"
+              [errores]="erroresReactivar()"
+              (reactivar)="reactivar($event)"
+            />
+          }
+        } @else {
+          <div
+            class="mt-6 h-48 animate-pulse rounded-card border border-line bg-card"
+            aria-busy="true"
+            aria-label="Cargando las mesas dadas de baja"
+          ></div>
+        }
+      } @else if (failed()) {
         <app-state-panel class="mt-6 !min-h-[24rem]" icon="alert" heading="No pudimos cargar las mesas">
           {{ errorMessage() }}
           <button actions appButton type="button" variant="secondary" (click)="reload()">
@@ -198,12 +258,48 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
                         <app-icon name="pencil" [size]="16" />
                       </button>
                     }
+                    @if (vista.acciones.darDeBaja.visible) {
+                      <button
+                        type="button"
+                        class="inline-flex size-9 items-center justify-center rounded-control border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                        [class]="mesa.estado === 'LIBRE' ? 'border-line text-ink hover:bg-surface' : 'border-ink-line text-white'"
+                        [attr.aria-label]="'Dar de baja la mesa ' + mesa.numero"
+                        [attr.aria-disabled]="vista.acciones.darDeBaja.habilitada ? null : 'true'"
+                        [attr.title]="vista.acciones.darDeBaja.motivo"
+                        (click)="vista.acciones.darDeBaja.habilitada && baja.set(mesa)"
+                      >
+                        <app-icon name="inbox" [size]="16" />
+                      </button>
+                    }
                   </div>
                 </app-mesa-card>
               </li>
             }
           </ul>
         }
+      }
+      @if (baja(); as mesa) {
+        <app-modal tone="danger" [heading]="'¿Dar de baja la mesa ' + mesa.numero + '?'">
+          <app-icon icon name="inbox" [size]="22" />
+          Dejará de aparecer en las mesas activas y no se podrá ocupar.
+          <div class="mt-4 flex items-start gap-2 rounded-control bg-info-soft px-3.5 py-3 text-info">
+            <app-icon name="clock" [size]="16" class="mt-0.5" />
+            <div>
+              <p class="font-semibold">No se borra nada</p>
+              <p>
+                El historial de pedidos de esta mesa se conserva. Podés reactivarla cuando quieras desde "Mesas dadas de baja".
+              </p>
+            </div>
+          </div>
+          <div footer class="ml-auto flex gap-3">
+            <button appButton type="button" variant="secondary" [disabled]="dandoDeBaja()" (click)="baja.set(null)">
+              Cancelar
+            </button>
+            <button appButton type="button" variant="destructive" [disabled]="dandoDeBaja()" (click)="confirmarBaja(mesa)">
+              <app-icon [name]="dandoDeBaja() ? 'spinner' : 'inbox'" [size]="18" [class.animate-spin]="dandoDeBaja()" />Dar de baja
+            </button>
+          </div>
+        </app-modal>
       }
       @if (ocupar(); as mesa) {
         <app-ocupar-mesa
@@ -308,6 +404,19 @@ export class MesasPage {
   protected readonly liberar = signal<Liberar | null>(null);
   protected readonly liberando = signal(false);
   protected readonly cuenta = signal<DetalleCuenta | null>(null);
+  /** Activas / Dadas de baja tabs (admin). */
+  protected readonly pestana = signal<'ACTIVAS' | 'INACTIVAS'>('ACTIVAS');
+  protected readonly inactivas = signal<Mesa[] | null>(null);
+  protected readonly inactivasFailed = signal(false);
+  /** "Dar de baja" confirmation for this table while not null. */
+  protected readonly baja = signal<Mesa | null>(null);
+  protected readonly dandoDeBaja = signal(false);
+  protected readonly reactivandoId = signal<number | null>(null);
+  protected readonly erroresReactivar = signal<Readonly<Record<number, string>>>({});
+  protected readonly tabs = computed(() => [
+    { id: 'ACTIVAS' as const, label: 'Activas', count: this.activas()?.length ?? null },
+    { id: 'INACTIVAS' as const, label: 'Dadas de baja', count: this.inactivas()?.length ?? null },
+  ]);
   protected readonly ocupacion = ocupacionLabel;
 
   protected readonly activas = signal<Mesa[] | null>(null);
@@ -355,6 +464,78 @@ export class MesasPage {
     this.activas.set(null);
     this.failed.set(false);
     this.fetchActivas(false);
+    if (this.permisos().verInactivas) {
+      this.loadInactivas();
+    }
+  }
+
+  protected loadInactivas(): void {
+    this.inactivasFailed.set(false);
+    this.api
+      .listarInactivas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (mesas) => this.inactivas.set(mesas),
+        error: (err: unknown) => {
+          this.errorMessage.set(messageOf(err));
+          this.inactivasFailed.set(true);
+        },
+      });
+  }
+
+  protected confirmarBaja(mesa: Mesa): void {
+    if (this.dandoDeBaja()) {
+      return;
+    }
+    this.dandoDeBaja.set(true);
+    this.api
+      .desactivar(mesa.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (inactiva) => {
+          this.dandoDeBaja.set(false);
+          this.activas.update((mesas) => (mesas ?? []).filter((m) => m.mesaId !== inactiva.mesaId));
+          this.inactivas.update((mesas) => (mesas === null ? mesas : upsertMesa(mesas, inactiva)));
+          this.baja.set(null);
+          this.toasts.show('OK', mesaBajaMessage(inactiva), 'success');
+        },
+        error: (err: unknown) => {
+          this.dandoDeBaja.set(false);
+          this.baja.set(null);
+          this.toasts.show(err instanceof HttpErrorResponse ? err.status : 'Error', messageOf(err));
+          this.refresh();
+        },
+      });
+  }
+
+  protected reactivar(mesa: Mesa): void {
+    if (this.reactivandoId() !== null) {
+      return;
+    }
+    this.reactivandoId.set(mesa.mesaId);
+    this.api
+      .reactivar(mesa.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (activa) => {
+          this.reactivandoId.set(null);
+          this.inactivas.update((mesas) => (mesas ?? []).filter((m) => m.mesaId !== activa.mesaId));
+          this.activas.update((mesas) => (mesas === null ? mesas : upsertMesa(mesas, activa)));
+          this.erroresReactivar.update(({ [activa.mesaId]: _, ...rest }) => rest);
+          this.toasts.show('OK', mesaReactivadaMessage(activa), 'success');
+        },
+        error: (err: unknown) => {
+          this.reactivandoId.set(null);
+          const message = err instanceof HttpErrorResponse ? (readApiError(err.error)?.message ?? null) : null;
+          if (message !== null) {
+            this.erroresReactivar.update((errores) => ({ ...errores, [mesa.mesaId]: message }));
+          }
+          this.toasts.show(
+            err instanceof HttpErrorResponse ? err.status : 'Error',
+            `No se pudo reactivar la mesa ${mesa.numero}. ${reactivarFalloMensaje(message)}`,
+          );
+        },
+      });
   }
 
   protected onSaved(mesa: Mesa, mode: 'crear' | 'editar'): void {
@@ -423,6 +604,9 @@ export class MesasPage {
   protected refresh(): void {
     this.refreshing.set(true);
     this.fetchActivas(true);
+    if (this.permisos().verInactivas) {
+      this.loadInactivas();
+    }
   }
 
   private fetchActivas(keepGrid: boolean): void {
