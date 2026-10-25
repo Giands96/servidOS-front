@@ -26,7 +26,6 @@ import {
   mesaLiberadaMessage,
   mesaOcupadaMessage,
   mesasPermisos,
-  ocupacionLabel,
   upsertMesa,
 } from './domain/mesas.rules';
 import { MesaCardComponent } from './mesa-card.component';
@@ -225,7 +224,7 @@ const FILTROS: readonly { filtro: FiltroEstadoMesa; label: string; icon: IconNam
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-muted">Comensales</dt>
-                <dd class="font-mono font-semibold">{{ ocupacion(state.mesa) }}</dd>
+                <dd class="font-mono font-semibold">{{ state.mesa.comensales ?? '–' }}/{{ state.mesa.capacidad }}</dd>
               </div>
             </dl>
             <div footer class="ml-auto flex gap-3">
@@ -308,7 +307,6 @@ export class MesasPage {
   protected readonly liberar = signal<Liberar | null>(null);
   protected readonly liberando = signal(false);
   protected readonly cuenta = signal<DetalleCuenta | null>(null);
-  protected readonly ocupacion = ocupacionLabel;
 
   protected readonly activas = signal<Mesa[] | null>(null);
   protected readonly failed = signal(false);
