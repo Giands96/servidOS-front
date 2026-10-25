@@ -120,7 +120,7 @@ const LEYENDA = [
             <li>
               <button
                 type="button"
-                class="flex h-full min-h-36 w-full flex-col gap-3 rounded-card border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                class="touch-lg flex h-full min-h-36 w-full flex-col gap-3 rounded-card border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 [class]="
                   vista.libre
                     ? 'border-line bg-card text-ink hover:border-brand'
