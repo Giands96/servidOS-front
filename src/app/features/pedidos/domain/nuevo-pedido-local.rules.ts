@@ -357,3 +357,41 @@ export function tipoPasoResumen(tipo: TipoPedido): string | null {
     ? null
     : (OPCIONES_TIPO.find((opcion) => opcion.tipoPedido === tipo)?.descripcion ?? null);
 }
+
+// ---- Create-order failures ----
+
+/**
+ * What a failed `ocupar` means. The backend answers 400 (409 defensively) when the table is already
+ * taken or the guests are out of range: the picker must be refreshed. Anything else (network 0, 5xx,
+ * 401/403) says nothing about the table, so the user stays on the products to retry.
+ */
+export function clasificarFalloOcupar(status: number): 'mesa-no-disponible' | 'reintentar' {
+  return status === 400 || status === 409 ? 'mesa-no-disponible' : 'reintentar';
+}
+
+/** State of the table after `crear` failed and `liberar` was attempted. */
+export type ResultadoFalloCrear = 'mesa-liberada' | 'pedido-posible' | 'mesa-ocupada';
+
+/**
+ * Reads the outcome of `liberar` after a failed `crear`. The backend rejects `liberar` with 400 while the
+ * table has pending orders, so a 400 means the order may exist; any other failure leaves the table
+ * probably occupied without orders.
+ */
+export function resultadoFalloCrear(liberar: 'liberada' | { status: number }): ResultadoFalloCrear {
+  if (liberar === 'liberada') {
+    return 'mesa-liberada';
+  }
+  return liberar.status === 400 ? 'pedido-posible' : 'mesa-ocupada';
+}
+
+/** Message for the ambiguous outcomes; null when the backend error of the order is the right one to show. */
+export function mensajeFalloCrear(resultado: ResultadoFalloCrear, numeroMesa: number): string | null {
+  switch (resultado) {
+    case 'pedido-posible':
+      return 'No pudimos confirmar el pedido. Revisa el tablero antes de reintentar: puede que se haya creado.';
+    case 'mesa-ocupada':
+      return `El pedido no se creó y la Mesa ${numeroMesa} quedó ocupada. Vuelve a elegirla para reintentar.`;
+    case 'mesa-liberada':
+      return null;
+  }
+}

@@ -34,6 +34,9 @@ import {
   tipoPasoResumen,
   OPCIONES_TIPO,
   seccionesCuenta,
+  clasificarFalloOcupar,
+  resultadoFalloCrear,
+  mensajeFalloCrear,
 } from './nuevo-pedido-local.rules';
 import type { MesaCard } from './nuevo-pedido-local.rules';
 
@@ -574,5 +577,44 @@ describe('tipo de pedido options', () => {
     expect(tipoPasoResumen('DELIVERY')).toBe('Envío a domicilio');
     expect(tipoPasoResumen('RECOJO')).toBe('El cliente recoge en el local');
     expect(tipoPasoResumen('MESA')).toBeNull();
+  });
+});
+
+describe('clasificarFalloOcupar', () => {
+  it('treats 400 and 409 as the table being taken', () => {
+    expect(clasificarFalloOcupar(400)).toBe('mesa-no-disponible');
+    expect(clasificarFalloOcupar(409)).toBe('mesa-no-disponible');
+  });
+
+  it('keeps the table for network, auth and server failures', () => {
+    for (const status of [0, 401, 403, 500, 503, 418]) {
+      expect(clasificarFalloOcupar(status)).toBe('reintentar');
+    }
+  });
+});
+
+describe('resultadoFalloCrear / mensajeFalloCrear', () => {
+  it('a successful liberar means the table is free again', () => {
+    expect(resultadoFalloCrear('liberada')).toBe('mesa-liberada');
+  });
+
+  it('a 400 from liberar means the table still has pending orders', () => {
+    expect(resultadoFalloCrear({ status: 400 })).toBe('pedido-posible');
+  });
+
+  it('any other liberar failure leaves the table probably occupied without orders', () => {
+    for (const status of [0, 401, 404, 500]) {
+      expect(resultadoFalloCrear({ status })).toBe('mesa-ocupada');
+    }
+  });
+
+  it('only the ambiguous outcomes carry their own message', () => {
+    expect(mensajeFalloCrear('mesa-liberada', 5)).toBeNull();
+    expect(mensajeFalloCrear('pedido-posible', 5)).toBe(
+      'No pudimos confirmar el pedido. Revisa el tablero antes de reintentar: puede que se haya creado.',
+    );
+    expect(mensajeFalloCrear('mesa-ocupada', 5)).toBe(
+      'El pedido no se creó y la Mesa 5 quedó ocupada. Vuelve a elegirla para reintentar.',
+    );
   });
 });
