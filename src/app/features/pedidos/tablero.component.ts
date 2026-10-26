@@ -9,6 +9,7 @@ import {
   afterNextRender,
   computed,
   inject,
+  input,
   signal,
   viewChildren,
 } from '@angular/core';
@@ -31,6 +32,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel/state-panel.com
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { PedidosApi } from './data/pedidos.api';
 import {
+  AlcancePedidos,
   cancelCopy,
   failedLoadView,
   isRowBusy,
@@ -413,6 +415,9 @@ const MENU_ICON: Record<MoveMenuItem['direction'], IconName> = {
   `,
 })
 export class TableroComponent {
+  /** Moves the role may make on the board (the waiter only confirms and delivers MESA orders). */
+  readonly alcance = input<AlcancePedidos>('completo');
+
   private readonly api = inject(PedidosApi);
   private readonly toasts = inject(ToastService);
   private readonly injector = inject(Injector);
@@ -454,7 +459,7 @@ export class TableroComponent {
       header: columnHeader(estado, groups[estado].length),
       cards: groups[estado].map((pedido) => ({
         pedido,
-        view: cardView(pedido, now),
+        view: cardView(pedido, now, this.alcance()),
         icon: tipoIcon(pedido.tipoPedido),
         busy: isRowBusy(pedido.pedidoId, inFlight, awaitingReload),
       })),
@@ -482,13 +487,13 @@ export class TableroComponent {
   protected readonly dropStates = computed(() => {
     const dragged = this.dragging();
     return Object.fromEntries(
-      ALL_ESTADOS.map((estado) => [estado, columnDropState(dragged, estado)]),
+      ALL_ESTADOS.map((estado) => [estado, columnDropState(dragged, estado, this.alcance())]),
     ) as Record<EstadoPedido, ColumnDropState>;
   });
 
   protected readonly menuView = computed(() => {
     const state = this.menu();
-    return state === null ? null : { ...state, menu: moveMenu(state.pedido) };
+    return state === null ? null : { ...state, menu: moveMenu(state.pedido, this.alcance()) };
   });
 
   protected readonly cancelView = computed(() => {
@@ -500,7 +505,7 @@ export class TableroComponent {
   protected readonly canEnter = (
     drag: CdkDrag<PedidoListado>,
     drop: CdkDropList<EstadoPedido>,
-  ): boolean => drag.data.estado === drop.data || canDrop(drag.data, drop.data);
+  ): boolean => drag.data.estado === drop.data || canDrop(drag.data, drop.data, this.alcance());
 
   constructor() {
     // switchMap drops the previous in-flight load, so a slow answer can never overwrite a newer one.
@@ -592,7 +597,7 @@ export class TableroComponent {
   }
 
   protected onPrimary(pedido: PedidoListado): void {
-    const target = cardView(pedido, this.now()).primary?.estado;
+    const target = cardView(pedido, this.now(), this.alcance()).primary?.estado;
     if (target !== undefined) {
       this.requestMove(pedido, target);
     }
@@ -620,7 +625,7 @@ export class TableroComponent {
 
   /** Cancelling asks for confirmation (like the list); any other move goes straight to the API. */
   private requestMove(pedido: PedidoListado, target: EstadoPedido): void {
-    if (this.isBusy(pedido.pedidoId) || !canDrop(pedido, target)) {
+    if (this.isBusy(pedido.pedidoId) || !canDrop(pedido, target, this.alcance())) {
       return;
     }
     if (target === 'CANCELADO') {
@@ -631,10 +636,10 @@ export class TableroComponent {
   }
 
   private move(pedido: PedidoListado, target: EstadoPedido): void {
-    if (this.isBusy(pedido.pedidoId) || !canDrop(pedido, target)) {
+    if (this.isBusy(pedido.pedidoId) || !canDrop(pedido, target, this.alcance())) {
       return;
     }
-    const request = moveRequest(pedido, target);
+    const request = moveRequest(pedido, target, this.alcance());
     this.run(
       pedido.pedidoId,
       request.kind === 'confirmar'
@@ -648,7 +653,7 @@ export class TableroComponent {
 
   protected openMenu(pedido: PedidoListado, event: Event): void {
     const trigger = event.currentTarget as HTMLElement;
-    const items = moveMenu(pedido).items;
+    const items = moveMenu(pedido, this.alcance()).items;
     const view = this.document.defaultView;
     const position = menuPlacement(
       trigger.getBoundingClientRect(),

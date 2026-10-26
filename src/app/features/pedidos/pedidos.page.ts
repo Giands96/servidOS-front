@@ -27,6 +27,7 @@ import { PedidosApi } from './data/pedidos.api';
 import {
   ESTADO_TABS,
   PedidoAction,
+  alcanceDe,
   cancelCopy,
   canCancel,
   cobrarLabel,
@@ -139,7 +140,7 @@ interface RowView {
       </header>
 
       @if (vista() === 'tablero') {
-        <app-tablero class="mt-6 block" />
+        <app-tablero class="mt-6 block" [alcance]="alcance()" />
       } @else {
       <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-line" aria-label="Filtrar por estado">
         @for (tab of tabs; track tab.label) {
@@ -341,6 +342,8 @@ export class PedidosPage {
   /** Rows whose transition was applied and that wait for the list reload to show their new estado. */
   private readonly awaitingReload = signal<ReadonlySet<number>>(new Set());
   private readonly cancelTarget = signal<PedidoListado | null>(null);
+  /** Moves the role may make: the waiter only confirms and delivers MESA orders (no cancel). */
+  protected readonly alcance = computed(() => alcanceDe(this.session.user()));
 
   protected readonly vistas: readonly { vista: Vista; label: string; icon: IconName }[] = [
     { vista: 'tablero', label: 'Tablero', icon: 'columns' },
@@ -377,6 +380,7 @@ export class PedidosPage {
     const inFlight = this.inFlight();
     const awaitingReload = this.awaitingReload();
     const mayCharge = can(this.session.user(), 'pagos.registrar');
+    const alcance = this.alcance();
     return (this.data()?.content ?? []).map((pedido) => ({
       pedido,
       number: formatOrderNumber(pedido.pedidoId),
@@ -389,8 +393,8 @@ export class PedidosPage {
       variant: estadoVariant(pedido.estado),
       pago: estadoPagoLabel(pedido.estadoPago),
       cobrar: mayCharge && isCobrable(pedido) ? cobrarLabel(pedido.total) : null,
-      action: primaryAction(pedido),
-      cancelable: canCancel(pedido),
+      action: primaryAction(pedido, alcance),
+      cancelable: canCancel(pedido, alcance),
       busy: isRowBusy(pedido.pedidoId, inFlight, awaitingReload),
     }));
   });
@@ -474,7 +478,7 @@ export class PedidosPage {
   }
 
   protected advance(pedido: PedidoListado): void {
-    const action = primaryAction(pedido);
+    const action = primaryAction(pedido, this.alcance());
     if (action === null || this.isBusy(pedido.pedidoId)) {
       return;
     }
