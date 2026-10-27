@@ -62,6 +62,10 @@ Cliente Angular del sistema ServidOS (multi-tenant restaurantes). Consume el bac
 - Commits: Conventional Commits (feat:, fix:, chore:)
 - Squash merge únicamente
 - PR necesita: tests en verde + 1 aprobación
+- PR fácil de leer: un PR NO supera 400 líneas cambiadas (adiciones + eliminaciones; no cuentan lockfiles, generados ni vendor). Si el cambio lo excede, se parte en PRs encadenados, uno por unidad de trabajo, con sus tests y docs incluidos en la misma unidad.
+  - El límite corta el trabajo, nunca el código: prohibido borrar comentarios, tests, docs, líneas en blanco o comprimir/restylear para entrar en el presupuesto.
+  - Cada PR de la cadena declara: alcance de su unidad, PR del que depende, diagrama de dependencias marcando el PR actual, y qué queda fuera.
+  - Si tras un solo corte honesto no hay forma de dejar todas las partes bajo 400 líneas, se entrega el mejor corte cohesivo, se reporta el excedente con el motivo, y se pide excepción explícita (`size:exception`) al maintainer.
 
 ## 8. Antes de hacer código
 
