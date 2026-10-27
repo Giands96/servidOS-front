@@ -19,8 +19,10 @@ export interface VentaReporte {
   tipoPedido: TipoPedido;
   metodoPago: MetodoPago;
   total: number;
-  /** Not in the contract yet: shown as "Mesa N" when the backend starts sending it. */
+  /** Not in the contract yet (odd/prompts/backend-numero-mesa.md). */
   mesaId?: number | null;
+  /** Table number, shown as "Mesa N" once the backend sends it. */
+  numeroMesa?: number | null;
 }
 
 /** `GET /reportes/ventas`. `desde`/`hasta` are `yyyy-MM-dd`, both inclusive. */

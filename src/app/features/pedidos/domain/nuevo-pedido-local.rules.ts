@@ -2,7 +2,7 @@ import { Page } from '../../../core/http/api.types';
 import { elapsedMinutes } from '../../cocina/domain/cocina.rules';
 import { CuentaMesa, EstadoMesa, Mesa, PedidoCuenta } from '../../mesas/mesas.types';
 import { PedidoListado, TipoPedido } from '../pedidos.types';
-import { formatClock } from './pedidos.rules';
+import { AlcancePedidos, formatClock } from './pedidos.rules';
 
 /**
  * Pure rules of the table-first ("Local") flow of the new-order screen. Every function returns new
@@ -345,6 +345,11 @@ export const OPCIONES_TIPO: readonly OpcionTipo[] = [
     pie: 'Directo a productos',
   },
 ];
+
+/** Options of the tipo step: the waiter only takes Local (the table takeaway starts from an occupied table). */
+export function opcionesTipo(alcance: AlcancePedidos): readonly OpcionTipo[] {
+  return alcance === 'completo' ? OPCIONES_TIPO : OPCIONES_TIPO.filter((opcion) => opcion.tipoPedido === 'MESA');
+}
 
 /** Label of a tipo in the new-order flow (MESA reads "Local"). */
 export function tipoPasoLabel(tipo: TipoPedido): string {

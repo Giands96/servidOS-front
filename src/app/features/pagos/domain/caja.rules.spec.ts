@@ -34,7 +34,8 @@ const draft = (overrides: Partial<CobroDraft> = {}): CobroDraft => ({
 const pedido: PedidoListado = {
   pedidoId: 474,
   tipoPedido: 'MESA',
-  mesaId: 1,
+  mesaId: 801,
+  numeroMesa: 1,
   estado: 'ENTREGADO',
   total: 72,
   observacion: null,
@@ -364,7 +365,7 @@ describe('list and form copy', () => {
   it('builds the headings and submit label', () => {
     expect(porCobrarHeading(5)).toBe('POR COBRAR · 5');
     expect(cobroHeading(pedido)).toBe('Cobrar pedido #0474 · Mesa 1');
-    expect(cobroHeading({ ...pedido, pedidoId: 480, tipoPedido: 'RECOJO', mesaId: null })).toBe(
+    expect(cobroHeading({ ...pedido, pedidoId: 480, tipoPedido: 'RECOJO', numeroMesa: null })).toBe(
       'Cobrar pedido #0480 · Recojo',
     );
     expect(submitLabel(72)).toBe('Registrar pago · S/ 72.00');

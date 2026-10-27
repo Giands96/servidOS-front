@@ -196,7 +196,7 @@ describe('routes', () => {
     const pedidos = shellChild('pedidos');
     expect(pedidos.canActivate).toEqual([routeActionGuard]);
     expect(pedidos.data).toMatchObject({
-      action: 'pedidos.gestionar',
+      action: 'pedidos.tomar',
       nav: { label: 'Pedidos', icon: 'receipt' },
     });
     const page = await (pedidos.loadComponent as () => Promise<{ name: string }>)();
@@ -208,7 +208,7 @@ describe('routes', () => {
     const nuevo = shellChild('pedidos/nuevo');
     // Creating an order is the one pedidos write a lapsed tenant cannot do (402), so only this route is guarded.
     expect(nuevo.canActivate).toEqual([routeActionGuard, subscriptionGuard]);
-    expect(nuevo.data).toEqual({ action: 'pedidos.gestionar', title: 'Nuevo pedido' });
+    expect(nuevo.data).toEqual({ action: 'pedidos.tomar', title: 'Nuevo pedido' });
     const page = await (nuevo.loadComponent as () => Promise<{ name: string }>)();
     expect(page.name).toMatch(/NuevoPedidoPage$/);
   });

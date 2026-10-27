@@ -163,7 +163,7 @@ describe('dropTargets', () => {
 
 describe('moveMenu', () => {
   it('puts the primary first, then the disabled ones, Cancelar last', () => {
-    const menu = moveMenu(order({ tipoPedido: 'MESA', mesaId: 9, estado: 'EN_PREPARACION' }));
+    const menu = moveMenu(order({ tipoPedido: 'MESA', mesaId: 809, numeroMesa: 9, estado: 'EN_PREPARACION' }));
     expect(menu.heading).toBe('Mover Mesa 9 a…');
     expect(menu.items).toEqual([
       { estado: 'LISTO', label: 'Listo', allowed: true, reason: null, sublabel: null, next: true, direction: 'forward' },
@@ -319,7 +319,8 @@ describe('cardView', () => {
     const pedido = order({
       pedidoId: 479,
       tipoPedido: 'MESA',
-      mesaId: 9,
+      mesaId: 809,
+      numeroMesa: 9,
       estado: 'EN_PREPARACION',
       total: 118,
       observacion: '  sin ají  ',
@@ -515,5 +516,43 @@ describe('nextEnabledIndex', () => {
   it('answers -1 when no entry is enabled', () => {
     expect(nextEnabledIndex([{ allowed: false }], -1, 1)).toBe(-1);
     expect(nextEnabledIndex([], -1, 1)).toBe(-1);
+  });
+});
+
+describe('board for the waiter (alcance salon)', () => {
+  it('drops only along the waiter moves; the rest is locked with the reason', () => {
+    const pendiente = order({ tipoPedido: 'MESA', estado: 'PENDIENTE', estadoPago: null });
+    expect(canDrop(pendiente, 'EN_PREPARACION', 'salon')).toBe(true);
+    expect(canDrop(pendiente, 'CANCELADO', 'salon')).toBe(false);
+    expect(columnDropState(pendiente, 'CANCELADO', 'salon')).toEqual({
+      kind: 'locked',
+      reason: 'No disponible para el mesero',
+    });
+    const enPreparacion = order({ tipoPedido: 'MESA', estado: 'EN_PREPARACION' });
+    expect(dropTargets(enPreparacion, 'salon').find((t) => t.estado === 'LISTO')).toEqual({
+      estado: 'LISTO',
+      allowed: false,
+      reason: 'No disponible para el mesero',
+    });
+    expect(canDrop(order({ tipoPedido: 'MESA', estado: 'LISTO' }), 'ENTREGADO', 'salon')).toBe(true);
+    expect(canDrop(order({ tipoPedido: 'RECOJO', estado: 'LISTO' }), 'ENTREGADO', 'salon')).toBe(false);
+  });
+
+  it('keeps the contract refusal when the transition does not exist at all', () => {
+    expect(dropTargets(order({ tipoPedido: 'MESA', estado: 'LISTO' }), 'salon').find((t) => t.estado === 'EN_ENTREGA'))
+      .toEqual({ estado: 'EN_ENTREGA', allowed: false, reason: 'Solo pedidos delivery' });
+  });
+
+  it('the menu has no allowed Cancelar and the card no forward action the waiter cannot do', () => {
+    const listo = order({ tipoPedido: 'MESA', estado: 'LISTO', estadoPago: null });
+    const menu = moveMenu(listo, 'salon');
+    expect(menu.items.filter((i) => i.allowed).map((i) => i.estado)).toEqual(['ENTREGADO']);
+    expect(menu.items.find((i) => i.estado === 'CANCELADO')?.allowed).toBe(false);
+    expect(cardView(order({ tipoPedido: 'MESA', estado: 'EN_PREPARACION' }), new Date(), 'salon').primary).toBeNull();
+  });
+
+  it('refuses to build a request for a move the waiter cannot do', () => {
+    expect(() => moveRequest(order({ estado: 'PENDIENTE', estadoPago: null }), 'CANCELADO', 'salon')).toThrow();
+    expect(moveRequest(order({ estado: 'PENDIENTE' }), 'EN_PREPARACION', 'salon')).toEqual({ kind: 'confirmar' });
   });
 });
