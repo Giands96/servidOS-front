@@ -16,7 +16,7 @@ const ENTERO_POSITIVO = /^[1-9]\d*$/;
 
 /** Copy of the design (Modal Nueva mesa · Errores de campo). */
 const ENTERO_MAYOR_A_CERO = 'Debe ser un entero mayor a 0';
-const CAPACIDAD_VACIA = 'Ingresá la cantidad de asientos';
+const CAPACIDAD_VACIA = 'Ingresa la cantidad de asientos';
 
 export function emptyMesaDraft(): MesaDraft {
   return { numero: '', capacidad: '' };
@@ -212,4 +212,27 @@ export function falloLiberar(status: number, message: string | null): 'pedidos-a
 /** Toast after freeing a table. */
 export function mesaLiberadaMessage(m: Pick<Mesa, 'numero'>): string {
   return `Mesa ${m.numero} liberada`;
+}
+
+/** Toast after "Dar de baja". */
+export function mesaBajaMessage(m: Pick<Mesa, 'numero'>): string {
+  return `Mesa ${m.numero} dada de baja`;
+}
+
+/** Toast after "Reactivar". */
+export function mesaReactivadaMessage(m: Pick<Mesa, 'numero'>): string {
+  return `Mesa ${m.numero} reactivada`;
+}
+
+/**
+ * Body of the "No se pudo reactivar la mesa N" toast (design "Dadas de baja · Error al reactivar"): a number now used by an
+ * active table gets the design hint; any other backend message goes as is.
+ */
+export function reactivarFalloMensaje(message: string | null): string {
+  if (message === null) {
+    return 'Revisa tu conexión e inténtalo de nuevo.';
+  }
+  return /ya existe/i.test(message)
+    ? `${message}. Edita el número de la mesa activa o mantén esta dada de baja.`
+    : message;
 }

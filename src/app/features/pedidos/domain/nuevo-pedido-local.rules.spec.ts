@@ -33,6 +33,7 @@ import {
   tipoPasoLabel,
   tipoPasoResumen,
   OPCIONES_TIPO,
+  opcionesTipo,
   seccionesCuenta,
   clasificarFalloOcupar,
   resultadoFalloCrear,
@@ -616,5 +617,15 @@ describe('resultadoFalloCrear / mensajeFalloCrear', () => {
     expect(mensajeFalloCrear('mesa-ocupada', 5)).toBe(
       'El pedido no se creó y la Mesa 5 quedó ocupada. Vuelve a elegirla para reintentar.',
     );
+  });
+});
+
+describe('opcionesTipo', () => {
+  it('the full matrix keeps Local, Delivery and Recojo', () => {
+    expect(opcionesTipo('completo')).toEqual(OPCIONES_TIPO);
+  });
+
+  it('the waiter only takes Local (the table takeaway starts from an occupied table)', () => {
+    expect(opcionesTipo('salon').map((o) => o.tipoPedido)).toEqual(['MESA']);
   });
 });

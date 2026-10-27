@@ -1,3 +1,5 @@
+import { MeResponse } from '../../../core/auth/auth.types';
+import { can } from '../../../core/auth/domain/permissions.rules';
 import { Page } from '../../../core/http/api.types';
 import { BadgeVariant } from '../../../shared/ui/badge/badge.component';
 import { IconName } from '../../../shared/ui/icon/icon.component';
@@ -52,13 +54,43 @@ export function nextEstados(tipo: TipoPedido, estado: EstadoPedido): EstadoPedid
   return transitionsOf(tipo, estado).filter((next) => next !== 'CANCELADO');
 }
 
-/** Cancel is allowed when the contract has a CANCELADO transition and the order is not paid. */
+/**
+ * Who moves the orders: `completo` is the whole contract matrix (ADMINISTRADOR, RECEPCION); `salon` is the waiter
+ * (MESERO), limited by `movimientoPermitido`.
+ */
+export type AlcancePedidos = 'completo' | 'salon';
+
+export function alcanceDe(user: Pick<MeResponse, 'rol' | 'restauranteId'> | null): AlcancePedidos {
+  return can(user, 'pedidos.gestionar') ? 'completo' : 'salon';
+}
+
+/**
+ * Role filter on top of the contract transitions, mirror of CambiarEstadoPedidoUseCase: the waiter confirms
+ * (PENDIENTE → EN_PREPARACION, any tipo) and delivers a MESA order that is LISTO; nothing else, never a cancel.
+ * The backend stays authoritative (403).
+ */
+export function movimientoPermitido(
+  alcance: AlcancePedidos,
+  pedido: Pick<PedidoListado, 'tipoPedido' | 'estado'>,
+  target: EstadoPedido,
+): boolean {
+  if (alcance === 'completo') {
+    return true;
+  }
+  const confirma = pedido.estado === 'PENDIENTE' && target === 'EN_PREPARACION';
+  const entregaEnMesa = pedido.tipoPedido === 'MESA' && pedido.estado === 'LISTO' && target === 'ENTREGADO';
+  return confirma || entregaEnMesa;
+}
+
+/** Cancel is allowed when the contract has a CANCELADO transition, the order is not paid and the role may cancel. */
 export function canCancel(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'>,
+  alcance: AlcancePedidos = 'completo',
 ): boolean {
   return (
     transitionsOf(pedido.tipoPedido, pedido.estado).includes('CANCELADO') &&
-    pedido.estadoPago !== 'PAGADO'
+    pedido.estadoPago !== 'PAGADO' &&
+    movimientoPermitido(alcance, pedido, 'CANCELADO')
   );
 }
 
@@ -76,12 +108,13 @@ const ACTION_LABEL: Partial<Record<EstadoPedido, string>> = {
   ENTREGADO: 'Marcar entregado',
 };
 
-/** The single forward action a list row offers, or null for a final estado. */
+/** The single forward action a list row offers, or null for a final estado or a move the role may not make. */
 export function primaryAction(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'estado'>,
+  alcance: AlcancePedidos = 'completo',
 ): PedidoAction | null {
   const [estado] = nextEstados(pedido.tipoPedido, pedido.estado);
-  if (estado === undefined) {
+  if (estado === undefined || !movimientoPermitido(alcance, pedido, estado)) {
     return null;
   }
   return {
@@ -157,10 +190,11 @@ export const TIPO_LABEL: Readonly<Record<TipoPedido, string>> = {
   RECOJO: 'Recojo',
 };
 
-export function tipoLabel(order: Pick<PedidoListado, 'tipoPedido' | 'mesaId'>): string {
+/** "Mesa 7" from `numeroMesa`; just "Mesa" while the number is unknown (never the `mesaId` database id). */
+export function tipoLabel(order: Pick<PedidoListado, 'tipoPedido' | 'numeroMesa'>): string {
   switch (order.tipoPedido) {
     case 'MESA':
-      return order.mesaId === null ? TIPO_LABEL.MESA : `${TIPO_LABEL.MESA} ${order.mesaId}`;
+      return order.numeroMesa == null ? TIPO_LABEL.MESA : `${TIPO_LABEL.MESA} ${order.numeroMesa}`;
     case 'DELIVERY':
       return TIPO_LABEL.DELIVERY;
     case 'RECOJO':
@@ -297,7 +331,7 @@ export function transitionMessage(pedidoId: number, estado: EstadoPedido): strin
 }
 
 /** Copy of the cancel confirmation; it names the order so the wrong row is not cancelled by mistake. */
-export function cancelCopy(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido' | 'mesaId'>): {
+export function cancelCopy(pedido: Pick<PedidoListado, 'pedidoId' | 'tipoPedido' | 'numeroMesa'>): {
   heading: string;
   message: string;
 } {

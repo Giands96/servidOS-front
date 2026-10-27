@@ -14,6 +14,7 @@ export type Action =
   | 'catalogo.editar'
   | 'catalogo.disponibilidad'
   | 'pedidos.gestionar'
+  | 'pedidos.tomar'
   | 'pagos.registrar'
   | 'pagos.reembolsar'
   | 'usuarios.gestionar'
@@ -50,6 +51,9 @@ const RESTAURANTE_ACTIONS: Partial<Record<Action, readonly RestauranteRol[]>> = 
   'catalogo.editar': ['ADMINISTRADOR'],
   'catalogo.disponibilidad': ['ADMINISTRADOR', 'COCINERO'],
   'pedidos.gestionar': ['ADMINISTRADOR', 'RECEPCION'],
+  // Mirror of PedidoController (create, list, confirmar, PATCH estado): the waiter takes and serves floor orders;
+  // which moves the MESERO may make is narrowed by `alcanceDe` / `movimientoPermitido` in pedidos.rules.
+  'pedidos.tomar': ['ADMINISTRADOR', 'RECEPCION', 'MESERO'],
   'pagos.registrar': ['ADMINISTRADOR', 'RECEPCION', 'CAJERO'],
   'pagos.reembolsar': ['ADMINISTRADOR', 'RECEPCION'],
   'usuarios.gestionar': ['ADMINISTRADOR'],
