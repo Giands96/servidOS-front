@@ -3,6 +3,8 @@ import { Page } from '../../../core/http/api.types';
 import { EstadoPago, EstadoPedido, PedidoListado, TipoPedido } from '../pedidos.types';
 import {
   ESTADOS_PEDIDO,
+  alcanceDe,
+  movimientoPermitido,
   ESTADO_TABS,
   PedidoAction,
   cancelCopy,
@@ -595,5 +597,65 @@ describe('cobrarLabel', () => {
 
   it('shows an em dash amount when the total is not a number', () => {
     expect(cobrarLabel(Number.NaN)).toBe('Cobrar —');
+  });
+});
+
+describe('alcanceDe (who moves the orders)', () => {
+  it.each([
+    ['ADMINISTRADOR', 'completo'],
+    ['RECEPCION', 'completo'],
+    ['MESERO', 'salon'],
+  ] as const)('%s -> %s', (rol, expected) => {
+    expect(alcanceDe({ rol, restauranteId: 7 })).toBe(expected);
+  });
+});
+
+describe('movimientoPermitido (mirror of CambiarEstadoPedidoUseCase)', () => {
+  it('the full matrix allows every contract transition', () => {
+    for (const tipo of TIPOS) {
+      for (const estado of ESTADOS_PEDIDO) {
+        for (const target of ESTADOS_PEDIDO) {
+          expect(movimientoPermitido('completo', aPedidoListado({ tipoPedido: tipo, estado }), target)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('the waiter only confirms (PENDIENTE -> EN_PREPARACION, any tipo) and delivers a MESA order that is LISTO', () => {
+    const allowed: string[] = [];
+    for (const tipoPedido of TIPOS) {
+      for (const estado of ESTADOS_PEDIDO) {
+        for (const target of ESTADOS_PEDIDO) {
+          if (movimientoPermitido('salon', aPedidoListado({ tipoPedido, estado }), target)) {
+            allowed.push(`${tipoPedido} ${estado}->${target}`);
+          }
+        }
+      }
+    }
+    expect(allowed).toEqual([
+      'MESA PENDIENTE->EN_PREPARACION',
+      'MESA LISTO->ENTREGADO',
+      'DELIVERY PENDIENTE->EN_PREPARACION',
+      'RECOJO PENDIENTE->EN_PREPARACION',
+    ]);
+  });
+});
+
+describe('primaryAction / canCancel for the waiter', () => {
+  it('keeps "Enviar a cocina" and "Marcar entregado" (MESA), nothing else', () => {
+    expect(primaryAction(aPedidoListado({ tipoPedido: 'RECOJO', estado: 'PENDIENTE' }), 'salon')?.label).toBe(
+      'Enviar a cocina',
+    );
+    expect(primaryAction(aPedidoListado({ tipoPedido: 'MESA', estado: 'LISTO' }), 'salon')?.label).toBe(
+      'Marcar entregado',
+    );
+    expect(primaryAction(aPedidoListado({ tipoPedido: 'MESA', estado: 'EN_PREPARACION' }), 'salon')).toBeNull();
+    expect(primaryAction(aPedidoListado({ tipoPedido: 'RECOJO', estado: 'LISTO' }), 'salon')).toBeNull();
+    expect(primaryAction(aPedidoListado({ tipoPedido: 'DELIVERY', estado: 'LISTO' }), 'salon')).toBeNull();
+  });
+
+  it('never cancels, even an unpaid order', () => {
+    expect(canCancel(aPedidoListado({ estado: 'PENDIENTE', estadoPago: null }), 'salon')).toBe(false);
+    expect(canCancel(aPedidoListado({ estado: 'PENDIENTE', estadoPago: null }))).toBe(true);
   });
 });

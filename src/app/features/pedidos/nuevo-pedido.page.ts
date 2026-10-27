@@ -24,6 +24,7 @@ import {
   switchMap,
   throwError,
 } from 'rxjs';
+import { SessionStore } from '../../core/auth/session.store';
 import { readApiError } from '../../core/http/domain/api-error.rules';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
@@ -77,7 +78,7 @@ import {
   tipoPasoLabel,
   tipoPasoResumen,
 } from './domain/nuevo-pedido-local.rules';
-import { formatMoney, tipoIcon } from './domain/pedidos.rules';
+import { alcanceDe, formatMoney, tipoIcon } from './domain/pedidos.rules';
 import { CuentaMesaApi } from '../mesas/data/cuenta-mesa.api';
 import { CuentaMesa } from '../mesas/mesas.types';
 import { ComensalesStepComponent } from './nuevo-pedido/comensales-step.component';
@@ -195,7 +196,7 @@ interface LineView {
       </header>
 
       @if (paso() === 'TIPO') {
-        <app-tipo-pedido-step (elegir)="elegirTipo($event)" />
+        <app-tipo-pedido-step [alcance]="alcance()" (elegir)="elegirTipo($event)" />
       } @else if (paso() === 'MESA') {
         <app-mesa-picker
           [cards]="mesasCards()"
@@ -648,6 +649,10 @@ export class NuevoPedidoPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
+  private readonly session = inject(SessionStore);
+
+  /** The waiter (MESERO) only takes Local orders; the table takeaway starts from an occupied table. */
+  protected readonly alcance = computed(() => alcanceDe(this.session.user()));
 
   protected readonly skeletonTabs = [1, 2, 3, 4] as const;
   protected readonly skeletonCards = [1, 2, 3, 4, 5, 6] as const;

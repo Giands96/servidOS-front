@@ -2,6 +2,7 @@ import { BadgeVariant } from '../../../shared/ui/badge/badge.component';
 import { limaToday } from '../../plataforma/domain/plataforma.rules';
 import { EstadoPedido, PedidoListado, PedidosQuery, TipoPedido } from '../pedidos.types';
 import {
+  AlcancePedidos,
   PedidoAction,
   TIPO_LABEL,
   canCancel,
@@ -10,6 +11,7 @@ import {
   estadoVariant,
   formatMoney,
   formatOrderNumber,
+  movimientoPermitido,
   primaryAction,
   tipoLabel,
   transitionMessage,
@@ -32,6 +34,7 @@ export const CLOSED_COLUMNS: readonly EstadoPedido[] = ['ENTREGADO', 'CANCELADO'
 const ALL_COLUMNS: readonly EstadoPedido[] = [...BOARD_COLUMNS, ...CLOSED_COLUMNS];
 
 const PAID_CANCEL_REASON = 'Un pedido pagado no se puede cancelar';
+const ROLE_REASON = 'No disponible para el mesero';
 
 // ----------------------------------------------------------------------------------------- view + data
 
@@ -98,12 +101,19 @@ export function groupByColumn(pedidos: readonly PedidoListado[]): Record<BoardCo
 
 // ------------------------------------------------------------------------------------- drag & drop
 
-/** The card may be dropped on `target` only along a transition of the contract (CANCELADO also needs an unpaid order). */
+/**
+ * The card may be dropped on `target` only along a transition of the contract that the role may make
+ * (CANCELADO also needs an unpaid order).
+ */
 export function canDrop(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'>,
   target: EstadoPedido,
+  alcance: AlcancePedidos = 'completo',
 ): boolean {
   if (!transitionsOf(pedido.tipoPedido, pedido.estado).includes(target)) {
+    return false;
+  }
+  if (!movimientoPermitido(alcance, pedido, target)) {
     return false;
   }
   return target === 'CANCELADO' ? canCancel(pedido) : true;
@@ -119,9 +129,16 @@ export interface DropTarget {
 function refusalReason(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'>,
   target: EstadoPedido,
+  alcance: AlcancePedidos,
 ): string | null {
-  if (canDrop(pedido, target)) {
+  if (canDrop(pedido, target, alcance)) {
     return null;
+  }
+  if (
+    transitionsOf(pedido.tipoPedido, pedido.estado).includes(target) &&
+    !movimientoPermitido(alcance, pedido, target)
+  ) {
+    return ROLE_REASON;
   }
   if (target === 'EN_ENTREGA' && pedido.tipoPedido !== 'DELIVERY') {
     return 'Solo pedidos delivery';
@@ -139,11 +156,12 @@ function refusalReason(
 /** Verdict for every column (board and closed), so the board can lock the invalid ones while dragging. */
 export function dropTargets(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'>,
+  alcance: AlcancePedidos = 'completo',
 ): DropTarget[] {
   return ALL_COLUMNS.map((estado) => ({
     estado,
-    allowed: canDrop(pedido, estado),
-    reason: estado === pedido.estado ? null : refusalReason(pedido, estado),
+    allowed: canDrop(pedido, estado, alcance),
+    reason: estado === pedido.estado ? null : refusalReason(pedido, estado, alcance),
   }));
 }
 
@@ -159,6 +177,7 @@ export interface ColumnDropState {
 export function columnDropState(
   dragged: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'> | null,
   estado: EstadoPedido,
+  alcance: AlcancePedidos = 'completo',
 ): ColumnDropState {
   if (dragged === null) {
     return { kind: 'idle', reason: null };
@@ -166,7 +185,7 @@ export function columnDropState(
   if (dragged.estado === estado) {
     return { kind: 'origin', reason: null };
   }
-  const target = dropTargets(dragged).find((t) => t.estado === estado);
+  const target = dropTargets(dragged, alcance).find((t) => t.estado === estado);
   return target?.allowed === true
     ? { kind: 'allowed', reason: null }
     : { kind: 'locked', reason: target?.reason ?? null };
@@ -220,9 +239,10 @@ function directionOf(current: EstadoPedido, target: EstadoPedido): MoveDirection
  */
 export function moveMenu(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'numeroMesa' | 'estado' | 'estadoPago'>,
+  alcance: AlcancePedidos = 'completo',
 ): MoveMenu {
-  const primary = primaryAction(pedido)?.estado ?? null;
-  const entries = dropTargets(pedido).filter((t) => t.estado !== pedido.estado);
+  const primary = primaryAction(pedido, alcance)?.estado ?? null;
+  const entries = dropTargets(pedido, alcance).filter((t) => t.estado !== pedido.estado);
   const toItem = (t: DropTarget): MoveMenuItem => {
     const cancel = t.estado === 'CANCELADO';
     return {
@@ -252,8 +272,9 @@ export type MoveRequest = { kind: 'confirmar' } | { kind: 'estado'; estado: Esta
 export function moveRequest(
   pedido: Pick<PedidoListado, 'tipoPedido' | 'estado' | 'estadoPago'>,
   target: EstadoPedido,
+  alcance: AlcancePedidos = 'completo',
 ): MoveRequest {
-  if (!canDrop(pedido, target)) {
+  if (!canDrop(pedido, target, alcance)) {
     throw new Error(`Movimiento no permitido: ${pedido.estado} → ${target}`);
   }
   return pedido.estado === 'PENDIENTE' && target === 'EN_PREPARACION'
@@ -303,7 +324,7 @@ export interface CardView {
   primary: PedidoAction | null;
 }
 
-export function cardView(pedido: PedidoListado, now: Date): CardView {
+export function cardView(pedido: PedidoListado, now: Date, alcance: AlcancePedidos = 'completo'): CardView {
   const observacion = pedido.observacion?.trim() ?? '';
   return {
     titulo: tipoLabel(pedido),
@@ -313,7 +334,7 @@ export function cardView(pedido: PedidoListado, now: Date): CardView {
     pagado: pedido.estadoPago === 'PAGADO',
     total: formatMoney(pedido.total),
     observacion: observacion === '' ? null : observacion,
-    primary: primaryAction(pedido),
+    primary: primaryAction(pedido, alcance),
   };
 }
 
