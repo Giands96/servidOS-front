@@ -598,6 +598,12 @@ export class MesasPage {
       });
   }
 
+  protected onSaved(mesa: Mesa, mode: 'crear' | 'editar'): void {
+    this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
+    this.form.set(null);
+    this.toasts.show('OK', mesaGuardadaMessage(mesa, mode), 'success');
+  }
+
   /** "Actualizar" (decision 4, manual only): keeps the grid on screen while it reloads. */
   protected refresh(): void {
     this.refreshing.set(true);
