@@ -11,7 +11,7 @@ import { Mesa } from './mesas.types';
   host: { class: 'block' },
   template: `
     <article
-      class="flex h-full flex-col rounded-card border p-4"
+      class="touch-lg flex h-full flex-col rounded-card border p-4"
       [class]="libre() ? 'border-line bg-card text-ink' : 'border-ink bg-ink text-white'"
       [attr.aria-label]="ariaLabel()"
     >

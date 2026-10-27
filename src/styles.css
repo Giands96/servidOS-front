@@ -70,4 +70,62 @@
   [role='button']:not([aria-disabled='true']) {
     cursor: pointer;
   }
+
+  /*
+   * Touch targets (user, 2026-10-25): everything pressable is 15% larger, for desktop touch screens and low vision.
+   * Utilities compile to calc(var(--spacing) * N) and var(--text-*), so redefining the tokens on the control scales its
+   * padding, size, gap and text without touching templates. Values are absolute (Tailwind defaults x 1.15), never
+   * multipliers, so nested rules never compound. `.touch` opts in pressable elements outside this list.
+   * If @theme ever overrides --spacing or --text-*, recompute these from the new base.
+   */
+  :where(
+    button,
+    [role='button'],
+    [role='tab'],
+    [role='option'],
+    select,
+    textarea,
+    input:not([type='checkbox'], [type='radio']),
+    a[appButton],
+    nav a[href],
+    .touch
+  ) {
+    --spacing: 0.2875rem;
+    --text-xs: 0.8625rem;
+    --text-sm: 1.00625rem;
+    --text-base: 1.15rem;
+    --text-lg: 1.29375rem;
+    --text-xl: 1.4375rem;
+    --text-2xl: 1.725rem;
+    --text-3xl: 2.15625rem;
+    --text-4xl: 2.5875rem;
+  }
+}
+
+@layer components {
+  /* Table-selection cards (Mesas grid, Nuevo pedido picker): 30% larger, including the controls inside them. */
+  .touch-lg,
+  .touch-lg
+    :where(
+      button,
+      [role='button'],
+      [role='tab'],
+      [role='option'],
+      select,
+      textarea,
+      input:not([type='checkbox'], [type='radio']),
+      a[appButton],
+      nav a[href],
+      .touch
+    ) {
+    --spacing: 0.325rem;
+    --text-xs: 0.975rem;
+    --text-sm: 1.1375rem;
+    --text-base: 1.3rem;
+    --text-lg: 1.4625rem;
+    --text-xl: 1.625rem;
+    --text-2xl: 1.95rem;
+    --text-3xl: 2.4375rem;
+    --text-4xl: 2.925rem;
+  }
 }
