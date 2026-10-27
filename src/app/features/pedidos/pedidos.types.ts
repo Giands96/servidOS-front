@@ -11,6 +11,11 @@ export interface PedidoListado {
   pedidoId: number;
   tipoPedido: TipoPedido;
   mesaId: number | null;
+  /**
+   * Number of the order's table (`Mesa.numero`), null without a table. Optional until the backend ships it
+   * (odd/prompts/backend-numero-mesa.md); `mesaId` is the database id and is never shown as the number.
+   */
+  numeroMesa?: number | null;
   estado: EstadoPedido;
   total: number;
   observacion: string | null;
@@ -24,6 +29,11 @@ export interface Pedido {
   pedidoId: number;
   tipoPedido: TipoPedido;
   mesaId: number | null;
+  /**
+   * Number of the order's table (`Mesa.numero`), null without a table. Optional until the backend ships it
+   * (odd/prompts/backend-numero-mesa.md); `mesaId` is the database id and is never shown as the number.
+   */
+  numeroMesa?: number | null;
   estado: EstadoPedido;
   total: number;
 }

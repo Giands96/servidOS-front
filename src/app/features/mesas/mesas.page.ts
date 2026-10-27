@@ -598,6 +598,74 @@ export class MesasPage {
       });
   }
 
+  protected onSaved(mesa: Mesa, mode: 'crear' | 'editar'): void {
+    this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
+    this.form.set(null);
+    this.toasts.show('OK', mesaGuardadaMessage(mesa, mode), 'success');
+  }
+
+  protected onSaved(mesa: Mesa, mode: 'crear' | 'editar'): void {
+    this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
+    this.form.set(null);
+    this.toasts.show('OK', mesaGuardadaMessage(mesa, mode), 'success');
+  }
+
+  protected onOcupada(mesa: Mesa, comensales: number): void {
+    this.activas.update((mesas) => upsertMesa(mesas ?? [], mesa));
+    this.ocupar.set(null);
+    this.toasts.show('OK', mesaOcupadaMessage(mesa, comensales), 'success');
+  }
+
+  /** A rejected occupy (e.g. taken meanwhile): close, show the backend message and reload the grid. */
+  protected onFalloOcupar(message: string): void {
+    this.ocupar.set(null);
+    this.toasts.show('Error', message);
+    this.refresh();
+  }
+
+  protected confirmarLiberar(mesa: Mesa): void {
+    if (this.liberando()) {
+      return;
+    }
+    this.liberando.set(true);
+    this.api
+      .liberar(mesa.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (libre) => {
+          this.liberando.set(false);
+          this.activas.update((mesas) => upsertMesa(mesas ?? [], libre));
+          this.liberar.set(null);
+          this.toasts.show('OK', mesaLiberadaMessage(libre), 'success');
+        },
+        error: (err: unknown) => {
+          this.liberando.set(false);
+          const status = err instanceof HttpErrorResponse ? err.status : 0;
+          const message = err instanceof HttpErrorResponse ? (readApiError(err.error)?.message ?? null) : null;
+          if (falloLiberar(status, message) === 'pedidos-abiertos') {
+            this.liberar.set({ mesa, fase: 'abiertos', mensaje: message ?? '' });
+            return;
+          }
+          this.liberar.set(null);
+          this.toasts.show(status || 'Error', message ?? DEFAULT_ERROR);
+          this.refresh();
+        },
+      });
+  }
+
+  protected verCuenta(mesa: Mesa): void {
+    this.liberar.set(null);
+    this.cuenta.set({ mesa, card: mesaCards([mesa], [], new Date())[0], estado: 'cargando', cuenta: null, error: '' });
+    this.cuentaApi
+      .obtener(mesa.mesaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuenta) => this.cuenta.update((d) => (d === null ? d : { ...d, estado: 'listo', cuenta })),
+        error: (err: unknown) =>
+          this.cuenta.update((d) => (d === null ? d : { ...d, estado: 'error', error: messageOf(err) })),
+      });
+  }
+
   /** "Actualizar" (decision 4, manual only): keeps the grid on screen while it reloads. */
   protected refresh(): void {
     this.refreshing.set(true);

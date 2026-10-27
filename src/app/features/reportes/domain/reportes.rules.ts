@@ -154,9 +154,9 @@ export function ventaDateTime(fechaPago: string, variant: VentaDateVariant): str
   }
 }
 
-/** "Mesa 4" when the table is known, "Mesa" otherwise (the contract has no table yet), "Delivery", "Recojo". */
-export function tipoVentaLabel(venta: Pick<VentaReporte, 'tipoPedido' | 'mesaId'>): string {
-  return tipoLabel({ tipoPedido: venta.tipoPedido, mesaId: venta.mesaId ?? null });
+/** "Mesa 4" from `numeroMesa`, "Mesa" while the number is unknown (never the id), "Delivery", "Recojo". */
+export function tipoVentaLabel(venta: Pick<VentaReporte, 'tipoPedido' | 'numeroMesa'>): string {
+  return tipoLabel({ tipoPedido: venta.tipoPedido, numeroMesa: venta.numeroMesa ?? null });
 }
 
 /** Share of the top amount, 0..1, for the ranking bars. 0 when there is no positive top amount. */

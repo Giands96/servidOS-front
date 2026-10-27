@@ -50,13 +50,13 @@ export const routes: Routes = [
       {
         path: 'pedidos',
         pathMatch: 'full',
-        ...moduleRoute('pedidos.gestionar', 'Pedidos', 'receipt', [], () =>
+        ...moduleRoute('pedidos.tomar', 'Pedidos', 'receipt', [], () =>
           import('./features/pedidos/pedidos.page').then((m) => m.PedidosPage),
         ),
       },
       {
         path: 'pedidos/nuevo',
-        ...moduleRoute('pedidos.gestionar', 'Nuevo pedido', null, [subscriptionGuard], () =>
+        ...moduleRoute('pedidos.tomar', 'Nuevo pedido', null, [subscriptionGuard], () =>
           import('./features/pedidos/nuevo-pedido.page').then((m) => m.NuevoPedidoPage),
         ),
       },
