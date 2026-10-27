@@ -62,7 +62,7 @@ describe('TIPOS_PEDIDO', () => {
 
   it('shares its labels with the list (no duplicated wording)', () => {
     for (const { tipoPedido, label } of TIPOS_PEDIDO) {
-      expect(tipoLabel({ tipoPedido, mesaId: null })).toBe(label);
+      expect(tipoLabel({ tipoPedido, numeroMesa: null })).toBe(label);
     }
   });
 });

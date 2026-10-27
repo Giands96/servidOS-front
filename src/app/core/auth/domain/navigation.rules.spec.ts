@@ -56,7 +56,7 @@ describe('navFor', () => {
     ['ADMINISTRADOR', ['/pedidos', '/mesas', '/cocina', '/caja', '/catalogo', '/reportes', '/usuarios', '/restaurante']],
     ['RECEPCION', ['/pedidos', '/mesas', '/cocina', '/caja', '/catalogo']],
     ['COCINERO', ['/cocina', '/catalogo']],
-    ['MESERO', ['/mesas', '/catalogo']],
+    ['MESERO', ['/pedidos', '/mesas', '/catalogo']],
     ['CAJERO', ['/mesas', '/caja', '/catalogo']],
     ['REPARTIDOR', ['/catalogo']],
   ] as const)('tenant %s sees %j', (rol, expected) => {

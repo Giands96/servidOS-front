@@ -152,7 +152,11 @@ describe('ventaDateTime', () => {
 
 describe('tipoVentaLabel', () => {
   it('names the table when the number is known', () => {
-    expect(tipoVentaLabel(venta({ mesaId: 4 }))).toBe('Mesa 4');
+    expect(tipoVentaLabel(venta({ mesaId: 804, numeroMesa: 4 }))).toBe('Mesa 4');
+  });
+
+  it('never shows the database id as the table number', () => {
+    expect(tipoVentaLabel(venta({ mesaId: 804 }))).toBe('Mesa');
   });
 
   it('shows just "Mesa" without a table number', () => {

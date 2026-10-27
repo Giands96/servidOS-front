@@ -168,6 +168,7 @@ const CHIP_CLASS: Record<AlertaTiempo, string> = {
           </p>
         </div>
         <!-- "Cobrar cuenta" stays hidden by product decision: charging a table bill belongs to Caja. -->
+        @if (!soloLectura()) {
         <div class="mt-4 flex gap-3">
           <button appButton type="button" variant="secondary" (click)="nuevoParaLlevar.emit()">
             <app-icon name="bag" [size]="18" />Para llevar
@@ -182,6 +183,7 @@ const CHIP_CLASS: Record<AlertaTiempo, string> = {
             <app-icon name="plus" [size]="18" />Agregar ronda
           </button>
         </div>
+        }
       </footer>
     </div>
 
@@ -221,6 +223,8 @@ export class MesaDetalleComponent implements OnDestroy {
   readonly estado = input<EstadoMesaDetalle>('cargando');
   /** Backend message shown under the error heading, when there is one. */
   readonly mensajeError = input('');
+  /** Bill only (Mesas screen, "Ver cuenta"): hides "Para llevar" and "Agregar ronda". */
+  readonly soloLectura = input(false);
 
   readonly cerrar = output<void>();
   readonly reintentar = output<void>();

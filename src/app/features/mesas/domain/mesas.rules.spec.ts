@@ -5,14 +5,19 @@ import {
   conteoMesas,
   draftFromMesa,
   emptyMesaDraft,
+  falloLiberar,
   filtrarPorEstado,
   mesaFieldErrors,
+  mesaBajaMessage,
   mesaGuardadaMessage,
+  mesaLiberadaMessage,
+  mesaReactivadaMessage,
   mesaOcupadaMessage,
   mesasPermisos,
   ocupacionLabel,
   opcionesComensales,
   previewOcupar,
+  reactivarFalloMensaje,
   toGuardarMesaRequest,
   upsertMesa,
   validateMesaDraft,
@@ -37,7 +42,7 @@ describe('validateMesaDraft', () => {
   });
 
   it('asks for the seats when the capacity is empty, and for an integer > 0 otherwise', () => {
-    expect(validateMesaDraft({ numero: '1', capacidad: ' ' }).capacidad).toBe('Ingresá la cantidad de asientos');
+    expect(validateMesaDraft({ numero: '1', capacidad: ' ' }).capacidad).toBe('Ingresa la cantidad de asientos');
     for (const capacidad of ['0', '-1', '3.5', 'x']) {
       expect(validateMesaDraft({ numero: '1', capacidad }).capacidad).toBe('Debe ser un entero mayor a 0');
     }
@@ -46,7 +51,7 @@ describe('validateMesaDraft', () => {
   it('reports both fields at once', () => {
     expect(validateMesaDraft(emptyMesaDraft())).toEqual({
       numero: 'Debe ser un entero mayor a 0',
-      capacidad: 'Ingresá la cantidad de asientos',
+      capacidad: 'Ingresa la cantidad de asientos',
     });
   });
 });
@@ -272,5 +277,43 @@ describe('upsertMesa', () => {
   it('does not mutate the given list', () => {
     upsertMesa(mesas, aMesa({ mesaId: 9, numero: 2 }));
     expect(mesas.map((m) => m.mesaId)).toEqual([1, 2]);
+  });
+});
+
+describe('falloLiberar', () => {
+  it('a 400 about open orders opens the "No se pudo liberar" dialog', () => {
+    expect(falloLiberar(400, 'La mesa tiene pedidos abiertos')).toBe('pedidos-abiertos');
+  });
+
+  it('any other failure is a toast', () => {
+    expect(falloLiberar(400, 'La mesa ya está libre')).toBe('otro');
+    expect(falloLiberar(500, 'La mesa tiene pedidos abiertos')).toBe('otro');
+    expect(falloLiberar(400, null)).toBe('otro');
+  });
+});
+
+describe('mesaLiberadaMessage', () => {
+  it('confirms the freed table by number', () => {
+    expect(mesaLiberadaMessage(aMesa({ numero: 2 }))).toBe('Mesa 2 liberada');
+  });
+});
+
+describe('mesaBajaMessage / mesaReactivadaMessage', () => {
+  it('confirms by number', () => {
+    expect(mesaBajaMessage(aMesa({ numero: 9 }))).toBe('Mesa 9 dada de baja');
+    expect(mesaReactivadaMessage(aMesa({ numero: 3 }))).toBe('Mesa 3 reactivada');
+  });
+});
+
+describe('reactivarFalloMensaje', () => {
+  it('adds the design hint when the number is now used by an active table', () => {
+    expect(reactivarFalloMensaje('La mesa 3 ya existe para este restaurante')).toBe(
+      'La mesa 3 ya existe para este restaurante. Edita el número de la mesa activa o mantén esta dada de baja.',
+    );
+  });
+
+  it('keeps any other backend message as is, and falls back when there is none', () => {
+    expect(reactivarFalloMensaje('La mesa ya está activa')).toBe('La mesa ya está activa');
+    expect(reactivarFalloMensaje(null)).toBe('Revisa tu conexión e inténtalo de nuevo.');
   });
 });
